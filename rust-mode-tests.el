@@ -893,3 +893,9 @@ list of substrings of `STR' each followed by its face."
    "/* #[foo] */"
    '("/* " font-lock-comment-delimiter-face
      "#[foo] */" font-lock-comment-face)))
+
+(ert-deftest font-lock-double-quote-character-literal ()
+  (rust-test-font-lock
+   "'\"'; let"
+   '("'\"'" font-lock-string-face
+     "let" font-lock-keyword-face)))

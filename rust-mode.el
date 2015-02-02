@@ -44,6 +44,13 @@
 
     table))
 
+(defvar rust-mode-character-literal-syntax-table
+  (let ((table (make-syntax-table rust-mode-syntax-table)))
+    (modify-syntax-entry ?' "\"" table)
+    (modify-syntax-entry ?\" "_" table)
+
+    table))
+
 (defgroup rust-mode nil
   "Support for Rust code."
   :link '(url-link "http://www.rust-lang.org/")
@@ -259,14 +266,6 @@
      ;; Lifetimes like `'foo`
      (,(concat "'" (rust-re-grab rust-re-ident) "[^']") 1 font-lock-variable-name-face)
 
-     ;; Character constants, since they're not treated as strings
-     ;; in order to have sufficient leeway to parse 'lifetime above.
-     (,(rust-re-grab "'[^']'") 1 font-lock-string-face)
-     (,(rust-re-grab "'\\\\[nrt]'") 1 font-lock-string-face)
-     (,(rust-re-grab "'\\\\x[[:xdigit:]]\\{2\\}'") 1 font-lock-string-face)
-     (,(rust-re-grab "'\\\\u[[:xdigit:]]\\{4\\}'") 1 font-lock-string-face)
-     (,(rust-re-grab "'\\\\U[[:xdigit:]]\\{8\\}'") 1 font-lock-string-face)
-
      ;; CamelCase Means Type Or Constructor
      (,(rust-re-grabword rust-re-CamelCase) 1 font-lock-type-face)
      )
@@ -439,12 +438,19 @@ Assume that this is called after beginning-of-defun. So point is
 at the beginning of the defun body.
 
 This is written mainly to be used as `end-of-defun-function' for Rust."
-  (interactive "p")
+  (interactive)
   ;; Find the opening brace
-  (re-search-forward "[{]" nil t)
-  (goto-char (match-beginning 0))
-  ;; Go to the closing brace
-  (forward-sexp))
+  (if (re-search-forward "[{]" nil t)
+      (progn
+        (goto-char (match-beginning 0))
+        ;; Go to the closing brace
+        (condition-case err
+            (forward-sexp)
+          (scan-error
+           ;; The parentheses are unbalanced; instead of being unable to fontify, just jump to the end of the buffer
+           (goto-char (point-max)))))
+    ;; There is no opening brace, so consider the whole buffer to be one "defun"
+    (goto-char (point-max))))
 
 ;; For compatibility with Emacs < 24, derive conditionally
 (defalias 'rust-parent-mode
@@ -481,7 +487,34 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
   (setq-local comment-line-break-function 'rust-comment-indent-new-line)
   (setq-local imenu-generic-expression rust-imenu-generic-expression)
   (setq-local beginning-of-defun-function 'rust-beginning-of-defun)
-  (setq-local end-of-defun-function 'rust-end-of-defun))
+  (setq-local end-of-defun-function 'rust-end-of-defun)
+  (setq-local parse-sexp-lookup-properties t)
+  (add-hook 'syntax-propertize-extend-region-functions 'rust-syntax-propertize-extend-region)
+  (setq-local syntax-propertize-function 'rust-syntax-propertize))
+
+(defun rust-syntax-propertize-extend-region (start end)
+  (save-excursion
+    (goto-char start)
+    (beginning-of-defun)
+    (cons
+     (point)
+     (progn
+       (goto-char end)
+       (end-of-defun)
+       (point)))))
+
+(defun rust-syntax-propertize (start end)
+  ;; Find character literals and make the syntax table recognize the single quote as the string delimiter
+  (dolist (char-lit-re
+           '("'[^']'"
+             "'\\\\['nrt]'"
+             "'\\\\x[[:xdigit:]]\\{2\\}'"
+             "'\\\\u[[:xdigit:]]\\{4\\}'"
+             "'\\\\U[[:xdigit:]]\\{8\\}'"))
+    (save-excursion
+      (goto-char start)
+      (while (re-search-forward char-lit-re end t)
+        (put-text-property (match-beginning 0) (match-end 0) 'syntax-table rust-mode-character-literal-syntax-table)))))
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.rs\\'" . rust-mode))
