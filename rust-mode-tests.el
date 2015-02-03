@@ -616,7 +616,10 @@ fn indented_already() {
 POS-SYMBOL is a symbol found in `rust-test-positions-alist'.
 Convert the line-column information from that list into a buffer position value."
   (interactive "P")
-  (pcase-let ((`(,line ,column) (cadr (assoc pos-symbol rust-test-positions-alist))))
+  (let* (
+         (line-and-column (cadr (assoc pos-symbol rust-test-positions-alist)))
+         (line (nth 0 line-and-column))
+         (column (nth 1 line-and-column)))
     (save-excursion
       (goto-line line)
       (move-to-column column)
@@ -844,14 +847,14 @@ All positions are position symbols found in `rust-test-positions-alist'."
 (defun rust-test-group-str-by-face (str)
   "Fontify `STR' in rust-mode and group it by face, returning a
 list of substrings of `STR' each followed by its face."
-  (cl-loop with fontified = (rust-test-fontify-string str)
-           for start = 0 then end
-           while start
-           for end   = (next-single-property-change start 'face fontified)
-           for prop  = (get-text-property start 'face fontified)
-           for text  = (substring-no-properties fontified start end)
-           if prop
-           append (list text prop)))
+  (loop with fontified = (rust-test-fontify-string str)
+        for start = 0 then end
+        while start
+        for end   = (next-single-property-change start 'face fontified)
+        for prop  = (get-text-property start 'face fontified)
+        for text  = (substring-no-properties fontified start end)
+        if prop
+        append (list text prop)))
 
 (defun rust-test-font-lock (source face-groups)
   "Test that `SOURCE' fontifies to the expected `FACE-GROUPS'"
