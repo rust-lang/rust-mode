@@ -526,6 +526,18 @@ fn foo() {
 "
    ))
 
+;; Closing braces in single char literals and strings should not confuse the indentation
+(ert-deftest indent-closing-braces-in-char-literals ()
+  (test-indent
+   "
+fn foo() {
+    { bar('}'); }
+    { bar(']'); }
+    { bar(')'); }
+}
+"
+   ))
+
 (setq rust-test-motion-string
       "
 fn fn1(arg: int) -> bool {
