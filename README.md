@@ -1,3 +1,5 @@
+test
+
 `rust-mode`: A major Emacs mode for editing Rust source code
 ============================================================
 
