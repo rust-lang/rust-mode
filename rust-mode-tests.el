@@ -246,8 +246,8 @@ fn bar() { }" 14 67))
    "/**
  *
  */"
-   8
-   "This is a very very very very very very very long string"
+   7
+   " This is a very very very very very very very long string"
    "/**
  * This is a very very very very
  * very very very long string
@@ -317,8 +317,7 @@ fn foo() {
     /*!
      * this is a nested doc comment
      */
-
-    //! And so is this
+    \n    //! And so is this
 }"))
 
 (ert-deftest indent-inside-braces ()
