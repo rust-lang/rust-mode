@@ -481,10 +481,83 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
     ;; There is no opening brace, so consider the whole buffer to be one "defun"
     (goto-char (point-max))))
 
+;; Angle-bracket matching. This is kind of a hack designed to deal
+;; with the fact that we can't add angle-brackets to the list of
+;; matching characters unconditionally. Basically we just have some
+;; special-case code such that whenever `>` is typed, we look
+;; backwards to find a matching `<` and highlight it, whether or not
+;; this is *actually* appropriate. This could be annoying so it is
+;; configurable (but on by default because it's awesome).
+
+(defcustom rust-blink-matching-angle-brackets t
+  "Blink matching `<` (if any) when `>` is typed"
+  :type 'boolean
+  :group 'rust-mode)
+
+(defvar rust-point-before-matching-angle-bracket 0)
+
+(defvar rust-matching-angle-bracker-timer nil)
+
+(defun rust-find-matching-angle-bracket ()
+  (save-excursion
+    (let ((angle-brackets 1)
+          (start-point (point))
+          (invalid nil))
+      (while (and
+              ;; didn't find a match
+              (> angle-brackets 0)
+              ;; we have no guarantee of a match, so give up eventually
+              (< (- start-point (point)) blink-matching-paren-distance)
+              ;; didn't hit the top of the buffer
+              (> (point) (point-min))
+              ;; didn't hit something else weird like a `;`
+              (not invalid))
+        (backward-char 1)
+        (cond
+         ((looking-at ">")
+           (setq angle-brackets (+ angle-brackets 1)))
+          ((looking-at "<")
+           (setq angle-brackets (- angle-brackets 1)))
+          ((looking-at "[;{]")
+           (setq invalid t))))
+      (cond
+       ((= angle-brackets 0) (point))
+       (t nil)))))
+
+(defun rust-restore-point-after-angle-bracket ()
+  (goto-char rust-point-before-matching-angle-bracket)
+  (when rust-matching-angle-bracker-timer
+    (cancel-timer rust-matching-angle-bracker-timer))
+  (setq rust-matching-angle-bracker-timer nil)
+  (remove-hook 'pre-command-hook 'rust-restore-point-after-angle-bracket))
+
+(defun rust-match-angle-bracket-hook ()
+  "If the most recently inserted character is a `>`, briefly moves point to matching `<` (if any)."
+  (interactive)
+  (when (and rust-blink-matching-angle-brackets
+             (looking-back ">"))
+    (let ((matching-angle-bracket-point (save-excursion
+                                          (backward-char 1)
+                                          (rust-find-matching-angle-bracket))))
+      (when matching-angle-bracket-point
+        (progn
+          (setq rust-point-before-matching-angle-bracket (point))
+          (goto-char matching-angle-bracket-point)
+          (add-hook 'pre-command-hook 'rust-restore-point-after-angle-bracket)
+          (setq rust-matching-angle-bracker-timer
+                (run-at-time blink-matching-delay nil 'rust-restore-point-after-angle-bracket)))))))
+
+(defun rust-match-angle-bracket ()
+  "The point should be placed on a `>`. Finds the matching `<` and moves point there."
+  (interactive)
+  (let ((matching-angle-bracket-point (rust-find-matching-angle-bracket)))
+    (if matching-angle-bracket-point
+        (goto-char matching-angle-bracket-point)
+      (message "no matching angle bracket found"))))
+
 ;; For compatibility with Emacs < 24, derive conditionally
 (defalias 'rust-parent-mode
   (if (fboundp 'prog-mode) 'prog-mode 'fundamental-mode))
-
 
 ;;;###autoload
 (define-derived-mode rust-mode rust-parent-mode "Rust"
@@ -519,6 +592,7 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
   (setq-local end-of-defun-function 'rust-end-of-defun)
   (setq-local parse-sexp-lookup-properties t)
   (add-hook 'syntax-propertize-extend-region-functions 'rust-syntax-propertize-extend-region)
+  (add-hook 'post-self-insert-hook 'rust-match-angle-bracket-hook)
   (setq-local syntax-propertize-function 'rust-syntax-propertize))
 
 (defun rust-syntax-propertize-extend-region (start end)
