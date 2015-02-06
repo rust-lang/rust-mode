@@ -10,5 +10,13 @@
 # except according to those terms.
 #
 # This runs the test for emacs rust-mode.
-# It must be possible to find emacs via PATH.
-emacs -batch -l rust-mode.el -l rust-mode-tests.el -f ert-run-tests-batch-and-exit
+# Either $EMACS must be set, or it must be possible to find emacs via PATH.
+
+if [ -z "$EMACS" ]; then
+    EMACS=emacs
+elif [ ! $(which "$EMACS") ]; then
+   echo "You must set EMACS to a program that runs emacs."
+   exit 1
+fi
+
+"$EMACS" -batch -l rust-mode.el -l rust-mode-tests.el -f ert-run-tests-batch-and-exit
