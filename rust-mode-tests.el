@@ -526,6 +526,18 @@ fn foo() {
 "
    ))
 
+;; Closing braces in single char literals and strings should not confuse the indentation
+(ert-deftest indent-closing-braces-in-char-literals ()
+  (test-indent
+   "
+fn foo() {
+    { bar('}'); }
+    { bar(']'); }
+    { bar(')'); }
+}
+"
+   ))
+
 (setq rust-test-motion-string
       "
 fn fn1(arg: int) -> bool {
@@ -893,3 +905,17 @@ list of substrings of `STR' each followed by its face."
    "/* #[foo] */"
    '("/* " font-lock-comment-delimiter-face
      "#[foo] */" font-lock-comment-face)))
+
+(ert-deftest font-lock-double-quote-character-literal ()
+  (rust-test-font-lock
+   "'\"'; let"
+   '("'\"'" font-lock-string-face
+     "let" font-lock-keyword-face)))
+
+(ert-deftest font-lock-single-quote-character-literal ()
+  (rust-test-font-lock
+   "fn main() { let ch = '\\''; }"
+   '("fn" font-lock-keyword-face
+     "main" font-lock-function-name-face
+     "let" font-lock-keyword-face
+     "'\\''" font-lock-string-face)))
