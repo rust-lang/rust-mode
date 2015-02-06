@@ -89,21 +89,60 @@
     (backward-word 1))
       (current-column))))
 
-(defun rust-align-to-method-chain ()
-  (save-excursion
-    (previous-line)
-    (end-of-line)
-    (backward-word 1)
-    (backward-char)
-    (when (looking-at "\\..+\(.*\)\n")
-      (- (current-column) rust-indent-offset))))
-
 (defun rust-rewind-to-beginning-of-current-level-expr ()
   (let ((current-level (rust-paren-level)))
     (back-to-indentation)
     (while (> (rust-paren-level) current-level)
       (backward-up-list)
       (back-to-indentation))))
+
+(defun rust-align-to-method-chain ()
+  (save-excursion
+    ;; for method-chain alignment to apply, we must be looking at
+    ;; another method call or field access or something like
+    ;; that. This avoids rather "eager" jumps in situations like:
+    ;;
+    ;; {
+    ;;     something.foo()
+    ;; <indent>
+    ;;
+    ;; Without this check, we would wind up with the cursor under the
+    ;; `.`. In an older version, I had the inverse of the current
+    ;; check, where we checked for situations that should NOT indent,
+    ;; vs checking for the one situation where we SHOULD. It should be
+    ;; clear that this is more robust, but also I find it mildly less
+    ;; annoying to have to press tab again to align to a method chain
+    ;; than to have an over-eager indent in all other cases which must
+    ;; be undone via tab.
+    
+    (when (looking-at (concat "\s*\." rust-re-ident))
+      (previous-line)
+      (end-of-line)
+
+      (let
+          ;; skip-dot-identifier is used to position the point at the
+          ;; `.` when looking at something like
+          ;;
+          ;;      foo.bar
+          ;;         ^   ^
+          ;;         |   |
+          ;;         |  position of point
+          ;;       returned offset      
+          ;;
+          ((skip-dot-identifier
+            (lambda ()
+              (when (looking-back (concat "\." rust-re-ident))
+                (backward-word 1)
+                (backward-char)
+                (- (current-column) rust-indent-offset)))))
+        (cond
+         ;; foo.bar(...)
+         ((looking-back ")")
+          (backward-list 1)
+          (funcall skip-dot-identifier))
+
+         ;; foo.bar
+         (t (funcall skip-dot-identifier)))))))
 
 (defun rust-mode-indent-line ()
   (interactive)
@@ -123,10 +162,10 @@
                      (or
                       (when rust-indent-method-chain
                         (rust-align-to-method-chain))
-                     (save-excursion
-                       (backward-up-list)
-                       (rust-rewind-to-beginning-of-current-level-expr)
-                       (+ (current-column) rust-indent-offset))))))
+                      (save-excursion
+                        (backward-up-list)
+                        (rust-rewind-to-beginning-of-current-level-expr)
+                        (+ (current-column) rust-indent-offset))))))
              (cond
               ;; A function return type is indented to the corresponding function arguments
               ((looking-at "->")
@@ -137,16 +176,6 @@
 
               ;; A closing brace is 1 level unindended
               ((looking-at "}") (- baseline rust-indent-offset))
-
-              ;;Line up method chains by their .'s
-              ((when (and rust-indent-method-chain
-                          (looking-at "\..+\(.*\);?\n"))
-                 (or
-                  (let ((method-indent (rust-align-to-method-chain)))
-                    (when method-indent
-                      (+ method-indent rust-indent-offset)))
-                  (+ baseline rust-indent-offset))))
-
               
               ;; Doc comments in /** style with leading * indent to line up the *s
               ((and (nth 4 (syntax-ppss)) (looking-at "*"))

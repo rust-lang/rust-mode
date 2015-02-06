@@ -919,3 +919,89 @@ list of substrings of `STR' each followed by its face."
      "main" font-lock-function-name-face
      "let" font-lock-keyword-face
      "'\\''" font-lock-string-face)))
+
+(ert-deftest indent-method-chains-no-align ()
+  (let ((rust-indent-method-chain nil)) (test-indent
+   "
+fn main() {
+    let x = thing.do_it()
+        .aligned()
+        .more_alignment();
+}
+"
+   )))
+
+(ert-deftest indent-method-chains-with-align ()
+  (let ((rust-indent-method-chain t)) (test-indent
+   "
+fn main() {
+    let x = thing.do_it()
+                 .aligned()
+                 .more_alignment();
+}
+"
+   )))
+
+(ert-deftest indent-method-chains-with-align-and-second-stmt ()
+  (let ((rust-indent-method-chain t)) (test-indent
+   "
+fn main() {
+    let x = thing.do_it()
+                 .aligned()
+                 .more_alignment();
+    foo.bar();
+}
+"
+   )))
+
+(ert-deftest indent-method-chains-field ()
+  (let ((rust-indent-method-chain t)) (test-indent
+   "
+fn main() {
+    let x = thing.do_it
+                 .aligned
+                 .more_alignment();
+}
+"
+   )))
+
+(ert-deftest indent-method-chains-double-field-on-first-line ()
+  (let ((rust-indent-method-chain t)) (test-indent
+   "
+fn main() {
+    let x = thing.a.do_it
+                   .aligned
+                   .more_alignment();
+}
+"
+   )))
+
+(ert-deftest indent-method-chains-no-let ()
+  (let ((rust-indent-method-chain t)) (test-indent
+   "
+fn main() {
+    thing.a.do_it
+           .aligned
+           .more_alignment();
+}
+"
+   )))
+
+(ert-deftest indent-method-chains-comment ()
+  (let ((rust-indent-method-chain t)) (test-indent
+   "
+fn main() {
+    // thing.do_it()
+    // .aligned()
+}
+"
+   )))
+
+(ert-deftest indent-method-chains-close-block ()
+  (let ((rust-indent-method-chain t)) (test-indent
+   "
+fn main() {
+    foo.bar()
+}
+"
+   )))
