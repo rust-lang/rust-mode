@@ -116,7 +116,7 @@
     ;; be undone via tab.
     
     (when (looking-at (concat "\s*\." rust-re-ident))
-      (previous-line)
+      (previous-logical-line)
       (end-of-line)
 
       (let
@@ -310,6 +310,14 @@
              ("use" . font-lock-type-face)
              ("fn" . font-lock-function-name-face)
              ("static" . font-lock-constant-face)))))
+
+(defvar rust-mode-font-lock-syntactic-keywords
+  (mapcar (lambda (re) (list re '(1 "\"") '(2 "\"")))
+          '("\\('\\)[^']\\('\\)"
+            "\\('\\)\\\\['nrt]\\('\\)"
+            "\\('\\)\\\\x[[:xdigit:]]\\{2\\}\\('\\)"
+            "\\('\\)\\\\u[[:xdigit:]]\\{4\\}\\('\\)"
+            "\\('\\)\\\\U[[:xdigit:]]\\{8\\}\\('\\)")))
 
 (defun rust-fill-prefix-for-comment-start (line-start)
   "Determine what to use for `fill-prefix' based on what is at the beginning of a line."
@@ -569,7 +577,7 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
   (setq-local indent-line-function 'rust-mode-indent-line)
 
   ;; Fonts
-  (setq-local font-lock-defaults '(rust-mode-font-lock-keywords nil nil nil nil))
+  (setq-local font-lock-defaults '(rust-mode-font-lock-keywords nil nil nil nil (font-lock-syntactic-keywords . rust-mode-font-lock-syntactic-keywords)))
 
   ;; Misc
   (setq-local comment-start "// ")
@@ -591,33 +599,8 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
   (setq-local beginning-of-defun-function 'rust-beginning-of-defun)
   (setq-local end-of-defun-function 'rust-end-of-defun)
   (setq-local parse-sexp-lookup-properties t)
-  (add-hook 'syntax-propertize-extend-region-functions 'rust-syntax-propertize-extend-region)
-  (add-hook 'post-self-insert-hook 'rust-match-angle-bracket-hook)
-  (setq-local syntax-propertize-function 'rust-syntax-propertize))
-
-(defun rust-syntax-propertize-extend-region (start end)
-  (save-excursion
-    (goto-char start)
-    (beginning-of-defun)
-    (cons
-     (point)
-     (progn
-       (goto-char end)
-       (end-of-defun)
-       (point)))))
-
-(defun rust-syntax-propertize (start end)
-  ;; Find character literals and make the syntax table recognize the single quote as the string delimiter
-  (dolist (char-lit-re
-           '("'[^']'"
-             "'\\\\['nrt]'"
-             "'\\\\x[[:xdigit:]]\\{2\\}'"
-             "'\\\\u[[:xdigit:]]\\{4\\}'"
-             "'\\\\U[[:xdigit:]]\\{8\\}'"))
-    (save-excursion
-      (goto-char start)
-      (while (re-search-forward char-lit-re end t)
-        (put-text-property (match-beginning 0) (match-end 0) 'syntax-table rust-mode-character-literal-syntax-table)))))
+  (setq-local syntax-begin-function 'beginning-of-defun)
+  (add-hook 'post-self-insert-hook 'rust-match-angle-bracket-hook))
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.rs\\'" . rust-mode))
