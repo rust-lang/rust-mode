@@ -2,6 +2,7 @@ language: generic
 
 env:
   matrix:
+    - EMACS=emacs23
     - EMACS=emacs24
     - EMACS=emacs-snapshot
 
