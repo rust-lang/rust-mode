@@ -289,7 +289,11 @@ very very very long string
     (rust-test-manip-code
      deindented
      1
-     (lambda () (indent-region 1 (buffer-size)))
+     (lambda ()
+       ;; The indentation will fial in some cases if the syntax properties are
+       ;; not set.  This only happens when font-lock fontifies the buffer.
+       (font-lock-fontify-buffer)
+       (indent-region 1 (buffer-size)))
      indented)))
 
 
@@ -1004,6 +1008,15 @@ fn main() {
   (let ((rust-indent-method-chain t)) (test-indent
    "
 fn main() {
+    foo.bar()
+}
+"
+   )))
+
+(ert-deftest indent-method-chains-after-comment ()
+  (let ((rust-indent-method-chain t)) (test-indent
+   "
+fn main() { // comment here should not push next line out
     foo.bar()
 }
 "
