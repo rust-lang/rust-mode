@@ -76,4 +76,9 @@ the packages for you (under `~/.emacs.d/elpa/`).
 The file `rust-mode-tests.el` contains tests that can be run via
 [ERT](http://www.gnu.org/software/emacs/manual/html_node/ert/index.html).
 You can use `run_rust_emacs_tests.sh` to run them in batch mode, if
-Emacs is somewhere in your `$PATH`.
+you set the environment variable EMACS to a program that runs emacs.
+
+To test it under emacs 23, which does not ship with ERT, download ert.el from
+https://raw.githubusercontent.com/ohler/ert/c619b56c5bc6a866e33787489545b87d79973205/lisp/emacs-lisp/ert.el
+and put it in a place where emacs can find it.  (ERT has shipped with emacs
+since emacs 24.)
