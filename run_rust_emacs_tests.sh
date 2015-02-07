@@ -19,4 +19,14 @@ elif [ ! $(which "$EMACS") ]; then
    exit 1
 fi
 
+$( "$EMACS" -batch > /dev/null 2>&1 ) || {
+    echo "Your emacs command ($EMACS) does not run properly."
+    exit 2
+};
+
+$( "$EMACS" -batch --eval "(require 'ert)" > /dev/null 2>&1 ) || {
+    echo 'You must install the `ert` dependency; see README.md'
+    exit 3
+};
+
 "$EMACS" -batch -l rust-mode.el -l rust-mode-tests.el -f ert-run-tests-batch-and-exit
