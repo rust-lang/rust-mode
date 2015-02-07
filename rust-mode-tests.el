@@ -1012,3 +1012,12 @@ fn main() {
 }
 "
    )))
+
+(ert-deftest indent-method-chains-after-comment ()
+  (let ((rust-indent-method-chain t)) (test-indent
+   "
+fn main() { // comment here should not push next line out
+    foo.bar()
+}
+"
+   )))
