@@ -290,7 +290,7 @@ very very very long string
      deindented
      1
      (lambda ()
-       ;; The indentation will fial in some cases if the syntax properties are
+       ;; The indentation will fail in some cases if the syntax properties are
        ;; not set.  This only happens when font-lock fontifies the buffer.
        (font-lock-fontify-buffer)
        (indent-region 1 (buffer-size)))
@@ -926,6 +926,42 @@ list of substrings of `STR' each followed by its face."
      "main" font-lock-function-name-face
      "let" font-lock-keyword-face
      "'\\''" font-lock-string-face)))
+
+(ert-deftest font-lock-raw-strings-no-hashes ()
+  (rust-test-font-lock
+   "r\"No hashes\";"
+   '("r\"No hashes\"" font-lock-string-face)))
+
+(ert-deftest font-lock-raw-strings-double-quote ()
+  (rust-test-font-lock
+   "fn main() {
+    r#\"With a double quote (\")\"#;
+}
+"
+   '("fn" font-lock-keyword-face
+     "main" font-lock-function-name-face
+     "r#\"With a double quote (\")\"#" font-lock-string-face)))
+
+(ert-deftest font-lock-raw-strings-two-hashes ()
+  (rust-test-font-lock
+   "r##\"With two hashes\"##;"
+   '("r##\"With two hashes\"##" font-lock-string-face)))
+
+(ert-deftest font-lock-raw-strings-backslash-at-end ()
+  (rust-test-font-lock
+   "r\"With a backslash at the end\\\";"
+   '("r\"With a backslash at the end\\\"" font-lock-string-face)))
+
+(ert-deftest font-lock-two-raw-strings ()
+  (rust-test-font-lock
+   "fn main() {
+    r\"With a backslash at the end\\\";
+    r##\"With two hashes\"##;
+}"
+   '("fn" font-lock-keyword-face
+     "main" font-lock-function-name-face
+     "r\"With a backslash at the end\\\"" font-lock-string-face
+     "r##\"With two hashes\"##" font-lock-string-face)))
 
 (ert-deftest indent-method-chains-no-align ()
   (let ((rust-indent-method-chain nil)) (test-indent
