@@ -290,7 +290,7 @@ very very very long string
      deindented
      1
      (lambda ()
-       ;; The indentation will fial in some cases if the syntax properties are
+       ;; The indentation will fail in some cases if the syntax properties are
        ;; not set.  This only happens when font-lock fontifies the buffer.
        (font-lock-fontify-buffer)
        (indent-region 1 (buffer-size)))
