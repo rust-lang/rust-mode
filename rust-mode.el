@@ -51,6 +51,13 @@
 
     table))
 
+(defvar rust-mode-inside-raw-string-syntax-table
+  (let ((table (make-syntax-table rust-mode-syntax-table)))
+    (modify-syntax-entry ?\" "_" table)
+    (modify-syntax-entry ?\\ "_" table)
+
+    table))
+
 (defgroup rust-mode nil
   "Support for Rust code."
   :link '(url-link "http://www.rust-lang.org/")
@@ -312,12 +319,17 @@
              ("static" . font-lock-constant-face)))))
 
 (defvar rust-mode-font-lock-syntactic-keywords
-  (mapcar (lambda (re) (list re '(1 "\"") '(2 "\"")))
-          '("\\('\\)[^']\\('\\)"
-            "\\('\\)\\\\['nrt]\\('\\)"
-            "\\('\\)\\\\x[[:xdigit:]]\\{2\\}\\('\\)"
-            "\\('\\)\\\\u[[:xdigit:]]\\{4\\}\\('\\)"
-            "\\('\\)\\\\U[[:xdigit:]]\\{8\\}\\('\\)")))
+  (append
+   ;; Handle single quoted character literals:
+   (mapcar (lambda (re) (list re '(1 "\"") '(2 "\"")))
+           '("\\('\\)[^']\\('\\)"
+             "\\('\\)\\\\['nrt]\\('\\)"
+             "\\('\\)\\\\x[[:xdigit:]]\\{2\\}\\('\\)"
+             "\\('\\)\\\\u[[:xdigit:]]\\{4\\}\\('\\)"
+             "\\('\\)\\\\U[[:xdigit:]]\\{8\\}\\('\\)"))
+   ;; Handle raw strings:
+   `(("\\(r\\)\"\\([^\"]*\\)\\(\"\\)" (1 "|") (2 ,rust-mode-inside-raw-string-syntax-table) (3 "|"))
+     ("\\(r\\)#\\(#*\\)\\(\"[^#]*\"\\2\\)\\(#\\)" (1 "|") (3 ,rust-mode-inside-raw-string-syntax-table) (4 "|")))))
 
 (defun rust-fill-prefix-for-comment-start (line-start)
   "Determine what to use for `fill-prefix' based on what is at the beginning of a line."

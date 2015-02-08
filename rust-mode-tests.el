@@ -927,6 +927,42 @@ list of substrings of `STR' each followed by its face."
      "let" font-lock-keyword-face
      "'\\''" font-lock-string-face)))
 
+(ert-deftest font-lock-raw-strings-no-hashes ()
+  (rust-test-font-lock
+   "r\"No hashes\";"
+   '("r\"No hashes\"" font-lock-string-face)))
+
+(ert-deftest font-lock-raw-strings-double-quote ()
+  (rust-test-font-lock
+   "fn main() {
+    r#\"With a double quote (\")\"#;
+}
+"
+   '("fn" font-lock-keyword-face
+     "main" font-lock-function-name-face
+     "r#\"With a double quote (\")\"#" font-lock-string-face)))
+
+(ert-deftest font-lock-raw-strings-two-hashes ()
+  (rust-test-font-lock
+   "r##\"With two hashes\"##;"
+   '("r##\"With two hashes\"##" font-lock-string-face)))
+
+(ert-deftest font-lock-raw-strings-backslash-at-end ()
+  (rust-test-font-lock
+   "r\"With a backslash at the end\\\";"
+   '("r\"With a backslash at the end\\\"" font-lock-string-face)))
+
+(ert-deftest font-lock-two-raw-strings ()
+  (rust-test-font-lock
+   "fn main() {
+    r\"With a backslash at the end\\\";
+    r##\"With two hashes\"##;
+}"
+   '("fn" font-lock-keyword-face
+     "main" font-lock-function-name-face
+     "r\"With a backslash at the end\\\"" font-lock-string-face
+     "r##\"With two hashes\"##" font-lock-string-face)))
+
 (ert-deftest indent-method-chains-no-align ()
   (let ((rust-indent-method-chain nil)) (test-indent
    "
