@@ -963,6 +963,54 @@ list of substrings of `STR' each followed by its face."
      "r\"With a backslash at the end\\\"" font-lock-string-face
      "r##\"With two hashes\"##" font-lock-string-face)))
 
+(ert-deftest font-lock-raw-string-with-inner-hash ()
+  (rust-test-font-lock
+   "r##\"I've got an octothorpe (#)\"##; foo()"
+   '("r##\"I've got an octothorpe (#)\"##" font-lock-string-face)))
+
+(ert-deftest font-lock-string-ending-with-r-not-raw-string ()
+  (rust-test-font-lock
+   "fn f() {
+    \"Er\";
+}
+
+fn g() {
+    \"xs\";
+}"
+   '("fn" font-lock-keyword-face
+     "f" font-lock-function-name-face
+     "\"Er\"" font-lock-string-face
+     "fn" font-lock-keyword-face
+     "g" font-lock-function-name-face
+     "\"xs\"" font-lock-string-face)))
+
+(ert-deftest font-lock-raw-string-trick-ending-followed-by-string-with-quote ()
+  (rust-test-font-lock
+   "r\"With what looks like the start of a raw string at the end r#\";
+not_a_string();
+r##\"With \"embedded\" quote \"##;"
+   '("r\"With what looks like the start of a raw string at the end r#\"" font-lock-string-face
+     "r##\"With \"embedded\" quote \"##" font-lock-string-face)))
+
+(ert-deftest font-lock-raw-string-starter-inside-raw-string ()
+  ;; Check that it won't look for a raw string beginning inside another raw string.
+  (rust-test-font-lock
+   "r#\"In the first string r\" in the first string \"#;
+not_in_a_string();
+r##\"In the second string\"##;"
+   '("r#\"In the first string r\" in the first string \"#" font-lock-string-face
+     "r##\"In the second string\"##" font-lock-string-face)))
+
+(ert-deftest font-lock-raw-string-starter-inside-comment ()
+  ;; Check that it won't look for a raw string beginning inside another raw string.
+  (rust-test-font-lock
+   "// r\" this is a comment
+\"this is a string\";
+this_is_not_a_string();)"
+   '("// " font-lock-comment-delimiter-face
+     "r\" this is a comment\n" font-lock-comment-face
+     "\"this is a string\"" font-lock-string-face)))
+
 (ert-deftest indent-method-chains-no-align ()
   (let ((rust-indent-method-chain nil)) (test-indent
    "

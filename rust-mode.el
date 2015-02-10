@@ -10,7 +10,8 @@
 
 ;;; Code:
 
-(eval-when-compile (require 'misc))
+(eval-when-compile (require 'misc)
+                   (require 'rx))
 
 ;; for GNU Emacs < 24.3
 (eval-when-compile
@@ -48,13 +49,6 @@
   (let ((table (make-syntax-table rust-mode-syntax-table)))
     (modify-syntax-entry ?' "\"" table)
     (modify-syntax-entry ?\" "_" table)
-
-    table))
-
-(defvar rust-mode-inside-raw-string-syntax-table
-  (let ((table (make-syntax-table rust-mode-syntax-table)))
-    (modify-syntax-entry ?\" "_" table)
-    (modify-syntax-entry ?\\ "_" table)
 
     table))
 
@@ -318,6 +312,63 @@
              ("fn" . font-lock-function-name-face)
              ("static" . font-lock-constant-face)))))
 
+(defun rust-look-for-raw-string (bound)
+  ;; Find a raw string, but only if it's not in the middle of another string or
+  ;; a comment
+  
+  (let* ((raw-str-regexp
+          (rx
+           (seq
+            ;; The "r" starts the raw string.  Capture it as group 1 to mark it as such syntactically:
+            (group "r")
+
+            ;; Then either:
+            (or
+             ;; a sequence at least one "#" (followed by quote).  Capture all
+             ;; but the last "#" as group 2 for this case.
+             (seq (group (* "#")) "#\"")
+
+             ;; ...or a quote without any "#".  Capture it as group 3. This is
+             ;; used later to match the opposite quote only if this capture
+             ;; occurred
+             (group "\""))
+
+            ;; The contents of the string:
+            (*? anything)
+
+            ;; If there are any backslashes at the end of the string, capture
+            ;; them as group 4 so we can suppress the normal escape syntax
+            ;; parsing:
+            (group (* "\\"))
+
+            ;; Then the end of the string--the backreferences ensure that we
+            ;; only match the kind of ending that corresponds to the beginning
+            ;; we had:
+            (or
+             ;; There were "#"s - capture the last one as group 5 to mark it as
+             ;; the end of the string:
+             (seq "\"" (backref 2) (group "#"))
+
+             ;; No "#"s - capture the ending quote (using a backref to group 3,
+             ;; so that we can't match a quote if we had "#"s) as group 6
+             (group (backref 3))))))
+         ;; If it matches, it ends up with the starting character of the string
+         ;; as group 1, any ending backslashes as group 4, and the ending
+         ;; character as either group 5 or group 6.
+
+         (ret-list (save-excursion
+                    (let* ((match-end (re-search-forward raw-str-regexp bound t))
+                           (ret-list (and match-end (list match-end (match-beginning 0) (match-data) (point)))))
+                      (when (and ret-list
+                                 (save-excursion
+                                   (goto-char (nth 1 ret-list))
+                                   (not (rust-in-str-or-cmnt))))
+                        ret-list)))))
+    (when ret-list
+      (goto-char (nth 3 ret-list))
+      (set-match-data (nth 2 ret-list))
+      (nth 0 ret-list))))
+
 (defvar rust-mode-font-lock-syntactic-keywords
   (append
    ;; Handle single quoted character literals:
@@ -328,8 +379,7 @@
              "\\('\\)\\\\u[[:xdigit:]]\\{4\\}\\('\\)"
              "\\('\\)\\\\U[[:xdigit:]]\\{8\\}\\('\\)"))
    ;; Handle raw strings:
-   `(("\\(r\\)\"\\([^\"]*\\)\\(\"\\)" (1 "|") (2 ,rust-mode-inside-raw-string-syntax-table) (3 "|"))
-     ("\\(r\\)#\\(#*\\)\\(\"[^#]*\"\\2\\)\\(#\\)" (1 "|") (3 ,rust-mode-inside-raw-string-syntax-table) (4 "|")))))
+   `((rust-look-for-raw-string (1 "|") (4 "_" nil t) (5 "|" nil t) (6 "|" nil t)))))
 
 (defun rust-fill-prefix-for-comment-start (line-start)
   "Determine what to use for `fill-prefix' based on what is at the beginning of a line."
