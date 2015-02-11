@@ -968,6 +968,11 @@ list of substrings of `STR' each followed by its face."
    "r##\"I've got an octothorpe (#)\"##; foo()"
    '("r##\"I've got an octothorpe (#)\"##" font-lock-string-face)))
 
+(ert-deftest font-lock-raw-string-with-inner-quote-and-hash ()
+  (rust-test-font-lock
+   "not_the_string(); r##\"string \"# still same string\"##; not_the_string()"
+   '("r##\"string \"# still same string\"##" font-lock-string-face)))
+
 (ert-deftest font-lock-string-ending-with-r-not-raw-string ()
   (rust-test-font-lock
    "fn f() {
