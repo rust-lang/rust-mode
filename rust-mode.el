@@ -661,7 +661,6 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
   (setq-local beginning-of-defun-function 'rust-beginning-of-defun)
   (setq-local end-of-defun-function 'rust-end-of-defun)
   (setq-local parse-sexp-lookup-properties t)
-  (setq-local syntax-begin-function 'beginning-of-defun)
   (add-hook 'post-self-insert-hook 'rust-match-angle-bracket-hook))
 
 ;;;###autoload
