@@ -293,7 +293,7 @@ very very very long string
        ;; The indentation will fail in some cases if the syntax properties are
        ;; not set.  This only happens when font-lock fontifies the buffer.
        (font-lock-fontify-buffer)
-       (indent-region 1 (buffer-size)))
+       (indent-region 1 (+ 1 (buffer-size))))
      indented)))
 
 
