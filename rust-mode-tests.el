@@ -1124,12 +1124,14 @@ supposed to back out of all parens, but `beginning-of-defun'
 could leave it inside parens if a fn appears inside them.
 
 Having said that, as I write this I don't understand fully what
-internal state was corruped and how.  There wasn't an obvious
+internal state was corrupted and how.  There wasn't an obvious
 pattern to what did and did not trip it."
   
   ;; When bug #36 was present, the following test would pass, but running it
   ;; caused some unknown emacs state to be corrupted such that the following
   ;; test failed.  Both the "blank_line" and "indented_closing_brace" functions
+  ;; were needed to expose the error, for instance--deleting either of them
+  ;; would make the failure go away.
   (with-temp-buffer
     (rust-mode)
     (insert "fn blank_line(arg:int) -> bool {
