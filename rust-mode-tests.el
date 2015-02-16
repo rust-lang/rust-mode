@@ -293,7 +293,7 @@ very very very long string
        ;; The indentation will fail in some cases if the syntax properties are
        ;; not set.  This only happens when font-lock fontifies the buffer.
        (font-lock-fontify-buffer)
-       (indent-region 1 (buffer-size)))
+       (indent-region 1 (+ 1 (buffer-size))))
      indented)))
 
 
@@ -1110,3 +1110,98 @@ fn main() { // comment here should not push next line out
 }
 "
    )))
+
+(ert-deftest test-for-issue-36-syntax-corrupted-state ()
+  "This is a test for a issue #36, which involved emacs's
+internal state getting corrupted when actions were done in a
+specific sequence.  The test seems arbitrary, and is, but it was
+not clear how to narrow it down further.
+
+The cause of the bug was code that used to set
+`syntax-begin-function' to `beginning-of-defun', which doesn't
+actually fulfill the expectations--`syntax-begin-function' is
+supposed to back out of all parens, but `beginning-of-defun'
+could leave it inside parens if a fn appears inside them.
+
+Having said that, as I write this I don't understand fully what
+internal state was corruped and how.  There wasn't an obvious
+pattern to what did and did not trip it."
+  
+  ;; When bug #36 was present, the following test would pass, but running it
+  ;; caused some unknown emacs state to be corrupted such that the following
+  ;; test failed.  Both the "blank_line" and "indented_closing_brace" functions
+  (with-temp-buffer
+    (rust-mode)
+    (insert "fn blank_line(arg:int) -> bool {
+
+}
+
+fn indenting_closing_brace() {
+    if(true) {
+}
+}
+
+fn indented_already() {
+    \n    // The previous line already has its spaces
+}
+")
+
+    (goto-line 11)
+    (move-to-column 0)
+    (indent-for-tab-command)
+    (should (equal (current-column) 4))
+    )
+
+  ;; This is the test that would fail only after running the previous one.  The
+  ;; code is extracted from src/libstd/collections/table.rs in the rust tree.
+  ;; It was not clear how to reduce it further--removing various bits of it
+  ;; would make it no longer fail.  In particular, changing only the comment at
+  ;; the top of the "next" function was sufficient to make it no longer fail.
+  (test-indent
+   "
+impl Foo for Bar {
+    
+    /// Modifies the bucket pointer in place to make it point to the next slot.
+    pub fn next(&mut self) {
+        // Branchless bucket
+        // As we reach the end of the table...
+        // We take the current idx:          0111111b
+        // Xor it by its increment:        ^ 1000000b
+        //                               ------------
+        //                                   1111111b
+        // Then AND with the capacity:     & 1000000b
+        //                               ------------
+        // to get the backwards offset:      1000000b
+        let maybe_wraparound_dist = (self.idx ^ (self.idx + 1)) & self.table.capacity();
+        // Finally, we obtain the offset 1 or the offset -cap + 1.
+        let dist = 1 - (maybe_wraparound_dist as isize);
+        
+        self.idx += 1;
+        
+        unsafe {
+            self.raw = self.raw.offset(dist);
+        }
+    }
+    
+    /// Reads a bucket at a given index, returning an enum indicating whether
+    /// the appropriate types to call most of the other functions in
+    /// this module.
+    pub fn peek(self) {
+        match foo {
+            EMPTY_BUCKET =>
+                Empty(EmptyBucket {
+                    raw: self.raw,
+                    idx: self.idx,
+                    table: self.table
+                }),
+            _ =>
+                Full(FullBucket {
+                    raw: self.raw,
+                    idx: self.idx,
+                    table: self.table
+                })
+        }
+    }    
+}
+"
+   ))
