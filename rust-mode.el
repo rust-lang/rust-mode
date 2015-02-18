@@ -32,11 +32,6 @@
     (modify-syntax-entry ?\" "\"" table)
     (modify-syntax-entry ?\\ "\\" table)
 
-    ;; mark _ as a word constituent so that identifiers
-    ;; such as xyz_type don't cause type to be highlighted
-    ;; as a keyword
-    (modify-syntax-entry ?_ "w" table)
-
     ;; Comments
     (modify-syntax-entry ?/  ". 124b" table)
     (modify-syntax-entry ?*  ". 23"   table)
@@ -335,10 +330,10 @@
   (append
    `(
      ;; Keywords proper
-     (,(regexp-opt rust-mode-keywords 'words) . font-lock-keyword-face)
+     (,(regexp-opt rust-mode-keywords 'symbols) . font-lock-keyword-face)
 
      ;; Special types
-     (,(regexp-opt rust-special-types 'words) . font-lock-type-face)
+     (,(regexp-opt rust-special-types 'symbols) . font-lock-type-face)
 
      ;; Attributes like `#[bar(baz)]` or `#![bar(baz)]` or `#[bar = "baz"]`
      (,(rust-re-grab (concat "#\\!?\\[" rust-re-ident "[^]]*\\]"))
