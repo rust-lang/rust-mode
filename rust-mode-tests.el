@@ -1290,3 +1290,39 @@ And another line not indented
 \")
 }
 "))
+
+(ert-deftest test-indent-string-eol-backslash-dont-touch-raw-strings ()
+  (test-indent
+   "
+pub fn foo() {
+    format!(r\"\
+abc\
+         def\");
+}
+
+pub fn foo() {
+    format!(r\"la la la
+    la\
+la la\");
+}
+"
+   ;; Should still indent the code parts but leave the string internals alone:
+   "
+    pub fn foo() {
+    format!(r\"\
+abc\
+         def\");
+}
+
+pub fn foo() {
+          format!(r\"la la la
+    la\
+la la\");
+}
+"
+   ))
+
+(ert-deftest indent-inside-string-first-line ()
+  (test-indent
+   ;; Needs to leave 1 space before "world"
+   "\"hello \\\n world\""))
