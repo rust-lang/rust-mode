@@ -117,7 +117,7 @@
     ;; be undone via tab.
     
     (when (looking-at (concat "\s*\." rust-re-ident))
-      (previous-logical-line)
+      (forward-line -1)
       (end-of-line)
 
       (let
@@ -176,7 +176,7 @@
                    ((string-begin-pos (nth 8 (syntax-ppss)))
                     (end-of-prev-line-pos (when (> (line-number-at-pos) 1)
                                             (save-excursion
-                                              (previous-line)
+                                              (forward-line -1)
                                               (end-of-line)
                                               (point)))))
                  (when
