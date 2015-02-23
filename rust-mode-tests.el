@@ -284,8 +284,8 @@ very very very long string
  */"
    ))
 
-(defun test-indent (indented)
-  (let ((deindented (replace-regexp-in-string "^[[:blank:]]*" "      " indented)))
+(defun test-indent (indented &optional deindented)
+  (let ((deindented (or deindented (replace-regexp-in-string "^[[:blank:]]*" "      " indented))))
     (rust-test-manip-code
      deindented
      1
@@ -1207,3 +1207,86 @@ impl Foo for Bar {
 }
 "
    ))
+
+(ert-deftest test-indent-string-with-eol-backslash ()
+  (test-indent
+   "
+pub fn foo() {
+    format!(\"abc \\
+             def\")
+}
+"
+   ))
+
+(ert-deftest test-indent-string-with-eol-backslash-at-start ()
+  (test-indent
+   "
+pub fn foo() {
+    format!(\"\\
+        abc \\
+        def\")
+}
+"
+   ))
+
+(ert-deftest test-indent-string-without-eol-backslash-indent-is-not-touched ()
+  (test-indent
+   "
+pub fn foo() {
+    format!(\"
+abc
+def\");
+}
+
+pub fn foo() {
+    format!(\"la la la
+la
+la la\");
+}
+"
+   ;; Should still indent the code parts but leave the string internals alone:
+   "
+         pub fn foo() {
+    format!(\"
+abc
+def\");
+}
+
+pub fn foo() {
+    format!(\"la la la
+la
+la la\");
+   }
+"
+   ))
+
+(ert-deftest test-indent-string-eol-backslash-mixed-with-literal-eol ()
+  (test-indent
+   "
+fn foo() {
+    println!(\"
+Here is the beginning of the string
+            and here is a line that is arbitrarily indented \\
+            and a continuation of that indented line
+     and another arbitrary indentation
+  still another
+        yet another \\
+        with a line continuing it
+And another line not indented
+\")
+}
+"
+   "
+fn foo() {
+    println!(\"
+Here is the beginning of the string
+            and here is a line that is arbitrarily indented \\
+            and a continuation of that indented line
+     and another arbitrary indentation
+  still another
+        yet another \\
+with a line continuing it
+And another line not indented
+\")
+}
+"))
