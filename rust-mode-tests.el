@@ -927,6 +927,22 @@ list of substrings of `STR' each followed by its face."
      "let" font-lock-keyword-face
      "'\\''" font-lock-string-face)))
 
+(ert-deftest font-lock-escaped-double-quote-character-literal ()
+  (rust-test-font-lock
+   "fn main() { let ch = '\\\"'; }"
+   '("fn" font-lock-keyword-face
+     "main" font-lock-function-name-face
+     "let" font-lock-keyword-face
+     "'\\\"'" font-lock-string-face)))
+
+(ert-deftest font-lock-escaped-backslash-character-literal ()
+  (rust-test-font-lock
+   "fn main() { let ch = '\\\\'; }"
+   '("fn" font-lock-keyword-face
+     "main" font-lock-function-name-face
+     "let" font-lock-keyword-face
+     "'\\\\'" font-lock-string-face)))
+
 (ert-deftest font-lock-raw-strings-no-hashes ()
   (rust-test-font-lock
    "r\"No hashes\";"
