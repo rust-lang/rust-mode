@@ -508,7 +508,7 @@
     (funcall body)))
 
 (defun rust-find-fill-prefix ()
-  (rust-with-comment-fill-prefix (lambda () fill-prefix)))
+  (rust-in-comment-paragraph (lambda () (rust-with-comment-fill-prefix (lambda () fill-prefix)))))
 
 (defun rust-fill-paragraph (&rest args)
   "Special wrapping for `fill-paragraph' to handle multi-line comments with a * prefix on each line."
@@ -704,6 +704,7 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
   (setq-local fill-paragraph-function 'rust-fill-paragraph)
   (setq-local fill-forward-paragraph-function 'rust-fill-forward-paragraph)
   (setq-local adaptive-fill-function 'rust-find-fill-prefix)
+  (setq-local adaptive-fill-first-line-regexp "")
   (setq-local comment-multi-line t)
   (setq-local comment-line-break-function 'rust-comment-indent-new-line)
   (setq-local imenu-generic-expression rust-imenu-generic-expression)

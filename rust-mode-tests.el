@@ -42,9 +42,9 @@
              original point-pos manip-func expected (buffer-string)))))
 
 (defun test-fill-paragraph (unfilled expected &optional start-pos end-pos)
-  "We're going to run through many scenarios here--the point should be able to be anywhere from the start-pos (defaults to 1) through end-pos (defaults to the length of what was passed in) and (fill-paragraph) should return the same result.
+  "We're going to run through many scenarios here--the point should be able to be anywhere from the start-pos (defaults to 1) through end-pos (defaults to the length of what was passed in) and (fill-paragraph) should return the same result.  It should also work with fill-region from start-pos to end-pos.
 
-Also, the result should be the same regardless of whether the code is at the beginning or end of the file.  (If you're not careful, that can make a difference.)  So we test each position given above with the passed code at the beginning, the end, neither and both.  So we do this a total of (end-pos - start-pos)*4 times.  Oy."
+Also, the result should be the same regardless of whether the code is at the beginning or end of the file.  (If you're not careful, that can make a difference.)  So we test each position given above with the passed code at the beginning, the end, neither and both.  So we do this a total of 1 + (end-pos - start-pos)*4 times.  Oy."
   (let* ((start-pos (or start-pos 1))
          (end-pos (or end-pos (length unfilled)))
          (padding "\n     \n")
@@ -69,7 +69,16 @@ Also, the result should be the same regardless of whether the code is at the beg
                            (lambda ()
                              (let ((fill-column rust-test-fill-column))
                                (fill-paragraph)))
-                           (concat padding-beginning expected padding-end)))))))
+                           (concat padding-beginning expected padding-end)))))
+    ;; In addition to all the fill-paragraph tests, check that it works using fill-region
+    (rust-test-manip-code
+     unfilled
+     start-pos
+     (lambda ()
+       (let ((fill-column rust-test-fill-column))
+         (fill-region start-pos end-pos)))
+     expected)
+    ))
 
 (ert-deftest fill-paragraph-top-level-multi-line-style-doc-comment-second-line ()
   (test-fill-paragraph
@@ -223,7 +232,7 @@ fn bar() { }"
 /// This is my comment.  This is
 /// more of my comment.  This is
 /// even more.
-fn bar() { }" 14 67))
+fn bar() { }" 14 85))
 
 (defun test-auto-fill (initial position inserted expected)
   (rust-test-manip-code
