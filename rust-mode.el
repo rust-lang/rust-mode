@@ -140,7 +140,7 @@
           ((skip-dot-identifier
             (lambda ()
               (when (looking-back (concat "\\." rust-re-ident))
-                (backward-word 1)
+                (forward-thing 'symbol -1)
                 (backward-char)
                 (- (current-column) rust-indent-offset)))))
         (cond
