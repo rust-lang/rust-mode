@@ -42,9 +42,9 @@
              original point-pos manip-func expected (buffer-string)))))
 
 (defun test-fill-paragraph (unfilled expected &optional start-pos end-pos)
-  "We're going to run through many scenarios here--the point should be able to be anywhere from the start-pos (defaults to 1) through end-pos (defaults to the length of what was passed in) and (fill-paragraph) should return the same result.
+  "We're going to run through many scenarios here--the point should be able to be anywhere from the start-pos (defaults to 1) through end-pos (defaults to the length of what was passed in) and (fill-paragraph) should return the same result.  It should also work with fill-region from start-pos to end-pos.
 
-Also, the result should be the same regardless of whether the code is at the beginning or end of the file.  (If you're not careful, that can make a difference.)  So we test each position given above with the passed code at the beginning, the end, neither and both.  So we do this a total of (end-pos - start-pos)*4 times.  Oy."
+Also, the result should be the same regardless of whether the code is at the beginning or end of the file.  (If you're not careful, that can make a difference.)  So we test each position given above with the passed code at the beginning, the end, neither and both.  So we do this a total of 1 + (end-pos - start-pos)*4 times.  Oy."
   (let* ((start-pos (or start-pos 1))
          (end-pos (or end-pos (length unfilled)))
          (padding "\n     \n")
@@ -69,7 +69,16 @@ Also, the result should be the same regardless of whether the code is at the beg
                            (lambda ()
                              (let ((fill-column rust-test-fill-column))
                                (fill-paragraph)))
-                           (concat padding-beginning expected padding-end)))))))
+                           (concat padding-beginning expected padding-end)))))
+    ;; In addition to all the fill-paragraph tests, check that it works using fill-region
+    (rust-test-manip-code
+     unfilled
+     start-pos
+     (lambda ()
+       (let ((fill-column rust-test-fill-column))
+         (fill-region start-pos end-pos)))
+     expected)
+    ))
 
 (ert-deftest fill-paragraph-top-level-multi-line-style-doc-comment-second-line ()
   (test-fill-paragraph
@@ -223,7 +232,7 @@ fn bar() { }"
 /// This is my comment.  This is
 /// more of my comment.  This is
 /// even more.
-fn bar() { }" 14 67))
+fn bar() { }" 14 85))
 
 (defun test-auto-fill (initial position inserted expected)
   (rust-test-manip-code
@@ -284,8 +293,8 @@ very very very long string
  */"
    ))
 
-(defun test-indent (indented)
-  (let ((deindented (replace-regexp-in-string "^[[:blank:]]*" "      " indented)))
+(defun test-indent (indented &optional deindented)
+  (let ((deindented (or deindented (replace-regexp-in-string "^[[:blank:]]*" "      " indented))))
     (rust-test-manip-code
      deindented
      1
@@ -927,6 +936,22 @@ list of substrings of `STR' each followed by its face."
      "let" font-lock-keyword-face
      "'\\''" font-lock-string-face)))
 
+(ert-deftest font-lock-escaped-double-quote-character-literal ()
+  (rust-test-font-lock
+   "fn main() { let ch = '\\\"'; }"
+   '("fn" font-lock-keyword-face
+     "main" font-lock-function-name-face
+     "let" font-lock-keyword-face
+     "'\\\"'" font-lock-string-face)))
+
+(ert-deftest font-lock-escaped-backslash-character-literal ()
+  (rust-test-font-lock
+   "fn main() { let ch = '\\\\'; }"
+   '("fn" font-lock-keyword-face
+     "main" font-lock-function-name-face
+     "let" font-lock-keyword-face
+     "'\\\\'" font-lock-string-face)))
+
 (ert-deftest font-lock-raw-strings-no-hashes ()
   (rust-test-font-lock
    "r\"No hashes\";"
@@ -1207,3 +1232,122 @@ impl Foo for Bar {
 }
 "
    ))
+
+(ert-deftest test-indent-string-with-eol-backslash ()
+  (test-indent
+   "
+pub fn foo() {
+    format!(\"abc \\
+             def\")
+}
+"
+   ))
+
+(ert-deftest test-indent-string-with-eol-backslash-at-start ()
+  (test-indent
+   "
+pub fn foo() {
+    format!(\"\\
+        abc \\
+        def\")
+}
+"
+   ))
+
+(ert-deftest test-indent-string-without-eol-backslash-indent-is-not-touched ()
+  (test-indent
+   "
+pub fn foo() {
+    format!(\"
+abc
+def\");
+}
+
+pub fn foo() {
+    format!(\"la la la
+la
+la la\");
+}
+"
+   ;; Should still indent the code parts but leave the string internals alone:
+   "
+         pub fn foo() {
+    format!(\"
+abc
+def\");
+}
+
+pub fn foo() {
+    format!(\"la la la
+la
+la la\");
+   }
+"
+   ))
+
+(ert-deftest test-indent-string-eol-backslash-mixed-with-literal-eol ()
+  (test-indent
+   "
+fn foo() {
+    println!(\"
+Here is the beginning of the string
+            and here is a line that is arbitrarily indented \\
+            and a continuation of that indented line
+     and another arbitrary indentation
+  still another
+        yet another \\
+        with a line continuing it
+And another line not indented
+\")
+}
+"
+   "
+fn foo() {
+    println!(\"
+Here is the beginning of the string
+            and here is a line that is arbitrarily indented \\
+            and a continuation of that indented line
+     and another arbitrary indentation
+  still another
+        yet another \\
+with a line continuing it
+And another line not indented
+\")
+}
+"))
+
+(ert-deftest test-indent-string-eol-backslash-dont-touch-raw-strings ()
+  (test-indent
+   "
+pub fn foo() {
+    format!(r\"\
+abc\
+         def\");
+}
+
+pub fn foo() {
+    format!(r\"la la la
+    la\
+la la\");
+}
+"
+   ;; Should still indent the code parts but leave the string internals alone:
+   "
+    pub fn foo() {
+    format!(r\"\
+abc\
+         def\");
+}
+
+pub fn foo() {
+          format!(r\"la la la
+    la\
+la la\");
+}
+"
+   ))
+
+(ert-deftest indent-inside-string-first-line ()
+  (test-indent
+   ;; Needs to leave 1 space before "world"
+   "\"hello \\\n world\""))

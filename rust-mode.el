@@ -112,7 +112,7 @@
     ;; be undone via tab.
     
     (when (looking-at (concat "\s*\." rust-re-ident))
-      (previous-logical-line)
+      (forward-line -1)
       (end-of-line)
 
       (let
@@ -159,10 +159,58 @@
                       (when rust-indent-method-chain
                         (rust-align-to-method-chain))
                       (save-excursion
+                        (rust-rewind-irrelevant)
                         (backward-up-list)
                         (rust-rewind-to-beginning-of-current-level-expr)
                         (+ (current-column) rust-indent-offset))))))
              (cond
+              ;; Indent inside a non-raw string only if the the previous line
+              ;; ends with a backslash that is is inside the same string
+              ((nth 3 (syntax-ppss))
+               (let*
+                   ((string-begin-pos (nth 8 (syntax-ppss)))
+                    (end-of-prev-line-pos (when (> (line-number-at-pos) 1)
+                                            (save-excursion
+                                              (forward-line -1)
+                                              (end-of-line)
+                                              (point)))))
+                 (when
+                     (and
+                      ;; If the string begins with an "r" it's a raw string and
+                      ;; we should not change the indentation
+                      (/= ?r (char-after string-begin-pos))
+
+                      ;; If we're on the first line this will be nil and the
+                      ;; rest does not apply
+                      end-of-prev-line-pos
+
+                      ;; The end of the previous line needs to be inside the
+                      ;; current string...
+                      (> end-of-prev-line-pos string-begin-pos)
+
+                      ;; ...and end with a backslash
+                      (= ?\\ (char-before end-of-prev-line-pos)))
+
+                   ;; Indent to the same level as the previous line, or the
+                   ;; start of the string if the previous line starts the string
+                   (if (= (line-number-at-pos end-of-prev-line-pos) (line-number-at-pos string-begin-pos))
+                       ;; The previous line is the start of the string.
+                       ;; If the backslash is the only character after the
+                       ;; string beginning, indent to the next indent
+                       ;; level.  Otherwise align with the start of the string.
+                       (if (> (- end-of-prev-line-pos string-begin-pos) 2)
+                           (save-excursion
+                             (goto-char (+ 1 string-begin-pos))
+                             (current-column))
+                         baseline)
+
+                     ;; The previous line is not the start of the string, so
+                     ;; match its indentation.
+                     (save-excursion
+                       (goto-char end-of-prev-line-pos)
+                       (back-to-indentation)
+                       (current-column))))))
+              
               ;; A function return type is indented to the corresponding function arguments
               ((looking-at "->")
                (save-excursion
@@ -218,13 +266,14 @@
                     ;; so add one additional indent level
                     (+ baseline rust-indent-offset))))))))))
 
-    ;; If we're at the beginning of the line (before or at the current
-    ;; indentation), jump with the indentation change.  Otherwise, save the
-    ;; excursion so that adding the indentations will leave us at the
-    ;; equivalent position within the line to where we were before.
-    (if (<= (current-column) (current-indentation))
-        (indent-line-to indent)
-      (save-excursion (indent-line-to indent)))))
+    (when indent
+      ;; If we're at the beginning of the line (before or at the current
+      ;; indentation), jump with the indentation change.  Otherwise, save the
+      ;; excursion so that adding the indentations will leave us at the
+      ;; equivalent position within the line to where we were before.
+      (if (<= (current-column) (current-indentation))
+          (indent-line-to indent)
+        (save-excursion (indent-line-to indent))))))
 
 
 ;; Font-locking definitions and helpers
@@ -369,7 +418,7 @@
    ;; Handle single quoted character literals:
    (mapcar (lambda (re) (list re '(1 "\"") '(2 "\"")))
            '("\\('\\)[^']\\('\\)"
-             "\\('\\)\\\\['nrt]\\('\\)"
+             "\\('\\)\\\\['nrt\"\\]\\('\\)"
              "\\('\\)\\\\x[[:xdigit:]]\\{2\\}\\('\\)"
              "\\('\\)\\\\u[[:xdigit:]]\\{4\\}\\('\\)"
              "\\('\\)\\\\U[[:xdigit:]]\\{8\\}\\('\\)"))
@@ -454,7 +503,7 @@
     (funcall body)))
 
 (defun rust-find-fill-prefix ()
-  (rust-with-comment-fill-prefix (lambda () fill-prefix)))
+  (rust-in-comment-paragraph (lambda () (rust-with-comment-fill-prefix (lambda () fill-prefix)))))
 
 (defun rust-fill-paragraph (&rest args)
   "Special wrapping for `fill-paragraph' to handle multi-line comments with a * prefix on each line."
@@ -650,6 +699,7 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
   (setq-local fill-paragraph-function 'rust-fill-paragraph)
   (setq-local fill-forward-paragraph-function 'rust-fill-forward-paragraph)
   (setq-local adaptive-fill-function 'rust-find-fill-prefix)
+  (setq-local adaptive-fill-first-line-regexp "")
   (setq-local comment-multi-line t)
   (setq-local comment-line-break-function 'rust-comment-indent-new-line)
   (setq-local imenu-generic-expression rust-imenu-generic-expression)
