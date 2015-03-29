@@ -67,6 +67,15 @@
   :type 'boolean
   :group 'rust-mode)
 
+(defcustom rust-playpen-url-format "https://play.rust-lang.org/?code=%s"
+  "Format string to use when submitting code to the playpen"
+  :type 'string
+  :group 'rust-mode)
+(defcustom rust-shortener-url-format "http://is.gd/create.php?format=simple&url=%s"
+  "Format string to use for creating the shortened link of a playpen submission"
+  :type 'string
+  :group 'rust-mode)
+
 (defun rust-paren-level () (nth 0 (syntax-ppss)))
 (defun rust-in-str-or-cmnt () (nth 8 (syntax-ppss)))
 (defun rust-rewind-past-str-cmnt () (goto-char (nth 8 (syntax-ppss))))
@@ -115,7 +124,7 @@
     ;; annoying to have to press tab again to align to a method chain
     ;; than to have an over-eager indent in all other cases which must
     ;; be undone via tab.
-    
+
     (when (looking-at (concat "\s*\." rust-re-ident))
       (forward-line -1)
       (end-of-line)
@@ -128,7 +137,7 @@
           ;;         ^   ^
           ;;         |   |
           ;;         |  position of point
-          ;;       returned offset      
+          ;;       returned offset
           ;;
           ((skip-dot-identifier
             (lambda ()
@@ -215,7 +224,7 @@
                        (goto-char end-of-prev-line-pos)
                        (back-to-indentation)
                        (current-column))))))
-              
+
               ;; A function return type is indented to the corresponding function arguments
               ((looking-at "->")
                (save-excursion
@@ -225,7 +234,7 @@
 
               ;; A closing brace is 1 level unindended
               ((looking-at "}") (- baseline rust-indent-offset))
-              
+
               ;; Doc comments in /** style with leading * indent to line up the *s
               ((and (nth 4 (syntax-ppss)) (looking-at "*"))
                (+ 1 baseline))
@@ -364,7 +373,7 @@
 (defun rust-look-for-raw-string (bound)
   ;; Find a raw string, but only if it's not in the middle of another string or
   ;; a comment
-  
+
   (let* ((raw-str-regexp
           (rx
            (seq
@@ -744,6 +753,40 @@ See `compilation-error-regexp-alist for help on their format.")
      (add-to-list 'compilation-error-regexp-alist-alist
                   (cons 'rustc rustc-compilation-regexps))
      (add-to-list 'compilation-error-regexp-alist 'rustc)))
+
+;;; Functions to submit (parts of) buffers to the rust playpen, for
+;;; sharing.
+(defun rust-playpen-region (begin end)
+  "Create a sharable URL for the contents of the current region
+   on the Rust playpen."
+  (interactive "r")
+  (let* ((data (buffer-substring begin end))
+         (escaped-data (url-hexify-string data))
+         (escaped-playpen-url (url-hexify-string (format rust-playpen-url-format escaped-data))))
+    (if (> (length escaped-playpen-url) 5000)
+        (error "encoded playpen data exceeds 5000 character limit (length %s)"
+               (length escaped-playpen-url))
+      (let ((shortener-url (format rust-shortener-url-format escaped-playpen-url))
+            (url-request-method "POST"))
+        (url-retrieve shortener-url
+                      (lambda (state)
+                        ; filter out the headers etc. included at the
+                        ; start of the buffer: the relevant text
+                        ; (shortened url or error message) is exactly
+                        ; the last line.
+                        (end-of-buffer)
+                        (let ((last-line (thing-at-point 'line t))
+                              (err (plist-get state :error)))
+                          (kill-buffer)
+                          (if err
+                              (error "failed to shorten playpen url: %s" last-line)
+                            (message "%s" last-line)))))))))
+
+(defun rust-playpen-buffer ()
+  "Create a sharable URL for the contents of the current buffer
+   on the Rust playpen."
+  (interactive)
+  (rust-playpen-region (point-min) (point-max)))
 
 (provide 'rust-mode)
 
