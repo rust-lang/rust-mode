@@ -102,6 +102,9 @@
 (defun rust-rewind-to-beginning-of-current-level-expr ()
   (let ((current-level (rust-paren-level)))
     (back-to-indentation)
+    (when (looking-at "->")
+      (rust-rewind-irrelevant)
+      (back-to-indentation))
     (while (> (rust-paren-level) current-level)
       (backward-up-list)
       (back-to-indentation))))
@@ -179,7 +182,7 @@
                         (+ (current-column) rust-indent-offset))))))
              (cond
               ;; Indent inside a non-raw string only if the the previous line
-              ;; ends with a backslash that is is inside the same string
+              ;; ends with a backslash that is inside the same string
               ((nth 3 (syntax-ppss))
                (let*
                    ((string-begin-pos (nth 8 (syntax-ppss)))
@@ -232,7 +235,7 @@
                  (or (rust-align-to-expr-after-brace)
                      (+ baseline rust-indent-offset))))
 
-              ;; A closing brace is 1 level unindended
+              ;; A closing brace is 1 level unindented
               ((looking-at "}") (- baseline rust-indent-offset))
 
               ;; Doc comments in /** style with leading * indent to line up the *s
