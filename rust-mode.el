@@ -326,14 +326,19 @@
 (defun rust-re-item-def (itype)
   (concat (rust-re-word itype) "[[:space:]]+" (rust-re-grab rust-re-ident)))
 
+;; (See PR #42 -- this is just like `(regexp-opt words 'symbols)` from
+;; newer Emacs versions, but will work on Emacs 23.)
+(defun regexp-opt-symbols (words)
+  (concat "\\_<" (regexp-opt words t) "\\_>"))
+
 (defvar rust-mode-font-lock-keywords
   (append
    `(
      ;; Keywords proper
-     (,(regexp-opt rust-mode-keywords 'symbols) . font-lock-keyword-face)
+     (,(regexp-opt-symbols rust-mode-keywords) . font-lock-keyword-face)
 
      ;; Special types
-     (,(regexp-opt rust-special-types 'symbols) . font-lock-type-face)
+     (,(regexp-opt-symbols rust-special-types) . font-lock-type-face)
 
      ;; Attributes like `#[bar(baz)]` or `#![bar(baz)]` or `#[bar = "baz"]`
      (,(rust-re-grab (concat "#\\!?\\[" rust-re-ident "[^]]*\\]"))
