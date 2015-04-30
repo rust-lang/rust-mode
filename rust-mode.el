@@ -32,11 +32,6 @@
     (modify-syntax-entry ?\" "\"" table)
     (modify-syntax-entry ?\\ "\\" table)
 
-    ;; mark _ as a word constituent so that identifiers
-    ;; such as xyz_type don't cause type to be highlighted
-    ;; as a keyword
-    (modify-syntax-entry ?_ "w" table)
-
     ;; Comments
     (modify-syntax-entry ?/  ". 124b" table)
     (modify-syntax-entry ?*  ". 23"   table)
@@ -145,7 +140,7 @@
           ((skip-dot-identifier
             (lambda ()
               (when (looking-back (concat "\\." rust-re-ident))
-                (backward-word 1)
+                (forward-thing 'symbol -1)
                 (backward-char)
                 (- (current-column) rust-indent-offset)))))
         (cond
@@ -331,14 +326,19 @@
 (defun rust-re-item-def (itype)
   (concat (rust-re-word itype) "[[:space:]]+" (rust-re-grab rust-re-ident)))
 
+;; (See PR #42 -- this is just like `(regexp-opt words 'symbols)` from
+;; newer Emacs versions, but will work on Emacs 23.)
+(defun regexp-opt-symbols (words)
+  (concat "\\_<" (regexp-opt words t) "\\_>"))
+
 (defvar rust-mode-font-lock-keywords
   (append
    `(
      ;; Keywords proper
-     (,(regexp-opt rust-mode-keywords 'words) . font-lock-keyword-face)
+     (,(regexp-opt-symbols rust-mode-keywords) . font-lock-keyword-face)
 
      ;; Special types
-     (,(regexp-opt rust-special-types 'words) . font-lock-type-face)
+     (,(regexp-opt-symbols rust-special-types) . font-lock-type-face)
 
      ;; Attributes like `#[bar(baz)]` or `#![bar(baz)]` or `#[bar = "baz"]`
      (,(rust-re-grab (concat "#\\!?\\[" rust-re-ident "[^]]*\\]"))
