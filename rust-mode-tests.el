@@ -394,6 +394,32 @@ fn baz(   a:int,  // should work with a comment here
 { }
 "))
 
+(ert-deftest indent-open-after-arrow ()
+  (test-indent
+   "
+// Indent function body only one level after `-> {`
+fn foo1(a:int, b:char) -> int {
+    let body;
+}
+
+fn foo2(a:int,
+        b:char) -> int {
+    let body;
+}
+
+fn foo3(a:int,
+        b:char)
+        -> int {
+    let body;
+}
+
+fn foo4(a:int,
+        b:char)
+        -> int where int:A {
+    let body;
+}
+"))
+
 (ert-deftest indent-square-bracket-alignment ()
   (test-indent
    "
