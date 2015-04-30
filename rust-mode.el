@@ -774,7 +774,7 @@ See `compilation-error-regexp-alist for help on their format.")
                         ; start of the buffer: the relevant text
                         ; (shortened url or error message) is exactly
                         ; the last line.
-                        (end-of-buffer)
+                        (goto-char (point-max))
                         (let ((last-line (thing-at-point 'line t))
                               (err (plist-get state :error)))
                           (kill-buffer)
