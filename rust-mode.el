@@ -77,7 +77,7 @@
 (defun rust-rewind-irrelevant ()
   (let ((starting (point)))
     (skip-chars-backward "[:space:]\n")
-    (if (looking-back "\\*/") (backward-char))
+    (if (looking-back "\\*/" nil) (backward-char))
     (if (rust-in-str-or-cmnt)
         (rust-rewind-past-str-cmnt))
     (if (/= starting (point))
@@ -139,13 +139,13 @@
           ;;
           ((skip-dot-identifier
             (lambda ()
-              (when (looking-back (concat "\\." rust-re-ident))
+              (when (looking-back (concat "\\." rust-re-ident) nil)
                 (forward-thing 'symbol -1)
                 (backward-char)
                 (- (current-column) rust-indent-offset)))))
         (cond
          ;; foo.bar(...)
-         ((looking-back ")")
+         ((looking-back ")" nil)
           (backward-list 1)
           (funcall skip-dot-identifier))
 
@@ -269,7 +269,7 @@
                           ;; ..or if the previous line ends with any of these:
                           ;;     { ? : ( , ; [ }
                           ;; then we are at the beginning of an expression, so stay on the baseline...
-                          (looking-back "[(,:;?[{}]\\|[^|]|")
+                          (looking-back "[(,:;?[{}]\\|[^|]|" nil)
                           ;; or if the previous line is the end of an attribute, stay at the baseline...
                           (progn (rust-rewind-to-beginning-of-current-level-expr) (looking-at "#")))))
                       baseline
@@ -666,7 +666,7 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
   "If the most recently inserted character is a `>`, briefly moves point to matching `<` (if any)."
   (interactive)
   (when (and rust-blink-matching-angle-brackets
-             (looking-back ">"))
+             (looking-back ">" nil))
     (let ((matching-angle-bracket-point (save-excursion
                                           (backward-char 1)
                                           (rust-find-matching-angle-bracket))))
