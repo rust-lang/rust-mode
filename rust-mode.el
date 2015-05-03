@@ -104,6 +104,8 @@
       (backward-up-list)
       (back-to-indentation))))
 
+(defconst rust-re-ident "[[:word:][:multibyte:]_][[:word:][:multibyte:]_[:digit:]]*")
+
 (defun rust-align-to-method-chain ()
   (save-excursion
     ;; for method-chain alignment to apply, we must be looking at
@@ -318,7 +320,6 @@
     "bool"
     "str" "char"))
 
-(defconst rust-re-ident "[[:word:][:multibyte:]_][[:word:][:multibyte:]_[:digit:]]*")
 (defconst rust-re-CamelCase "[[:upper:]][[:word:][:multibyte:]_[:digit:]]*")
 (defun rust-re-word (inner) (concat "\\<" inner "\\>"))
 (defun rust-re-grab (inner) (concat "\\(" inner "\\)"))
