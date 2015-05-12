@@ -50,7 +50,7 @@ Then do this to load the package listing:
 * <kbd>M-x package-refresh-contents</kbd>
 
 If you use a version of Emacs prior to 24 that doesn't include
-`package.el`, you can get it from [here](http://bit.ly/pkg-el23).
+`package.el`, you can get it from [here](http://git.savannah.gnu.org/gitweb/?p=emacs.git;a=blob_plain;hb=ba08b24186711eaeb3748f3d1f23e2c2d9ed0d09;f=lisp/emacs-lisp/package.el).
 
 If you have an older ELPA `package.el` installed from tromey.com, you
 should upgrade in order to support installation from multiple sources.
