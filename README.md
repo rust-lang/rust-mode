@@ -19,23 +19,12 @@ To install manually, check out this repository and add this to your
 This associates `rust-mode` with `.rs` files. To enable it explicitly, do
 <kbd>M-x rust-mode</kbd>.
 
-### `package.el` installation via Marmalade or MELPA
+### `package.el` installation via MELPA
 
 It can be more convenient to use Emacs's package manager to handle
 installation for you if you use many elisp libraries. If you have
-`package.el` but haven't added Marmalade or MELPA, the community
+`package.el` but haven't added MELPA, the community
 package source, yet, add this to `~/.emacs.d/init.el`:
-
-Using Marmalade:
-
-```lisp
-(require 'package)
-(add-to-list 'package-archives
-             '("marmalade" . "http://marmalade-repo.org/packages/"))
-(package-initialize)
-```
-
-Using MELPA:
 
 ```lisp
 (require 'package)
