@@ -10,8 +10,10 @@
 
 ;;; Code:
 
-(eval-when-compile (require 'misc)
-                   (require 'rx))
+(eval-when-compile
+  (require 'misc)
+  (require 'rx)
+  (require 'cl))
 
 ;; for GNU Emacs < 24.3
 (eval-when-compile
@@ -386,12 +388,12 @@
   ;; whole comment will be.
   (let ((start font-lock-beg)
         (end font-lock-end))
-    (cl-loop for level = (syntax-ppss start)
-             while (and (integerp level) (plusp start))
-             do (decf start))
-    (cl-loop for level = (syntax-ppss end)
-             while (and (integerp level) (plusp end))
-             do (incf end))
+    (loop for level = (syntax-ppss start)
+	  while (and (integerp level) (plusp start))
+	  do (decf start))
+    (loop for level = (syntax-ppss end)
+	  while (and (integerp level) (plusp end))
+	  do (incf end))
     (unless (and (eql start font-lock-beg) (eql end font-lock-end))
       (setq font-lock-beg start)
       (setq font-lock-end end)
