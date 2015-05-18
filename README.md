@@ -19,23 +19,12 @@ To install manually, check out this repository and add this to your
 This associates `rust-mode` with `.rs` files. To enable it explicitly, do
 <kbd>M-x rust-mode</kbd>.
 
-### `package.el` installation via Marmalade or MELPA
+### `package.el` installation via MELPA
 
 It can be more convenient to use Emacs's package manager to handle
 installation for you if you use many elisp libraries. If you have
-`package.el` but haven't added Marmalade or MELPA, the community
+`package.el` but haven't added MELPA, the community
 package source, yet, add this to `~/.emacs.d/init.el`:
-
-Using Marmalade:
-
-```lisp
-(require 'package)
-(add-to-list 'package-archives
-             '("marmalade" . "http://marmalade-repo.org/packages/"))
-(package-initialize)
-```
-
-Using MELPA:
 
 ```lisp
 (require 'package)
@@ -50,7 +39,7 @@ Then do this to load the package listing:
 * <kbd>M-x package-refresh-contents</kbd>
 
 If you use a version of Emacs prior to 24 that doesn't include
-`package.el`, you can get it from [here](http://bit.ly/pkg-el23).
+`package.el`, you can get it from [here](http://git.savannah.gnu.org/gitweb/?p=emacs.git;a=blob_plain;hb=ba08b24186711eaeb3748f3d1f23e2c2d9ed0d09;f=lisp/emacs-lisp/package.el).
 
 If you have an older ELPA `package.el` installed from tromey.com, you
 should upgrade in order to support installation from multiple sources.
