@@ -1102,6 +1102,25 @@ this_is_not_a_string();)"
      "//! doc */" font-lock-comment-face)))
 
 
+(ert-deftest font-lock-doc-block-comment-parent ()
+  (rust-test-font-lock
+   "/*! doc */"
+   '("/*! doc */" font-lock-doc-face)))
+
+(ert-deftest font-lock-doc-block-comment-item ()
+  (rust-test-font-lock
+   "/** doc */"
+   '("/** doc */" font-lock-doc-face)))
+
+(ert-deftest font-lock-doc-block-in-string ()
+  (rust-test-font-lock
+   "\"/** doc */\""
+   '("\"/** doc */\"" font-lock-string-face))
+  (rust-test-font-lock
+   "\"/*! doc */\""
+   '("\"/*! doc */\"" font-lock-string-face)))
+
+
 
 (ert-deftest indent-method-chains-no-align ()
   (let ((rust-indent-method-chain nil)) (test-indent
