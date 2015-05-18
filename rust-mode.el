@@ -360,7 +360,9 @@
 
      ;; CamelCase Means Type Or Constructor
      (,(rust-re-grabword rust-re-CamelCase) 1 font-lock-type-face)
-     )
+
+     ;; Documentation line comments
+     (rust-look-for-doc-comment 0 font-lock-doc-face t))
 
    ;; Item definitions
    (mapcar #'(lambda (x)
@@ -373,6 +375,14 @@
              ("use" . font-lock-type-face)
              ("fn" . font-lock-function-name-face)
              ("static" . font-lock-constant-face)))))
+
+
+(defun rust-look-for-doc-comment (bound)
+  ;; Find documentation comments starging with //! or ///. It will
+  ;; only match it if it is inside a non-nestable comment.
+  (when (search-forward-regexp "//[!/].*" bound t)
+    (eq (nth 4 (syntax-ppss)) t)))
+
 
 (defun rust-look-for-raw-string (bound)
   ;; Find a raw string, but only if it's not in the middle of another string or
@@ -430,6 +440,7 @@
       (goto-char (nth 3 ret-list))
       (set-match-data (nth 2 ret-list))
       (nth 0 ret-list))))
+
 
 (defvar rust-mode-font-lock-syntactic-keywords
   (append
