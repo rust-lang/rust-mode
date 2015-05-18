@@ -912,6 +912,7 @@ list of substrings of `STR' each followed by its face."
   (should (equal (rust-test-group-str-by-face source)
                  face-groups)))
 
+
 (ert-deftest font-lock-attribute-simple ()
   (rust-test-font-lock
    "#[foo]"
@@ -1066,6 +1067,41 @@ this_is_not_a_string();)"
    '("// " font-lock-comment-delimiter-face
      "r\" this is a comment\n" font-lock-comment-face
      "\"this is a string\"" font-lock-string-face)))
+
+
+;;; Documentation comments
+
+(ert-deftest font-lock-doc-line-comment-parent ()
+  (rust-test-font-lock
+   "//! doc"
+   '("//! doc" font-lock-doc-face)))
+
+(ert-deftest font-lock-doc-line-comment-item ()
+  (rust-test-font-lock
+   "/// doc"
+   '("/// doc" font-lock-doc-face)))
+
+(ert-deftest font-lock-doc-line-in-string ()
+  (rust-test-font-lock
+   "\"/// doc\""
+   '("\"/// doc\"" font-lock-string-face))
+
+  (rust-test-font-lock
+   "\"//! doc\""
+   '("\"//! doc\"" font-lock-string-face)))
+
+(ert-deftest font-lock-doc-line-in-nested-comment ()
+  (rust-test-font-lock
+   "/* /// doc */"
+   '("/* " font-lock-comment-delimiter-face
+     "/// doc */" font-lock-comment-face))
+
+  (rust-test-font-lock
+   "/* //! doc */"
+   '("/* " font-lock-comment-delimiter-face
+     "//! doc */" font-lock-comment-face)))
+
+
 
 (ert-deftest indent-method-chains-no-align ()
   (let ((rust-indent-method-chain nil)) (test-indent
