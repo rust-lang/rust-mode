@@ -399,14 +399,14 @@
   
 
 (defun rust-look-for-line-doc-comment (bound)
-  ;; Find documentation comments starging with //! or ///. It will
+  ;; Find documentation comments starting with //! or ///. It will
   ;; only match it if it is inside a non-nestable comment.
   (when (search-forward-regexp "//[!/].*" bound t)
     (eq (nth 4 (syntax-ppss)) t)))
 
 
 (defun rust-look-for-block-doc-comment (bound)
-  ;; Find documentation comments starging with /** or /*!. The
+  ;; Find documentation comments starting with /** or /*!. The
   ;; function `rust-extend-region-nested-comment' is invoked by
   ;; font-lock in order to ensure that no partial comment is between
   ;; the point and BOUND.
