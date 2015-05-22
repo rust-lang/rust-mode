@@ -10,8 +10,10 @@
 
 ;;; Code:
 
-(eval-when-compile (require 'misc)
-                   (require 'rx))
+(eval-when-compile
+  (require 'misc)
+  (require 'rx)
+  (require 'cl))
 
 ;; for GNU Emacs < 24.3
 (eval-when-compile
@@ -360,7 +362,12 @@
 
      ;; CamelCase Means Type Or Constructor
      (,(rust-re-grabword rust-re-CamelCase) 1 font-lock-type-face)
-     )
+
+     ;; Documentation line comments
+     (rust-look-for-line-doc-comment 0 font-lock-doc-face t)
+
+     ;; Documentation block comments
+     (rust-look-for-block-doc-comment 0 font-lock-doc-face t))
 
    ;; Item definitions
    (mapcar #'(lambda (x)
@@ -373,6 +380,51 @@
              ("use" . font-lock-type-face)
              ("fn" . font-lock-function-name-face)
              ("static" . font-lock-constant-face)))))
+
+
+(defun rust-extend-region-nested-comment ()
+  ;; Extend the region given by `font-lock-beg' and `font-lock-end' to
+  ;; ensure that if a part of a (nestable) comment is in it, then the
+  ;; whole comment will be.
+  (let ((start font-lock-beg)
+        (end font-lock-end))
+    (loop for level = (syntax-ppss start)
+	  while (and (integerp level) (plusp start))
+	  do (decf start))
+    (loop for level = (syntax-ppss end)
+	  while (and (integerp level) (plusp end))
+	  do (incf end))
+    (unless (and (eql start font-lock-beg) (eql end font-lock-end))
+      (setq font-lock-beg start)
+      (setq font-lock-end end)
+      t)))
+  
+
+(defun rust-look-for-line-doc-comment (bound)
+  ;; Find documentation comments starting with //! or ///. It will
+  ;; only match it if it is inside a non-nestable comment.
+  (when (search-forward-regexp "//[!/].*" bound t)
+    (eq (nth 4 (syntax-ppss)) t)))
+
+
+(defun rust-look-for-block-doc-comment (bound)
+  ;; Find documentation comments starting with /** or /*!. The
+  ;; function `rust-extend-region-nested-comment' is invoked by
+  ;; font-lock in order to ensure that no partial comment is between
+  ;; the point and BOUND.
+  (when (search-forward-regexp "/\\*[*!][^*]" bound t)
+    (let ((start (comment-beginning))
+          end)
+      (when start
+        (goto-char start)
+        (comment-forward 1)
+        (setq end (point))
+        (put-text-property start end 'font-lock-multiline t)
+        (set-match-data (list start end))
+        t))))
+
+
+
 
 (defun rust-look-for-raw-string (bound)
   ;; Find a raw string, but only if it's not in the middle of another string or
@@ -430,6 +482,7 @@
       (goto-char (nth 3 ret-list))
       (set-match-data (nth 2 ret-list))
       (nth 0 ret-list))))
+
 
 (defvar rust-mode-font-lock-syntactic-keywords
   (append
@@ -702,6 +755,8 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
   (setq-local indent-line-function 'rust-mode-indent-line)
 
   ;; Fonts
+  (add-to-list 'font-lock-extend-region-functions 'rust-extend-region-nested-comment)
+  
   (setq-local font-lock-defaults '(rust-mode-font-lock-keywords nil nil nil nil (font-lock-syntactic-keywords . rust-mode-font-lock-syntactic-keywords)))
 
   ;; Misc
