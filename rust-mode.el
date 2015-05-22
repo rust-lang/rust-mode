@@ -639,7 +639,8 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
               ;; didn't find a match
               (> angle-brackets 0)
               ;; we have no guarantee of a match, so give up eventually
-              (< (- start-point (point)) blink-matching-paren-distance)
+	      (or (not blink-matching-paren-distance)
+		  (< (- start-point (point)) blink-matching-paren-distance))
               ;; didn't hit the top of the buffer
               (> (point) (point-min))
               ;; didn't hit something else weird like a `;`
