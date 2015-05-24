@@ -55,12 +55,14 @@
 (defcustom rust-indent-offset 4
   "Indent Rust code by this number of spaces."
   :type 'integer
-  :group 'rust-mode)
+  :group 'rust-mode
+  :safe #'integerp)
 
 (defcustom rust-indent-method-chain nil
   "Indent Rust method chains, aligned by the '.' operators"
   :type 'boolean
-  :group 'rust-mode)
+  :group 'rust-mode
+  :safe #'booleanp)
 
 (defcustom rust-playpen-url-format "https://play.rust-lang.org/?code=%s"
   "Format string to use when submitting code to the playpen"
