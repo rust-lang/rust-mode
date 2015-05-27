@@ -1,4 +1,4 @@
-;;; rust-mode.el --- A major emacs mode for editing Rust source code
+;;; rust-mode.el --- A major emacs mode for editing Rust source code -*-lexical-binding: t-*-
 
 ;; Version: 0.2.0
 ;; Author: Mozilla
@@ -12,7 +12,8 @@
 
 (eval-when-compile (require 'misc)
                    (require 'rx)
-                   (require 'compile))
+                   (require 'compile)
+                   (require 'url-vars))
 
 (defvar electric-pair-inhibit-predicate)
 
@@ -1102,7 +1103,7 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
       (progn
         (goto-char (match-beginning 0))
         ;; Go to the closing brace
-        (condition-case err
+        (condition-case nil
             (forward-sexp)
           (scan-error
            ;; The parentheses are unbalanced; instead of being unable to fontify, just jump to the end of the buffer
@@ -1175,7 +1176,7 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
         (error-or-warning "\\(?:[Ee]rror\\|\\([Ww]arning\\)\\)"))
     (let ((re (concat "^" file ":" start-line ":" start-col
                       ": " end-line ":" end-col
-                      " \\(?:[Ee]rror\\|\\([Ww]arning\\)\\):")))
+                      " " error-or-warning ":")))
       (cons re '(1 (2 . 4) (3 . 5) (6)))))
   "Specifications for matching errors in rustc invocations.
 See `compilation-error-regexp-alist' for help on their format.")
