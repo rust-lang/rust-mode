@@ -1482,3 +1482,83 @@ la la\");
   (test-indent
    ;; Needs to leave 1 space before "world"
    "\"hello \\\n world\""))
+
+(defun rust-test-matching-parens (content pairs &optional nonparen-positions)
+  "Assert that in rust-mode, given a buffer with the given `content',
+  emacs's paren matching will find all of the pairs of positions
+  as matching braces.  The list of nonparen-positions asserts
+  specific positions that should NOT be considered to be
+  parens/braces of any kind.
+
+  This does not assert that the `pairs' list is
+  comprehensive--there can be additional pairs that don't appear
+  in the list and the test still passes (as long as none of their
+  positions appear in `nonparen-positions'.)"
+  (with-temp-buffer
+    (rust-mode)
+    (insert content)
+    (font-lock-fontify-buffer)
+    (dolist (pair pairs)
+      (let* ((open-pos (nth 0 pair))
+             (close-pos (nth 1 pair)))
+        (should (equal 4 (syntax-class (syntax-after open-pos))))
+        (should (equal 5 (syntax-class (syntax-after close-pos))))
+        (should (equal (scan-sexps open-pos 1) (+ 1 close-pos)))
+        (should (equal (scan-sexps (+ 1 close-pos) -1) open-pos))))
+    (dolist (nonpar-pos nonparen-positions)
+      (let ((nonpar-syntax-class (syntax-class (syntax-after nonpar-pos))))
+        (should (not (equal 4 nonpar-syntax-class)))
+        (should (not (equal 5 nonpar-syntax-class)))))))
+
+(ert-deftest rust-test-unmatched-single-quote-in-comment-paren-matching ()
+  ;; This was a bug from the char quote handling that affected the paren
+  ;; matching.  An unmatched quote char in a comment caused the problems.
+  (rust-test-matching-parens
+   "// If this appeared first in the file...
+\"\\
+{\";
+
+// And the { was not the on the first column:
+ {
+    // This then messed up the paren matching: '\\'
+}
+
+"
+   '((97 150) ;; The { and } at the bottom
+     )))
+
+(ert-deftest rust-test-two-character-quotes-in-a-row ()
+  (with-temp-buffer
+    (rust-mode)
+    (font-lock-fontify-buffer)
+    (insert "'\\n','a', fn")
+    (font-lock-after-change-function 1 12 0)
+
+    (should (equal 'font-lock-string-face (get-text-property 3 'face)))
+    (should (equal nil (get-text-property 5 'face)))
+    (should (equal 'font-lock-string-face (get-text-property 7 'face)))
+    (should (equal nil (get-text-property 9 'face)))
+    (should (equal 'font-lock-keyword-face (get-text-property 12 'face)))
+    )  
+  )
+
+(ert-deftest single-quote-null-char ()
+  (rust-test-font-lock
+   "'\\0' 'a' fn"
+   '("'\\0'" font-lock-string-face
+     "'a'" font-lock-string-face
+     "fn" font-lock-keyword-face)))
+
+(ert-deftest r-in-string-after-single-quoted-double-quote ()
+  (rust-test-font-lock
+   "'\"';\n\"r\";\n\"oops\";"
+   '("'\"'" font-lock-string-face
+     "\"r\"" font-lock-string-face
+     "\"oops\"" font-lock-string-face
+     )))
+
+(ert-deftest char-literal-after-quote-in-raw-string ()
+  (rust-test-font-lock
+   "r#\"\"\"#;\n'q'"
+   '("r#\"\"\"#" font-lock-string-face
+     "'q'" font-lock-string-face)))
