@@ -20,6 +20,27 @@
       "Set variable VAR to value VAL in current buffer."
       (list 'set (list 'make-local-variable (list 'quote var)) val))))
 
+(defun rust-looking-back-str (str)
+  "Like `looking-back' but for fixed strings rather than regexps (so that it's not so slow)"
+  (let ((len (length str)))
+    (and (> (point) len)
+         (equal str (buffer-substring-no-properties (- (point) len) (point))))))
+
+(defun rust-looking-back-symbols (SYMS)
+  "Return non-nil if the point is just after a complete symbol that is a member of the list of strings SYMS"
+  (save-excursion
+    (let* ((pt-orig (point))
+           (beg-of-symbol (progn (forward-thing 'symbol -1) (point)))
+           (end-of-symbol (progn (forward-thing 'symbol 1) (point))))
+      (and
+       (= end-of-symbol pt-orig)
+       (member (buffer-substring-no-properties beg-of-symbol pt-orig) SYMS)))))
+
+(defun rust-looking-back-ident ()
+  "Non-nil if we are looking backwards at a valid rust identifier"
+  (let ((beg-of-symbol (save-excursion (forward-thing 'symbol -1) (point))))
+    (looking-back rust-re-ident beg-of-symbol)))
+
 ;; Syntax definitions and helpers
 (defvar rust-mode-syntax-table
   (let ((table (make-syntax-table)))
@@ -77,7 +98,7 @@
 (defun rust-rewind-irrelevant ()
   (let ((starting (point)))
     (skip-chars-backward "[:space:]\n")
-    (if (looking-back "\\*/" nil) (backward-char))
+    (if (rust-looking-back-str "*/") (backward-char))
     (if (rust-in-str-or-cmnt)
         (rust-rewind-past-str-cmnt))
     (if (/= starting (point))
@@ -141,13 +162,13 @@
           ;;
           ((skip-dot-identifier
             (lambda ()
-              (when (looking-back (concat "\\." rust-re-ident) nil)
+              (when (and (rust-looking-back-ident) (save-excursion (forward-thing 'symbol -1) (= ?. (char-before))))
                 (forward-thing 'symbol -1)
                 (backward-char)
                 (- (current-column) rust-indent-offset)))))
         (cond
          ;; foo.bar(...)
-         ((looking-back ")" nil)
+         ((rust-looking-back-str ")")
           (backward-list 1)
           (funcall skip-dot-identifier))
 
@@ -271,7 +292,7 @@
                           ;; ..or if the previous line ends with any of these:
                           ;;     { ? : ( , ; [ }
                           ;; then we are at the beginning of an expression, so stay on the baseline...
-                          (looking-back "[(,:;?[{}]\\|[^|]|" nil)
+                          (looking-back "[(,:;?[{}]\\|[^|]|" (- (point) 2))
                           ;; or if the previous line is the end of an attribute, stay at the baseline...
                           (progn (rust-rewind-to-beginning-of-current-level-expr) (looking-at "#")))))
                       baseline
