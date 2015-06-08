@@ -41,6 +41,10 @@
   (let ((beg-of-symbol (save-excursion (forward-thing 'symbol -1) (point))))
     (looking-back rust-re-ident beg-of-symbol)))
 
+(defun rust-looking-back-macro ()
+  "Non-nil if looking back at an ident followed by a !"
+  (save-excursion (backward-char) (and (= ?! (char-after)) (rust-looking-back-ident))))
+
 ;; Syntax definitions and helpers
 (defvar rust-mode-syntax-table
   (let ((table (make-syntax-table)))
@@ -52,6 +56,11 @@
     ;; Strings
     (modify-syntax-entry ?\" "\"" table)
     (modify-syntax-entry ?\\ "\\" table)
+
+    ;; Angle brackets.  We suppress this with syntactic fontification when
+    ;; needed
+    (modify-syntax-entry ?< "(>" table)
+    (modify-syntax-entry ?> ")<" table)
 
     ;; Comments
     (modify-syntax-entry ?/  ". 124b" table)
@@ -92,6 +101,13 @@
   :type 'string
   :group 'rust-mode)
 
+(defcustom rust-match-angle-brackets t
+  "Enable angle bracket matching.  Attempt to match `<' and `>' where
+  appropriate."
+  :type 'boolean
+  :safe #'booleanp
+  :group 'rust-mode)
+
 (defun rust-paren-level () (nth 0 (syntax-ppss)))
 (defun rust-in-str-or-cmnt () (nth 8 (syntax-ppss)))
 (defun rust-rewind-past-str-cmnt () (goto-char (nth 8 (syntax-ppss))))
@@ -103,6 +119,15 @@
         (rust-rewind-past-str-cmnt))
     (if (/= starting (point))
         (rust-rewind-irrelevant))))
+(defun rust-in-macro ()
+  (save-excursion
+    (when (> (rust-paren-level) 0)
+      (backward-up-list)
+      (rust-rewind-irrelevant)
+      (or (rust-looking-back-macro)
+          (and (rust-looking-back-ident) (save-excursion (backward-sexp) (rust-rewind-irrelevant) (rust-looking-back-str "macro_rules!")))
+          (rust-in-macro))
+      )))
 
 (defun rust-align-to-expr-after-brace ()
   (save-excursion
@@ -342,6 +367,7 @@
     "str" "char"))
 
 (defconst rust-re-CamelCase "[[:upper:]][[:word:][:multibyte:]_[:digit:]]*")
+(defconst rust-re-pre-expression-operators "[-=!%&*/:<>[{(|.^;}]")
 (defun rust-re-word (inner) (concat "\\<" inner "\\>"))
 (defun rust-re-grab (inner) (concat "\\(" inner "\\)"))
 (defun rust-re-grabword (inner) (rust-re-grab (rust-re-word inner)))
@@ -545,10 +571,362 @@
            (and (nth 3 pstate) (wholenump (nth 8 pstate)) (< (nth 8 pstate) (match-beginning 0))) ;; Skip if in a string that isn't starting here
            )))))))
 
+(defun rust-syntax-class-before-point ()
+  (when (> (point) 1)
+    (syntax-class (syntax-after (1- (point))))))
+
+(defun rust-rewind-qualified-ident ()
+  (while (rust-looking-back-ident)
+    (backward-sexp)
+    (when (save-excursion (rust-rewind-irrelevant) (rust-looking-back-str "::"))
+      (rust-rewind-irrelevant)
+      (backward-char 2)
+      (rust-rewind-irrelevant))))
+
+(defun rust-rewind-type-param-list ()
+  (cond
+   ((and (rust-looking-back-str ">") (equal 5 (rust-syntax-class-before-point)))
+    (backward-sexp)
+    (rust-rewind-irrelevant))
+
+   ;; We need to be able to back up past the Fn(args) -> RT form as well.  If
+   ;; we're looking back at this, we want to end up just after "Fn".
+   ((member (char-before) '(?\] ?\) ))
+    (let* ((is-paren (rust-looking-back-str ")"))
+           (dest (save-excursion
+                  (backward-sexp)
+                  (rust-rewind-irrelevant)
+                  (or
+                   (when (rust-looking-back-str "->")
+                     (backward-char 2)
+                     (rust-rewind-irrelevant)
+                     (when (rust-looking-back-str ")")
+                       (backward-sexp)
+                       (point)))
+                   (and is-paren (point))))))
+      (when dest
+        (goto-char dest))))))
+
+(defun rust-rewind-to-decl-name ()
+  "If we are before an ident that is part of a declaration that
+  can have a where clause, rewind back to just before the name of
+  the subject of that where clause and return the new point.
+  Otherwise return nil"
+  
+  (let* ((ident-pos (point))
+         (newpos (save-excursion
+                   (rust-rewind-irrelevant)
+                   (rust-rewind-type-param-list)
+                   (cond
+                       ((rust-looking-back-symbols '("fn" "trait" "enum" "struct" "impl" "type")) ident-pos)
+
+                       ((equal 5 (rust-syntax-class-before-point))
+                        (backward-sexp)
+                        (rust-rewind-to-decl-name))
+
+                       ((looking-back "[:,'+=]" (1- (point)))
+                        (backward-char)
+                        (rust-rewind-to-decl-name))
+
+                       ((rust-looking-back-str "->")
+                        (backward-char 2)
+                        (rust-rewind-to-decl-name))
+
+                       ((rust-looking-back-ident)
+                        (rust-rewind-qualified-ident)
+                        (rust-rewind-to-decl-name))))))
+    (when newpos (goto-char newpos))
+    newpos))
+
+(defun rust-is-in-expression-context (token)
+  "Return t if what comes right after the point is part of an
+  expression (as opposed to starting a type) by looking at what
+  comes before.  Takes a symbol that roughly indicates what is
+  after the point.
+
+  This function is used as part of `rust-is-lt-char-operator' as
+  part of angle bracket matching, and is not intended to be used
+  outside of this context."
+
+  (save-excursion
+    (let ((postchar (char-after)))
+      (rust-rewind-irrelevant)
+
+      ;; A type alias or ascription could have a type param list.  Skip backwards past it.
+      (when (member token '(ambiguous-operator open-brace))
+        (rust-rewind-type-param-list))
+      
+      (cond
+
+       ;; Certain keywords always introduce expressions
+       ((rust-looking-back-symbols '("if" "while" "match" "return" "box" "in")) t)
+
+       ;; "as" introduces a type
+       ((rust-looking-back-symbols '("as")) nil)
+
+       ;; An open angle bracket never introduces expression context WITHIN the angle brackets
+       ((and (equal token 'open-brace) (equal postchar ?<)) nil)
+
+       ;; An ident! followed by an open brace is a macro invocation.  Consider
+       ;; it to be an expression.
+       ((and (equal token 'open-brace) (rust-looking-back-macro)) t)
+       
+       ;; An identifier is right after an ending paren, bracket, angle bracket
+       ;; or curly brace.  It's a type if the last sexp was a type.
+       ((and (equal token 'ident) (equal 5 (rust-syntax-class-before-point)))
+        (backward-sexp)
+        (rust-is-in-expression-context 'open-brace))
+
+       ;; If a "for" appears without a ; or { before it, it's part of an
+       ;; "impl X for y", so the y is a type.  Otherwise it's
+       ;; introducing a loop, so the y is an expression
+       ((and (equal token 'ident) (rust-looking-back-symbols '("for")))
+        (backward-sexp)
+        (rust-rewind-irrelevant)
+        (looking-back "[{;]" (1- (point))))
+       
+       ((rust-looking-back-ident)
+        (rust-rewind-qualified-ident)
+        (rust-rewind-irrelevant)
+        (cond
+         ((equal token 'open-brace)
+          ;; We now know we have:
+          ;;   ident <maybe type params> [{([]
+          ;; where [{([] denotes either a {, ( or [.  This character is bound as postchar.
+          (cond
+           ;; If postchar is a paren or square bracket, then if the brace is a type if the identifier is one
+           ((member postchar '(?\( ?\[ )) (rust-is-in-expression-context 'ident))
+
+           ;; If postchar is a curly brace, the brace can only be a type if
+           ;; ident2 is the name of an enum, struct or trait being declared.
+           ;; Note that if there is a -> before the ident then the ident would
+           ;; be a type but the { is not.
+           ((equal ?{ postchar)
+            (not (and (rust-rewind-to-decl-name)
+                      (progn
+                        (rust-rewind-irrelevant)
+                        (rust-looking-back-symbols '("enum" "struct" "trait" "type"))))))
+           ))
+         
+         ((equal token 'ambiguous-operator)
+          (cond
+           ;; An ampersand after an ident has to be an operator rather than a & at the beginning of a ref type
+           ((equal postchar ?&) t)
+
+           ;; A : followed by a type then an = introduces an expression (unless it is part of a where clause of a "type" declaration)
+           ((and (equal postchar ?=)
+                 (looking-back "[^:]:" (- (point) 2))
+                 (not (save-excursion (and (rust-rewind-to-decl-name) (progn (rust-rewind-irrelevant) (rust-looking-back-symbols '("type"))))))))
+
+           ;; "let ident =" introduces an expression--and so does "const" and "mut"
+           ((and (equal postchar ?=) (rust-looking-back-symbols '("let" "const" "mut"))) t)
+
+           ;; As a specific special case, see if this is the = in this situation:
+           ;;     enum EnumName<type params> { Ident =
+           ;; In this case, this is a c-like enum and despite Ident
+           ;; representing a type, what comes after the = is an expression
+           ((and
+             (> (rust-paren-level) 0)
+             (save-excursion
+               (backward-up-list)
+               (rust-rewind-irrelevant)
+               (rust-rewind-type-param-list)
+               (and
+                (rust-looking-back-ident)
+                (progn
+                  (rust-rewind-qualified-ident)
+                  (rust-rewind-irrelevant)
+                  (rust-looking-back-str "enum")))))
+            t)
+           
+           ;; Otherwise the ambiguous operator is a type if the identifier is a type
+           ((rust-is-in-expression-context 'ident) t)))
+
+         ((equal token 'colon)
+          (cond
+           ;; If we see a ident: not inside any braces/parens, we're at top level.
+           ;; There are no allowed expressions after colons there, just types.
+           ((<= (rust-paren-level) 0) nil)
+
+           ;; We see ident: inside a list
+           ((looking-back "[{,]" (1- (point)))
+            (backward-up-list)
+
+            ;; If a : appears whose surrounding paren/brackets/braces are
+            ;; anything other than curly braces, it can't be a field
+            ;; initializer and must be denoting a type.
+            (when (looking-at "{")
+              (rust-rewind-irrelevant)
+              (rust-rewind-type-param-list)
+              (when (rust-looking-back-ident)
+                ;; We have a context that looks like this:
+                ;;    ident2 <maybe type params> { [maybe paren-balanced code ending in comma] ident1:
+                ;; the point is sitting just after ident2, and we trying to
+                ;; figure out if the colon introduces an expression or a type.
+                ;; The answer is that ident1 is a field name, and what comes
+                ;; after the colon is an expression, if ident2 is an
+                ;; expression.
+                (rust-rewind-qualified-ident)
+                (rust-is-in-expression-context 'ident))))
+
+
+           ;; Otherwise, if the ident: appeared with anything other than , or {
+           ;; before it, it can't be part of a struct initializer and therefore
+           ;; must be denoting a type.
+           nil
+           ))
+         ))
+
+       ;; An operator-like character after a string is indeed an operator
+       ((and (equal token 'ambiguous-operator)
+             (member (rust-syntax-class-before-point) '(5 7 15))) t)
+
+       ;; A colon that has something other than an identifier before it is a
+       ;; type ascription
+       ((equal token 'colon) nil)
+
+       ;; A :: introduces a type (or module, but not an expression in any case)
+       ((rust-looking-back-str "::") nil)
+       
+       ((rust-looking-back-str ":")
+        (backward-char)
+        (rust-is-in-expression-context 'colon))
+
+       ;; A -> introduces a type
+       ((rust-looking-back-str "->") nil)
+
+       ;; If we are up against the beginning of a list, or after a comma inside
+       ;; of one, back up out of it and check what the list itself is
+       ((or
+         (equal 4 (rust-syntax-class-before-point))
+         (rust-looking-back-str ","))
+        (backward-up-list)
+        (rust-is-in-expression-context 'open-brace))
+
+       ;; A => introduces an expression
+       ((rust-looking-back-str "=>") t)
+
+       ;; A == introduces an expression
+       ((rust-looking-back-str "==") t)
+
+       ;; These operators can introduce expressions or types
+       ((looking-back "[-+=!?&*]" (1- (point)))
+        (backward-char)
+        (rust-is-in-expression-context 'ambiguous-operator))
+
+       ;; These operators always introduce expressions.  (Note that if this
+       ;; regexp finds a < it must not be an angle bracket, or it'd
+       ;; have been caught in the syntax-class check above instead of this.)
+       ((looking-back rust-re-pre-expression-operators (1- (point))) t)
+       ))))
+
+(defun rust-is-lt-char-operator ()
+  "Return t if the < sign just after point is an operator rather
+  than an opening angle bracket, otherwise nil."
+  
+  (let ((case-fold-search nil))
+    (save-excursion
+      (rust-rewind-irrelevant)
+      ;; We are now just after the character syntactically before the <.
+      (cond
+
+       ;; If we are looking back at a < that is not an angle bracket (but not
+       ;; two of them) then this is the second < in a bit shift operator
+       ((and (rust-looking-back-str "<")
+             (not (equal 4 (rust-syntax-class-before-point)))
+             (not (rust-looking-back-str "<<"))))
+       
+       ;; On the other hand, if we are after a closing paren/brace/bracket it
+       ;; can only be an operator, not an angle bracket.  Likewise, if we are
+       ;; after a string it's an operator.  (The string case could actually be
+       ;; valid in rust for character literals.)
+       ((member (rust-syntax-class-before-point) '(5 7 15)) t)
+
+       ;; If we are looking back at an operator, we know that we are at
+       ;; the beginning of an expression, and thus it has to be an angle
+       ;; bracket (starting a "<Type as Trait>::" construct.)
+       ((looking-back rust-re-pre-expression-operators (1- (point))) nil)
+
+       ;; If we are looking back at a keyword, it's an angle bracket
+       ;; unless that keyword is "self", "true" or "false"
+       ((rust-looking-back-symbols rust-mode-keywords)
+        (rust-looking-back-symbols '("self" "true" "false")))
+
+       ;; If we're looking back at an identifier, this depends on whether
+       ;; the identifier is part of an expression or a type
+       ((rust-looking-back-ident)
+        (backward-sexp)
+        (or
+         ;; The special types can't take type param lists, so a < after one is
+         ;; always an operator
+         (looking-at (regexp-opt rust-special-types 'symbols))
+         
+         (rust-is-in-expression-context 'ident)))
+
+       ;; Otherwise, assume it's an angle bracket
+       ))))
+
+(defun rust-electric-pair-inhibit-predicate-wrap (char)
+  "Wraps the default `electric-pair-inhibit-predicate' to prevent
+  inserting a \"matching\" > after a < that would be treated as a
+  less than sign rather than as an opening angle bracket."
+  (or
+   (when (= ?< char)
+     (save-excursion
+       (backward-char)
+       (rust-is-lt-char-operator)))
+   (funcall (default-value 'electric-pair-inhibit-predicate) char)))
+
+(defun rust-look-for-non-angle-bracket-lt-gt (bound)
+  "Find an angle bracket (\"<\" or \">\") that should be part of
+  a matched pair Relies on the fact that when it finds a < or >,
+  we have already decided which previous ones are angle brackets
+  and which ones are not.  So this only really works as a
+  font-lock-syntactic-keywords matcher--it won't work at
+  arbitrary positions without the earlier parts of the buffer
+  having already been covered."
+
+  (rust-conditional-re-search-forward
+   "[<>]" bound
+   (lambda ()
+     (goto-char (match-beginning 0))
+     (cond
+      ;; If matching is turned off suppress all of them
+      ((not rust-match-angle-brackets) t)
+
+      ;; We don't take < or > in strings or comments to be angle brackets
+      ((rust-in-str-or-cmnt) t)
+
+      ;; Inside a macro we don't really know the syntax.  Any < or > may be an
+      ;; angle bracket or it may not.  But we know that the other braces have
+      ;; to balance regardless of the < and >, so if we don't treat any < or >
+      ;; as angle brackets it won't mess up any paren balancing.
+      ((rust-in-macro) t)
+      
+      ((looking-at "<")
+       (rust-is-lt-char-operator))
+
+      ((looking-at ">")
+       (cond
+        ;; Don't treat the > in -> or => as an angle bracket
+        ((member (char-before (point)) '(?- ?=)) t)
+
+        ;; If we are at top level and not in any list, it can't be a closing
+        ;; angle bracket
+        ((>= 0 (rust-paren-level)) t)
+
+        ;; Otherwise, treat the > as a closing angle bracket if it would
+        ;; match an opening one
+        ((save-excursion
+           (backward-up-list)
+           (not (looking-at "<"))))))))))
+
 (defvar rust-mode-font-lock-syntactic-keywords
   (append
    ;; Handle raw strings and character literals:
-   `((rust-look-for-non-standard-string (1 "|" nil t) (4 "_" nil t) (5 "|" nil t) (6 "|" nil t) (7 "\"" nil t) (8 "\"" nil t)))))
+   `((rust-look-for-non-standard-string (1 "|" nil t) (4 "_" nil t) (5 "|" nil t) (6 "|" nil t) (7 "\"" nil t) (8 "\"" nil t)))
+   ;; Find where < and > characters represent operators rather than angle brackets:
+   '((rust-look-for-non-angle-bracket-lt-gt (0 "." t)))))
 
 (defun rust-mode-syntactic-face-function (state)
   "Syntactic face function to distinguish doc comments from other comments."
@@ -730,81 +1108,6 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
     ;; There is no opening brace, so consider the whole buffer to be one "defun"
     (goto-char (point-max))))
 
-;; Angle-bracket matching. This is kind of a hack designed to deal
-;; with the fact that we can't add angle-brackets to the list of
-;; matching characters unconditionally. Basically we just have some
-;; special-case code such that whenever `>` is typed, we look
-;; backwards to find a matching `<` and highlight it, whether or not
-;; this is *actually* appropriate. This could be annoying so it is
-;; configurable (but on by default because it's awesome).
-
-(defcustom rust-blink-matching-angle-brackets t
-  "Blink matching `<` (if any) when `>` is typed"
-  :type 'boolean
-  :group 'rust-mode)
-
-(defvar rust-point-before-matching-angle-bracket 0)
-
-(defvar rust-matching-angle-bracker-timer nil)
-
-(defun rust-find-matching-angle-bracket ()
-  (save-excursion
-    (let ((angle-brackets 1)
-          (start-point (point))
-          (invalid nil))
-      (while (and
-              ;; didn't find a match
-              (> angle-brackets 0)
-              ;; we have no guarantee of a match, so give up eventually
-	      (or (not blink-matching-paren-distance)
-		  (< (- start-point (point)) blink-matching-paren-distance))
-              ;; didn't hit the top of the buffer
-              (> (point) (point-min))
-              ;; didn't hit something else weird like a `;`
-              (not invalid))
-        (backward-char 1)
-        (cond
-         ((looking-at ">")
-           (setq angle-brackets (+ angle-brackets 1)))
-          ((looking-at "<")
-           (setq angle-brackets (- angle-brackets 1)))
-          ((looking-at "[;{]")
-           (setq invalid t))))
-      (cond
-       ((= angle-brackets 0) (point))
-       (t nil)))))
-
-(defun rust-restore-point-after-angle-bracket ()
-  (goto-char rust-point-before-matching-angle-bracket)
-  (when rust-matching-angle-bracker-timer
-    (cancel-timer rust-matching-angle-bracker-timer))
-  (setq rust-matching-angle-bracker-timer nil)
-  (remove-hook 'pre-command-hook 'rust-restore-point-after-angle-bracket))
-
-(defun rust-match-angle-bracket-hook ()
-  "If the most recently inserted character is a `>`, briefly moves point to matching `<` (if any)."
-  (interactive)
-  (when (and rust-blink-matching-angle-brackets
-             (looking-back ">" nil))
-    (let ((matching-angle-bracket-point (save-excursion
-                                          (backward-char 1)
-                                          (rust-find-matching-angle-bracket))))
-      (when matching-angle-bracket-point
-        (progn
-          (setq rust-point-before-matching-angle-bracket (point))
-          (goto-char matching-angle-bracket-point)
-          (add-hook 'pre-command-hook 'rust-restore-point-after-angle-bracket)
-          (setq rust-matching-angle-bracker-timer
-                (run-at-time blink-matching-delay nil 'rust-restore-point-after-angle-bracket)))))))
-
-(defun rust-match-angle-bracket ()
-  "The point should be placed on a `>`. Finds the matching `<` and moves point there."
-  (interactive)
-  (let ((matching-angle-bracket-point (rust-find-matching-angle-bracket)))
-    (if matching-angle-bracket-point
-        (goto-char matching-angle-bracket-point)
-      (message "no matching angle bracket found"))))
-
 ;; For compatibility with Emacs < 24, derive conditionally
 (defalias 'rust-parent-mode
   (if (fboundp 'prog-mode) 'prog-mode 'fundamental-mode))
@@ -847,7 +1150,7 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
   (setq-local beginning-of-defun-function 'rust-beginning-of-defun)
   (setq-local end-of-defun-function 'rust-end-of-defun)
   (setq-local parse-sexp-lookup-properties t)
-  (add-hook 'post-self-insert-hook 'rust-match-angle-bracket-hook))
+  (setq-local electric-pair-inhibit-predicate 'rust-electric-pair-inhibit-predicate-wrap))
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.rs\\'" . rust-mode))

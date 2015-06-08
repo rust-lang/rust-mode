@@ -710,6 +710,7 @@ INIT-POS, FINAL-POS are position symbols found in `rust-test-positions-alist'."
   (with-temp-buffer
     (rust-mode)
     (insert source-code)
+    (font-lock-fontify-buffer)
     (goto-char (rust-get-buffer-pos init-pos))
     (apply manip-func args)
     (should (equal (point) (rust-get-buffer-pos final-pos)))))
@@ -723,6 +724,7 @@ All positions are position symbols found in `rust-test-positions-alist'."
   (with-temp-buffer
     (rust-mode)
     (insert source-code)
+    (font-lock-fontify-buffer)
     (goto-char (rust-get-buffer-pos init-pos))
     (apply manip-func args)
     (should (equal (list (region-beginning) (region-end))
@@ -1303,7 +1305,7 @@ fn indented_already() {
     \n    // The previous line already has its spaces
 }
 ")
-
+    (font-lock-fontify-buffer)
     (goto-line 11)
     (move-to-column 0)
     (indent-for-tab-command)
@@ -1483,6 +1485,14 @@ la la\");
    ;; Needs to leave 1 space before "world"
    "\"hello \\\n world\""))
 
+(ert-deftest indent-multi-line-type-param-list ()
+  (test-indent
+   "
+pub fn foo<T,
+           V>() {
+    hello();
+}"))
+
 (defun rust-test-matching-parens (content pairs &optional nonparen-positions)
   "Assert that in rust-mode, given a buffer with the given `content',
   emacs's paren matching will find all of the pairs of positions
@@ -1562,3 +1572,640 @@ la la\");
    "r#\"\"\"#;\n'q'"
    '("r#\"\"\"#" font-lock-string-face
      "'q'" font-lock-string-face)))
+
+(ert-deftest rust-test-basic-paren-matching ()
+  (rust-test-matching-parens
+   "
+fn foo() {
+    let a = [1, 2, 3];
+}"
+   '((8 9) ;; Parens of foo()
+     (11 36) ;; Curly braces
+     (25 33) ;; Square brackets
+   )))
+
+(ert-deftest rust-test-paren-matching-generic-fn ()
+  (rust-test-matching-parens
+   "
+fn foo<A>() {
+}"
+   '((8 10) ;; Angle brackets <A>
+     (11 12) ;; Parens
+     (14 16) ;; Curly braces
+     )))
+
+(ert-deftest rust-test-paren-matching-generic-fn-with-return-value ()
+  (rust-test-matching-parens
+   "
+fn foo<A>() -> bool {
+    false
+}"
+   '((8 10) ;; Angle brackets <A>
+     (11 12) ;; Parens
+     (22 34) ;; Curly braces
+     )
+   
+   '(15 ;; The ">" in "->" is not an angle bracket
+     )))
+
+(ert-deftest rust-test-paren-matching-match-stmt ()
+  (rust-test-matching-parens
+   "
+fn foo() {
+    something_str(match <Type as Trait>::method() {
+        Some(_) => \"Got some\",
+        None => \"Nada\"
+    });
+}"
+   '((8 9) ;; parens of fn foo
+     (11 127) ;; curly braces of foo
+     (30 124) ;; parens of something_str
+     (37 51) ;; angle brackets of <Type as Trait>
+     (60 61) ;; parens of method()
+     (63 123) ;; curly braces of match
+     (77 79) ;; parens of Some(_)
+     )
+   
+   '(82 ;; > in first =>
+     112 ;; > in second =>
+     )))
+
+(ert-deftest rust-test-paren-matching-bitshift-operators ()
+  (rust-test-matching-parens
+  "
+fn foo(z:i32) {
+    let a:Option<Result<i32,i32>> = Some(Ok(4 >> 1));
+    let b = a.map(|x| x.map(|y| y << 3));
+    let trick_question = z<<<Type as Trait>::method();  // First two <s are not brackets, third is
+}"
+    '((34 50) ;; angle brackets of Option
+      (41 49) ;; angle brackets of Result
+      (142 156) ;; angle brackets of <Type as Trait>
+      )
+    '(64 ;; The >> inside Some(Ok()) are not angle brackets
+      65 ;; The >> inside Some(Ok()) are not angle brackets
+      106 ;; The << inside map() are not angle brackets
+      107 ;; The << inside map() are not angle brackets
+      140 ;; The << before <Type as Trait> are not angle brackets
+      141 ;; The << before <Type as Trait> are not angle brackets
+      183 ;; The < inside the comment
+      )))
+
+(ert-deftest rust-test-paren-matching-angle-bracket-after-colon-ident ()
+  (rust-test-matching-parens
+   "
+struct Bla<T> {
+    a:Option<(i32,Option<bool>)>,
+    b:Option<T>,
+    c:bool
+}
+
+fn f(x:i32,y:Option<i32>) {
+    let z:Option<i32> = None;
+    let b:Bla<i8> = Bla{
+        a:None,
+        b:None,
+        c:x<y.unwrap();
+    }
+}"
+   '((12 14) ;; Angle brackets of Bla<T>
+     (30 49) ;; Outer angle brackets of a:Option<...>
+     (42 47) ;; Inner angle brackets of Option<bool>
+     (64 66) ;; Angle brackets of Option<T>
+     (102 106) ;; Angle brackets of y:Option<i32>
+     (127 131) ;; Angle brackets of z:Option<i32>
+     (154 157) ;; Angle brackets of b:Bla<i8>
+     )
+   '(209 ;; less than operator in c:x<y.unwrap...
+     )))
+
+(ert-deftest rust-test-paren-matching-struct-literals ()
+  (rust-test-matching-parens
+   "
+fn foo(x:i32) -> Bar {
+    Bar {
+        b:x<3
+    }
+}"
+  '()
+  '(17 ;; the -> is not a brace
+    46 ;; x<3 the < is a less than sign
+    ))
+  )
+
+(ert-deftest rust-test-paren-matching-nested-struct-literals ()
+  (rust-test-matching-parens
+   "
+fn f(x:i32,y:i32) -> Foo<Bar> {
+    Foo{
+        bar:Bar{
+            a:3,
+            b:x<y
+        }
+    }
+}
+"
+   '((26 30)) ;; Angle brackets of Foo<Bar>
+   )
+  '(92 ;; less than operator x<y
+    ))
+
+(ert-deftest rust-test-paren-matching-fn-types-in-type-params ()
+  (rust-test-matching-parens
+   "
+fn foo<T:Fn() -> X<Y>>() -> Z {
+}
+"
+   '((8 23) ;; The angle brackets of foo<T...>
+     (20 22 ;; The angle brackets of X<Y>
+         ))
+   '(17 ;; The first ->
+     28 ;; The second ->
+     )
+   ))
+
+(ert-deftest rust-test-paren-matching-lt-ops-in-fn-params ()
+  (rust-test-matching-parens
+   "
+fn foo(x:i32) {
+    f(x < 3);
+}
+"
+   '()
+   '(26 ;; The < inside f is a less than operator
+     )
+   ))
+
+(ert-deftest rust-test-paren-matching-lt-ops-in-fn-params ()
+  (rust-test-matching-parens
+   "
+fn foo(x:i32) -> bool {
+    return x < 3;
+}
+"
+   '()
+   '(17 ;; The ->
+     39 ;; The < after return is a less than operator
+     )
+   ))
+
+(ert-deftest rust-test-type-paren-matching-angle-brackets-in-type-items ()
+  (rust-test-matching-parens
+   "
+type Foo = Blah<Z,Y>;
+type Bar<X> = (Foo, Bletch<X>);
+type ThisThing<Z,A,D,F> = HereYouGo<Z,Y<Fn(A) -> B<C<D>>,E<F>>>;"
+   '((17 21) ;; Angle brackets of Blah<Z,Y>
+     (32 34) ;; Angle brackets of Bar<X>
+     (50 52) ;; Angle brackets of Bletch<X>
+     (70 78) ;; Angle brackets of ThisThing<Z,A,D,F>
+     (91 118) ;; Angle brackets of HereYouGo<...>
+     (95 117) ;; Angle brackets of Y<Fn...>
+     (106 111) ;; Angle brackets of B<C<D>>
+     (108 110) ;; Angle brackets of C<D>
+     (114 116) ;; Angle brackets of E<F>
+     )))
+
+(ert-deftest rust-test-paren-matching-tuple-like-struct ()
+  (rust-test-matching-parens
+   "
+struct A(Option<B>);
+struct C<Q>(Result<Q,i32>);"
+   '((17 19) ;; The angle brackets <B>
+     (10 20) ;; The parens of A();
+     (31 33) ;; The angle brackets of C<Q>
+     (41 47) ;; The angle brackets of Result<Q,i32>
+     )
+   '()))
+
+(ert-deftest rust-test-paren-matching-in-enum ()
+  (rust-test-matching-parens
+   "
+enum Boo<A> {
+    TupleLike(Option<A>),
+    StructLike{foo: Result<A,i32>}
+}"
+   '((10 12) ;; Angle brackets of Boo<A>
+     (36 38) ;; Angle brackets of Option<A>
+     (68 74) ;; Angle brackets of Result<A,i32>
+     )))
+
+(ert-deftest rust-test-paren-matching-assoc-type-bounds ()
+  (rust-test-matching-parens
+   "impl <A:B<AssocType = C<A> >> Thing<A> {}"
+   '((6 29) ;; Outer angle brackets of impl
+     (10 28) ;; Outer angle brackets of B<AssocType = C<A>>
+     (24 26) ;; Inner angle brackets of C<A>
+     (36 38) ;; Angle brackets of Thing<A>
+     )
+   ))
+
+(ert-deftest rust-test-paren-matching-plus-signs-in-expressions-and-bounds ()
+  ;; Note that as I write this, the function "bluh" below does not compile, but
+  ;; it warns that the equality constraint in a where clause is "not yet
+  ;; supported."  It seems that the compiler will support this eventually, so
+  ;; the emacs mode needs to support it.
+  (rust-test-matching-parens
+   "fn foo<A:Trait1+Trait2<i32>,B>(a:A,b:B) -> bool where B:Trait3<Foo>+Trait4<Bar> {
+    2 + a < 3 && 3 + b > 11
+}
+
+fn bluh<A>() where A:Fn()+MyTrait<i32>, MyTrait<A>::AssocType = Option<bool> {
+}
+
+fn fluh<C>() where C:Fn(i32) -> (i32, i32) + SomeTrait<i32>, C::AssocType = OtherThing<bool> {
+}"
+   '((7 30) ;; Angle brackets of foo<...>
+     (23 27) ;; Angle brackets of Trait2<i32>
+     (63 67) ;; Angle brackets of Trait3<Foo>
+     (75 79) ;; Angle brackets of Trait4<Bar>
+
+     (121 123) ;; Angle brackets of bluh<A>
+     (147 151) ;; Angle brackets of MyTrait<i32>
+
+     (161 163) ;; Angle brackets of MyTrait<A>
+     (184 189) ;; Angle brackets of Option<bool>
+
+     (203 205) ;; Angle brackets of <C>
+     (250 254) ;; Angle brackets of SomeTrait<i32>
+     (282 287) ;; Angle brackets of Option<bool>
+     )
+   '(93 ;; Less-than sign of a < 3
+     106 ;; Greater than sign of b > 11
+     )))
+
+(ert-deftest rust-test-paren-matching-generic-type-in-tuple-return-type ()
+  (rust-test-matching-parens
+   "pub fn take(mut self) -> (EmptyBucket<K, V, M>, K, V) {}"
+   '((38 46))
+   ))
+
+(ert-deftest rust-test-paren-matching-references-and-logical-and ()
+  (rust-test-matching-parens
+   "
+fn ampersand_check(a: &Option<i32>, b:bool) -> &Option<u32> {
+    a.map(|x| {
+        b && x < 32
+    })
+}"
+   '((31 35) ;; Option<i32>
+     (56 60) ;; Option<u32>
+     )
+   '(95 ;; x < 32
+     )
+   )
+  )
+
+(ert-deftest rust-test-paren-matching-lt-sign-in-if-statement ()
+  (rust-test-matching-parens
+   "
+fn if_check(a:i32,b:i32,c:i32) {
+    if a + b < c {
+        
+    }
+    if a < b {
+        
+    }
+    if (c < a) {
+        
+    }
+}
+
+fn while_check(x:i32,y:i32) -> bool {
+    while x < y {
+    }
+    for x in y < x {
+    }
+    match y < z {
+        true => (), _ => ()
+    }
+    return z < y;
+}"
+   '()
+   '(48 ;; b < c
+     78 ;; a < b
+     109 ;; (c < a)
+
+     184 ;; x < y
+     211 ;; y < x
+     235 ;; y < z
+     288 ;; z < y
+     )))
+
+(ert-deftest rust-test-paren-matching-lt-expr-with-field ()
+  (rust-test-matching-parens
+   "fn foo() { x.y < 3 }"
+   '()
+   '(16 ;; x.y < 3
+     )))
+
+(ert-deftest rust-test-paren-matching-lt-expr-with-quote ()
+  (rust-test-matching-parens
+   "
+fn quote_check() {
+    'x' < y;
+     \"y\" < x;
+    r##\"z\"## < q;
+    a <= 3 && b < '2'
+}"
+   '()
+   '(29 ;; 'x' < y
+     42 ;; "y" < x
+     60 ;; r##"z"## < q
+     71 ;; a <= '3'
+     81 ;; b < '2'
+     )))
+
+(ert-deftest rust-test-paren-matching-keywords-capitalized-are-ok-type-names ()
+  (rust-test-matching-parens
+   "
+fn foo() -> Box<i32> {
+    let z:If<bool> = If(a < 3);
+}"
+   '((17 21) ;; Box<i32>
+     (37 42) ;; If<bool>
+     )
+   '(51 ;; If(a < 3)
+     )))
+
+(ert-deftest rust-test-paren-matching-lt-expression-inside-macro ()
+  (rust-test-matching-parens
+   "fn bla() { assert!(x < y); }"
+   '()
+   '(22 ;; x < y
+     )))
+
+(ert-deftest rust-test-paren-matching-array-types-with-generics ()
+  (rust-test-matching-parens
+   "fn boo () -> [Option<i32>] {}"
+   '((21 25))))
+
+(ert-deftest rust-test-paren-matching-angle-bracket-inner-reference ()
+  (rust-test-matching-parens
+   "fn x() -> Option<&Node<T>> {}"
+   '((17 26) ;; Option
+     (23 25) ;; Node
+     )))
+
+(ert-deftest rust-test-paren-matching-lt-operator-after-semicolon ()
+  (rust-test-matching-parens
+   "fn f(x:i32) -> bool { (); x < 3 }"
+   '()
+   '(29
+     )))
+
+(ert-deftest rust-test-paren-matching-lt-operator-after-comma ()
+  (rust-test-matching-parens
+   "fn foo() {
+    (e, a < b)
+}"
+   '((16 25) ;; The parens ()
+     )
+   '(22 ;; The < operator
+     )))
+
+(ert-deftest rust-test-paren-matching-lt-operator-after-let ()
+  (rust-test-matching-parens
+   "fn main() {
+    let x = a < b;
+}"
+   '((11 32) ;; The { }
+     )
+   '(27 ;; The < operator
+     )))
+
+(ert-deftest rust-test-paren-matching-two-lt-ops-in-a-row ()
+  (rust-test-matching-parens
+   "fn next(&mut self) -> Option<<I as Iterator>::Item>"
+   '((29 51) ;; Outer Option<>
+     (30 44) ;; Inner <I as Iterator>
+     )
+   '(21
+     )))
+
+(ert-deftest rust-test-paren-matching-lt-after-caret ()
+  (rust-test-matching-parens
+   "fn foo() { x^2 < 3 }"
+   '((10 20) ;; The { }
+     )
+   '(16 ;; The < operator
+     )))
+
+(ert-deftest rust-test-paren-matching-lt-operator-after-special-type ()
+  (rust-test-matching-parens
+   "fn foo() { low as uint <= c }"
+   '((10 29))
+   '(24)))
+
+(ert-deftest rust-test-paren-matching-lt-operator-after-closing-curly-brace ()
+  (rust-test-matching-parens
+   "fn main() { if true {} a < 3 }"
+   '((11 30)
+     )
+   '(26)))
+
+(ert-deftest rust-test-paren-matching-const ()
+  (rust-test-matching-parens
+   "
+const BLA = 1 << 3;
+const BLUB = 2 < 4;"
+   '()
+   '(16
+     17 ;; Both chars of the << in 1 << 3
+     37 ;; The < in 2 < 4
+     )))
+
+(ert-deftest rust-test-paren-matching-c-like-enum ()
+  (rust-test-matching-parens
+   "
+enum CLikeEnum {
+    Two = 1 << 1,
+    Four = 1 << 2 
+}"
+   '((17 56 ;; The { } of the enum
+         ))
+   '(31
+     32 ;; The first <<
+     50
+     51 ;; The second <<
+     )))
+
+(ert-deftest rust-test-paren-matching-no-angle-brackets-in-macros ()
+  (rust-test-matching-parens
+   "
+fn foo<A>(a:A) {
+    macro_a!( foo::<ignore the bracets> );
+    macro_b![ foo as Option<B> ];
+}
+
+macro_c!{
+    struct Boo<D> {}
+}"
+   '((8 10))
+   ;; Inside macros, it should not find any angle brackets, even if it normally
+   ;; would
+   '(38 ;; macro_a <
+     57 ;; macro_a >
+     89 ;; macro_b <
+     91 ;; macro_b >
+     123 ;; macro_c <
+     125 ;; macro_d >
+     )))
+
+(ert-deftest rust-test-paren-matching-type-with-module-name ()
+  (rust-test-matching-parens
+   "
+const X: libc::c_int = 1 << 2;
+fn main() {
+    let z: libc::c_uint = 1 << 4;
+}
+"
+   '((43 79)) ;; The curly braces
+   '(27
+     28 ;; The first <<
+     73
+     74 ;; The second <<
+     )))
+
+(ert-deftest rust-test-paren-matching-qualififed-struct-literal ()
+  (rust-test-matching-parens
+   "
+fn foo() -> Fn(asd) -> F<V> {
+    let z = foo::Struct{ b: 1 << 4, c: 2 < 4  }
+}"
+   '((30 80) ;; Outer curly brackets
+     )
+   '(62
+     63 ;; The shift operator
+     73 ;; The less than operator
+     )))
+
+(ert-deftest rust-test-paren-matching-let-mut ()
+  (rust-test-matching-parens
+   "
+fn f() {
+    let mut b = 1 < 3;
+    let mut i = 1 << 3;
+}
+"
+   '()
+   '(28 ;; 1 < 3
+     51
+     52 ;; 1 << 3
+     )))
+
+(ert-deftest rust-test-paren-matching-as-ref-type ()
+  (rust-test-matching-parens
+   "fn f() {
+    let a = b as &Foo<Bar>;
+}"
+   '((31 35) ;; Angle brackets Foo<Bar>
+     )))
+
+(ert-deftest rust-test-paren-matching-type-ascription ()
+  (rust-test-matching-parens
+   "
+fn rfc803() {
+    let z = a < b:FunnkyThing<int>;
+    let s = Foo {
+        a: b < 3,
+        b: d:CrazyStuff<int> < 3,
+        c: 2 < x:CrazyStuff<uint>
+    }
+}"
+   '((45 49) ;; FunkyThing<int>
+     (111 115) ;; CrazyStuff<int>
+     (149 154) ;; CrazyStuff<uint>
+     )
+   '(30 ;; a < b
+     83 ;; b < 3
+     117 ;; d... < 3
+     135 ;; 2 < x
+     )))
+
+(ert-deftest rust-test-paren-matching-angle-brackets-in-enum-with-where-claause ()
+  (rust-test-matching-parens
+   "
+enum MyEnum<T> where T:std::fmt::Debug {
+    Thing(Option<T>)
+}"
+   '((13 15) ;; MyEnum<T>
+     (59 61) ;; Option<T>
+     )))
+
+(ert-deftest rust-test-paren-matching-where-clauses-with-closure-types ()
+  (rust-test-matching-parens
+   "
+enum Boo<'a,T> where T:Fn() -> Option<&'a str> + 'a {
+   Thingy(Option<&'a T>)
+}
+
+fn foo<'a>() -> Result<B,C> where C::X: D<A>, B:FnMut() -> Option<Q>+'a {
+    Foo(a < b)
+}
+
+type Foo<T> where T: Copy = Box<T>;
+"
+   '((10 15) ;; Boo<'a,T>
+     (39 47) ;; Option<&'a str>
+     (72 78) ;; Option<&'a T>
+
+     (106 110) ;; Result<B,C>
+     (125 127) ;; D<A>
+     (149 151) ;; Option<Q>
+     (184 186) ;; Foo<T>
+     (207 209) ;; Box<T>
+     )
+
+   '(168 ;; Foo(a < b)
+     )
+   ))
+
+(ert-deftest rust-test-angle-bracket-matching-turned-off ()
+  (let ((rust-match-angle-brackets nil))
+    (rust-test-matching-parens
+     "fn foo<a>() {}"
+     '((10 11))
+     '(7 9))))
+
+;; If electric-pair-mode is available, load it and run the tests that use it.  If not,
+;; no error--the tests will be skipped.
+(require 'elec-pair nil t)
+
+;; The emacs 23 version of ERT does not have test skipping functionality.  So
+;; don't even define these tests if elec-pair is not available.
+(when (featurep 'elec-pair)
+  (defun test-electric-pair-insert (original point-pos char closer)
+    (let ((old-electric-pair-mode electric-pair-mode))
+      (electric-pair-mode 1)
+      (unwind-protect
+          (with-temp-buffer
+            (rust-mode)
+            (insert original)
+            (font-lock-fontify-buffer)
+
+            (goto-char point-pos)
+            (deactivate-mark)
+            (let ((last-command-event char)) (self-insert-command 1))
+            (should (equal (char-after)
+                           (or closer (aref original point-pos)))))
+        (electric-pair-mode (or old-electric-pair-mode 1)))))
+
+  (ert-deftest rust-test-electric-pair-generic-fn ()
+    (test-electric-pair-insert "fn foo() { }" 7 ?< ?>))
+
+  (ert-deftest rust-test-electric-pair-impl-param ()
+    (test-electric-pair-insert "impl Foo<T> for Bar<T>" 5 ?< ?>))
+
+  (ert-deftest rust-test-electric-pair-impl-for-type-param ()
+    (test-electric-pair-insert "impl<T> Foo<T> for Bar" 22 ?< ?>))
+
+  (ert-deftest rust-test-electric-pair-lt-expression ()
+    (test-electric-pair-insert "fn foo(bar:i32) -> bool { bar  }" 30 ?< nil))
+
+  (ert-deftest rust-test-electric-pair-lt-expression-in-struct-literal ()
+    (test-electric-pair-insert "fn foo(x:i32) -> Bar { Bar { a:(bleh() + whatever::<X>()), b:x   }  }" 63 ?< nil))
+
+  (ert-deftest rust-test-electric-pair-lt-expression-capitalized-keyword ()
+    (test-electric-pair-insert "fn foo() -> Box" 16 ?< ?>))
+  )
