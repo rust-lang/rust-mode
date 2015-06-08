@@ -374,6 +374,43 @@
              ("fn" . font-lock-function-name-face)
              ("static" . font-lock-constant-face)))))
 
+(defun rust-extend-region-raw-string ()
+  "Extend the region given by `font-lock-beg' and `font-lock-end'
+  to include the beginning of a string if it includes part of it.
+  Adjusts to include the r[#] of a raw string as well."
+  
+  (let* ((orig-beg font-lock-beg)
+         (orig-end font-lock-end)
+         (beg-ppss (syntax-ppss font-lock-beg))
+         (beg-in-str (nth 3 beg-ppss))
+         (end-ppss (syntax-ppss font-lock-end))
+         (end-in-str (nth 3 end-ppss)))
+    
+    (when (and beg-in-str (> font-lock-beg (nth 8 beg-ppss)))
+      (setq font-lock-beg str-beg)
+      (while (equal ?# (char-before font-lock-beg))
+        (setq font-lock-beg (1- font-lock-beg)))
+      (when (equal ?r (char-before font-lock-beg))
+        (setq font-lock-beg (1- font-lock-beg))))
+    
+    (when end-in-str
+      (save-excursion
+        (goto-char (nth 8 end-ppss))
+        (ignore-errors (forward-sexp))
+        (setq font-lock-end (max font-lock-end (point)))))
+    
+    ;; If we have the beginning of a raw string in the region, make sure we have the end of
+    ;; it.
+    (when (or beg-in-str end-in-str)
+      (save-excursion
+        (goto-char font-lock-beg)
+        (while (and (< (point) font-lock-end) (ignore-errors (rust-look-for-raw-string (buffer-end 1)))))
+        (setq font-lock-end (max font-lock-end (point)))))
+
+    (or (/= font-lock-beg orig-beg)
+        (/= font-lock-end orig-end))
+    ))
+
 (defun rust-look-for-raw-string (bound)
   ;; Find a raw string, but only if it's not in the middle of another string or
   ;; a comment
@@ -702,6 +739,7 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
   (setq-local indent-line-function 'rust-mode-indent-line)
 
   ;; Fonts
+  (add-to-list 'font-lock-extend-region-functions 'rust-extend-region-raw-string)
   (setq-local font-lock-defaults '(rust-mode-font-lock-keywords nil nil nil nil (font-lock-syntactic-keywords . rust-mode-font-lock-syntactic-keywords)))
 
   ;; Misc

@@ -1067,6 +1067,24 @@ this_is_not_a_string();)"
      "r\" this is a comment\n" font-lock-comment-face
      "\"this is a string\"" font-lock-string-face)))
 
+(ert-deftest font-lock-raw-string-constant ()
+  ;; There was an issue in which a multi-line raw string would be fontified
+  ;; correctly if inserted, but then incorrectly if one of the lines was then
+  ;; edited.  This test replicates how font-lock responds when text in the
+  ;; buffer is modified in order to reproduce it.
+  (with-temp-buffer
+    (rust-mode)
+    (font-lock-fontify-buffer)
+    (insert "const BOO:&str = r#\"\nBOO\"#;")
+    (beginning-of-buffer)
+    (insert " ")
+    (font-lock-after-change-function 1 2 0)
+
+    (should (equal 'font-lock-string-face (get-text-property 19 'face))) ;; Opening "r" of raw string
+    (should (equal 'font-lock-string-face (get-text-property 27 'face))) ;; Closing "#" of raw string
+    (should (equal nil (get-text-property 28 'face))) ;; Semicolon--should not be part of the string
+    ))
+
 (ert-deftest indent-method-chains-no-align ()
   (let ((rust-indent-method-chain nil)) (test-indent
    "
