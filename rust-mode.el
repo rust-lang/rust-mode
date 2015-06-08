@@ -411,6 +411,32 @@
         (/= font-lock-end orig-end))
     ))
 
+(defun rust-conditional-re-search-forward (regexp bound condition)
+  ;; Search forward for regexp (with bound).  If found, call condition and return the found
+  ;; match only if it returns true.
+  (let* (found
+         found-ret-list
+         (ret-list (save-excursion
+                     (while (and (not found) (re-search-forward regexp bound t))
+                       (setq
+                        found-ret-list (list (point) (match-data))
+                        found (save-match-data (save-excursion (ignore-errors (funcall condition)))))
+                       ;; If the condition filters out a match, need to search
+                       ;; again just after its beginning.  This will allow
+                       ;; cases such as:
+                       ;;    "bar" r"foo"
+                       ;; where the filtered out search (r" r") should not
+                       ;; prevent finding another one that begins in the middle
+                       ;; of it (r"foo")
+                       (when (not found)
+                         (goto-char (1+ (match-beginning 0))))
+                       )
+                     (when found found-ret-list))))
+    (when ret-list
+      (goto-char (nth 0 ret-list))
+      (set-match-data (nth 1 ret-list))
+      (nth 0 ret-list))))
+
 (defun rust-look-for-raw-string (bound)
   ;; Find a raw string, but only if it's not in the middle of another string or
   ;; a comment
@@ -450,23 +476,16 @@
 
              ;; No "#"s - capture the ending quote (using a backref to group 3,
              ;; so that we can't match a quote if we had "#"s) as group 6
-             (group (backref 3))))))
-         ;; If it matches, it ends up with the starting character of the string
-         ;; as group 1, any ending backslashes as group 4, and the ending
-         ;; character as either group 5 or group 6.
-
-         (ret-list (save-excursion
-                    (let* ((match-end (re-search-forward raw-str-regexp bound t))
-                           (ret-list (and match-end (list match-end (match-beginning 0) (match-data) (point)))))
-                      (when (and ret-list
-                                 (save-excursion
-                                   (goto-char (nth 1 ret-list))
-                                   (not (rust-in-str-or-cmnt))))
-                        ret-list)))))
-    (when ret-list
-      (goto-char (nth 3 ret-list))
-      (set-match-data (nth 2 ret-list))
-      (nth 0 ret-list))))
+             (group (backref 3))))
+           ;; If it matches, it ends up with the starting character of the string
+           ;; as group 1, any ending backslashes as group 4, and the ending
+           ;; character as either group 5 or group 6.
+           )))
+    (rust-conditional-re-search-forward
+     raw-str-regexp bound
+     (lambda () (save-excursion
+                  (goto-char (match-beginning 0))
+                  (not (rust-in-str-or-cmnt)))))))
 
 (defvar rust-mode-font-lock-syntactic-keywords
   (append

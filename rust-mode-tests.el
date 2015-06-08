@@ -362,6 +362,29 @@ use foo::bar::baz;
 fn foo() { }
 "))
 
+(ert-deftest font-lock-multi-raw-strings-in-a-row ()
+  (rust-test-font-lock
+   "
+r\"foo\\\", \"bar\", r\"bar\";
+r\"foo\\.\", \"bar\", r\"bar\";
+r\"foo\\..\", \"bar\", r\"foo\\..\\bar\";
+r\"\\\", \"foo\", r\"\\foo\";
+not_a_string();
+
+"
+
+   (apply 'append (mapcar (lambda (s) (list s 'font-lock-string-face))
+                          '("r\"foo\\\"" "\"bar\"" "r\"bar\""
+                            "r\"foo\\.\"" "\"bar\"" "r\"bar\""
+                            "r\"foo\\..\"" "\"bar\"" "r\"foo\\..\\bar\""
+                            "r\"\\\"" "\"foo\"" "r\"\\foo\"")))
+   ))
+
+(ert-deftest font-lock-raw-string-after-normal-string-ending-in-r ()
+  (rust-test-font-lock
+   "\"bar\" r\"foo\""
+   '("\"bar\"" font-lock-string-face "r\"foo\"" font-lock-string-face)))
+
 (ert-deftest indent-params-no-align ()
   (test-indent
    "
