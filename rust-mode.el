@@ -763,7 +763,7 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
   (setq-local beginning-of-defun-function 'rust-beginning-of-defun)
   (setq-local end-of-defun-function 'rust-end-of-defun)
   (setq-local parse-sexp-lookup-properties t)
-  (add-hook 'post-self-insert-hook 'rust-match-angle-bracket-hook))
+  (add-hook 'post-self-insert-hook 'rust-match-angle-bracket-hook nil t))
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.rs\\'" . rust-mode))
