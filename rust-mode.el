@@ -665,7 +665,7 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
 
 (defvar rust-point-before-matching-angle-bracket 0)
 
-(defvar rust-matching-angle-bracker-timer nil)
+(defvar rust-matching-angle-bracket-timer nil)
 
 (defun rust-find-matching-angle-bracket ()
   (save-excursion
@@ -696,9 +696,9 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
 
 (defun rust-restore-point-after-angle-bracket ()
   (goto-char rust-point-before-matching-angle-bracket)
-  (when rust-matching-angle-bracker-timer
-    (cancel-timer rust-matching-angle-bracker-timer))
-  (setq rust-matching-angle-bracker-timer nil)
+  (when rust-matching-angle-bracket-timer
+    (cancel-timer rust-matching-angle-bracket-timer))
+  (setq rust-matching-angle-bracket-timer nil)
   (remove-hook 'pre-command-hook 'rust-restore-point-after-angle-bracket))
 
 (defun rust-match-angle-bracket-hook ()
@@ -714,7 +714,7 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
           (setq rust-point-before-matching-angle-bracket (point))
           (goto-char matching-angle-bracket-point)
           (add-hook 'pre-command-hook 'rust-restore-point-after-angle-bracket)
-          (setq rust-matching-angle-bracker-timer
+          (setq rust-matching-angle-bracket-timer
                 (run-at-time blink-matching-delay nil 'rust-restore-point-after-angle-bracket)))))))
 
 (defun rust-match-angle-bracket ()
