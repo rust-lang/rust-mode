@@ -480,6 +480,16 @@
    ;; Handle raw strings:
    `((rust-look-for-raw-string (1 "|") (4 "_" nil t) (5 "|" nil t) (6 "|" nil t)))))
 
+(defun rust-mode-syntactic-face-function (state)
+  "Syntactic face function to distinguish doc comments from other comments."
+  (if (nth 3 state) 'font-lock-string-face
+    (save-excursion
+      (goto-char (nth 8 state))
+      (if (looking-at "/\\([*][*!][^*!]\\|/[/!][^/!]\\)")
+          'font-lock-doc-face
+        'font-lock-comment-face
+    ))))
+
 (defun rust-fill-prefix-for-comment-start (line-start)
   "Determine what to use for `fill-prefix' based on what is at the beginning of a line."
   (let ((result
@@ -740,7 +750,11 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
 
   ;; Fonts
   (add-to-list 'font-lock-extend-region-functions 'rust-extend-region-raw-string)
-  (setq-local font-lock-defaults '(rust-mode-font-lock-keywords nil nil nil nil (font-lock-syntactic-keywords . rust-mode-font-lock-syntactic-keywords)))
+  (setq-local font-lock-defaults '(rust-mode-font-lock-keywords
+                                   nil nil nil nil
+                                   (font-lock-syntactic-keywords . rust-mode-font-lock-syntactic-keywords)
+                                   (font-lock-syntactic-face-function . rust-mode-syntactic-face-function)
+                                   ))
 
   ;; Misc
   (setq-local comment-start "// ")
