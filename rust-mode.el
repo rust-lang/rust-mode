@@ -1176,14 +1176,14 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
                       " \\(?:[Ee]rror\\|\\([Ww]arning\\)\\):")))
       (cons re '(1 (2 . 4) (3 . 5) (6)))))
   "Specifications for matching errors in rustc invocations.
-See `compilation-error-regexp-alist for help on their format.")
+See `compilation-error-regexp-alist' for help on their format.")
 
 ;; Match test run failures and panics during compilation as
 ;; compilation warnings
 (defvar cargo-compilation-regexps
   '("^\\s-+thread '[^']+' panicked at \\('[^']+', \\([^:]+\\):\\([0-9]+\\)\\)" 2 3 nil nil 1)
   "Specifications for matching panics in cargo test invocations.
-See `compilation-error-regexp-alist for help on their format.")
+See `compilation-error-regexp-alist' for help on their format.")
 
 (eval-after-load 'compile
   '(progn
