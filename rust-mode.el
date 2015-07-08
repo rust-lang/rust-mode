@@ -459,14 +459,6 @@
             (goto-char (nth 8 end-ppss))
             (ignore-errors (forward-sexp))
             (setq font-lock-end (max font-lock-end (point)))))
-        
-        ;; If we have the beginning of a raw string in the region, make sure we have the end of
-        ;; it.
-        (when (or beg-in-str end-in-str)
-          (save-excursion
-            (goto-char font-lock-beg)
-            (while (and (< (point) font-lock-end) (ignore-errors (rust-look-for-raw-string (buffer-end 1)))))
-            (setq font-lock-end (max font-lock-end (point)))))
         )))
 
     (or (/= font-lock-beg orig-beg)

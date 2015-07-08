@@ -2168,6 +2168,35 @@ type Foo<T> where T: Copy = Box<T>;
      '((10 11))
      '(7 9))))
 
+
+(ert-deftest font-lock-extend-region-in-string ()
+  
+  (with-temp-buffer
+    (rust-mode)
+    (insert "
+fn foo() {
+    let x = r\"
+Fontification needs to include this whole string or none of it.
+             \"
+}")
+    (font-lock-fontify-buffer)
+    (let ((font-lock-beg 13)
+          (font-lock-end 42))
+      (rust-font-lock-extend-region)
+      (should (<= font-lock-beg 13))
+      (should (>= font-lock-end 106))
+      )
+    (let ((font-lock-beg 42)
+          (font-lock-end 108))
+      (rust-font-lock-extend-region)
+      (should (<= font-lock-beg 25))
+      (should (>= font-lock-end 108)))
+    (let ((font-lock-beg 1)
+          (font-lock-end 12))
+      (rust-font-lock-extend-region)
+      (should (<= font-lock-beg 1))
+      (should (>= font-lock-end 12)))))
+
 ;; If electric-pair-mode is available, load it and run the tests that use it.  If not,
 ;; no error--the tests will be skipped.
 (require 'elec-pair nil t)
