@@ -378,6 +378,7 @@
 ;; newer Emacs versions, but will work on Emacs 23.)
 (defun regexp-opt-symbols (words)
   (concat "\\_<" (regexp-opt words t) "\\_>"))
+(defconst rust-re-special-types (regexp-opt-symbols rust-special-types))
 
 (defvar rust-mode-font-lock-keywords
   (append
@@ -851,7 +852,7 @@
         (or
          ;; The special types can't take type param lists, so a < after one is
          ;; always an operator
-         (looking-at (regexp-opt rust-special-types 'symbols))
+         (looking-at rust-re-special-types)
          
          (rust-is-in-expression-context 'ident)))
 
