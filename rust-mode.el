@@ -531,7 +531,10 @@
 
       ;; No "#"s - capture the ending quote (using a backref to group 3,
       ;; so that we can't match a quote if we had "#"s) as group 6
-      (group (backref 3))))
+      (group (backref 3))
+
+      ;; If the raw string wasn't actually closed, go all the way to the end
+      string-end))
 
     ;; Character literal: match the beginning ' of a character literal
     ;; as group 7, and the ending one as group 8
