@@ -1110,6 +1110,41 @@ this_is_not_a_string();)"
     (should (equal nil (get-text-property 28 'face))) ;; Semicolon--should not be part of the string
     ))
 
+(ert-deftest font-lock-runaway-raw-string ()
+  (rust-test-font-lock
+   "const Z = r#\"my raw string\";\n// oops this is still in the string"
+   '("const" font-lock-keyword-face
+     "Z" font-lock-type-face
+     "r#\"my raw string\";\n// oops this is still in the string" font-lock-string-face))
+  )
+
+(ert-deftest font-lock-recognize-closing-raw-string ()
+  (with-temp-buffer
+    (rust-mode)
+    (insert "const foo = r##\"
+1...............................................50
+1...............................................50
+1...............................................50
+1...............195-->\"; let ...................50
+1...............................................50
+1...............................................50
+1...............................................50
+1...............................................50
+1...............................................50
+1......................500......................50
+\"#;
+")
+    (font-lock-fontify-buffer)
+    (goto-char 530)
+    (insert "#")
+    ;; We have now closed the raw string.  Check that the whole string is
+    ;; recognized after the change
+    (font-lock-after-change-function (1- (point)) (point) 0)
+    (should (equal 'font-lock-string-face (get-text-property 195 'face))) ;; The "let"
+    (should (equal 'font-lock-string-face (get-text-property 500 'face))) ;; The "500"
+    (should (equal nil (get-text-property 531 'face))) ;; The second ";"
+    ))
+
 ;;; Documentation comments
 
 (ert-deftest font-lock-doc-line-comment-parent ()

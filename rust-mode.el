@@ -428,24 +428,18 @@
   part of it.  Adjusts to include the r[#] of a raw string as
   well."
 
-  (let ((orig-beg font-lock-beg)
-        (orig-end font-lock-end))
-    (cond
-     ;; If we are not syntactically fontified yet, we cannot correctly cover
-     ;; anything less than the full buffer. The syntactic fontification
-     ;; modifies the syntax, so until it's done we can't use the syntax to
-     ;; determine what to fontify.
-     ((< (or font-lock-syntactically-fontified 0) font-lock-end)
-      (setq font-lock-beg 1)
-      (setq font-lock-end (buffer-end 1)))
-     
-     ((let* ((beg-ppss (syntax-ppss font-lock-beg))
-             (beg-in-cmnt (and (nth 4 beg-ppss) (nth 8 beg-ppss)))
-             (beg-in-str (nth 3 beg-ppss))
-             (end-ppss (syntax-ppss font-lock-end))
-             (end-in-str (nth 3 end-ppss)))
-        
-        (when (and beg-in-str (> font-lock-beg (nth 8 beg-ppss)))
+  (save-excursion
+    (let ((orig-beg font-lock-beg)
+          (orig-end font-lock-end))
+
+      (let*
+          ;; It's safe to call `syntax-ppss' here on positions that are
+          ;; already syntactically fontified
+          ((beg-ppss (syntax-ppss font-lock-beg))
+           (beg-in-cmnt (and beg-ppss (nth 4 beg-ppss) (nth 8 beg-ppss)))
+           (beg-in-str (and beg-ppss (nth 3 beg-ppss) (nth 8 beg-ppss))))
+
+        (when (and beg-in-str (>= font-lock-beg beg-in-str))
           (setq font-lock-beg (nth 8 beg-ppss))
           (while (equal ?# (char-before font-lock-beg))
             (setq font-lock-beg (1- font-lock-beg)))
@@ -453,18 +447,24 @@
             (setq font-lock-beg (1- font-lock-beg))))
 
         (when (and beg-in-cmnt (> font-lock-beg beg-in-cmnt))
-          (setq font-lock-beg beg-in-cmnt))
-        
-        (when end-in-str
-          (save-excursion
-            (goto-char (nth 8 end-ppss))
-            (ignore-errors (forward-sexp))
-            (setq font-lock-end (max font-lock-end (point)))))
-        )))
+          (setq font-lock-beg beg-in-cmnt)))
 
-    (or (/= font-lock-beg orig-beg)
-        (/= font-lock-end orig-end))
-    ))
+      ;; We need to make sure that if the region ends inside a raw string, we
+      ;; extend it out past the end of it.  But we can't use `syntax-ppss' to
+      ;; detect that, becaue that depends on font-lock already being done, and we
+      ;; are trying to figure out how much to font-lock before that.  So we use
+      ;; the regexp directly.
+      (save-match-data
+        (goto-char font-lock-beg)
+        (while (and (< (point) font-lock-end)
+                    (re-search-forward rust-re-non-standard-string (buffer-end 1) t)
+                    (<= (match-beginning 0) font-lock-end))
+          (setq font-lock-end (max font-lock-end (match-end 0)))
+          (goto-char (1+ (match-beginning 0)))))
+
+      (or (/= font-lock-beg orig-beg)
+          (/= font-lock-end orig-end))
+      )))
 
 (defun rust-conditional-re-search-forward (regexp bound condition)
   ;; Search forward for regexp (with bound).  If found, call condition and return the found
@@ -492,77 +492,82 @@
       (set-match-data (nth 1 ret-list))
       (nth 0 ret-list))))
 
+(defconst rust-re-non-standard-string
+  (rx
+   (or
+    ;; Raw string: if it matches, it ends up with the starting character
+    ;; of the string as group 1, any ending backslashes as group 4, and
+    ;; the ending character as either group 5 or group 6.
+    (seq
+     ;; The "r" starts the raw string.  Capture it as group 1 to mark it as such syntactically:
+     (group "r")
+
+     ;; Then either:
+     (or
+      ;; a sequence at least one "#" (followed by quote).  Capture all
+      ;; but the last "#" as group 2 for this case.
+      (seq (group (* "#")) "#\"")
+
+      ;; ...or a quote without any "#".  Capture it as group 3. This is
+      ;; used later to match the opposite quote only if this capture
+      ;; occurred
+      (group "\""))
+
+     ;; The contents of the string:
+     (*? anything)
+
+     ;; If there are any backslashes at the end of the string, capture
+     ;; them as group 4 so we can suppress the normal escape syntax
+     ;; parsing:
+     (group (* "\\"))
+
+     ;; Then the end of the string--the backreferences ensure that we
+     ;; only match the kind of ending that corresponds to the beginning
+     ;; we had:
+     (or
+      ;; There were "#"s - capture the last one as group 5 to mark it as
+      ;; the end of the string:
+      (seq "\"" (backref 2) (group "#"))
+
+      ;; No "#"s - capture the ending quote (using a backref to group 3,
+      ;; so that we can't match a quote if we had "#"s) as group 6
+      (group (backref 3))
+
+      ;; If the raw string wasn't actually closed, go all the way to the end
+      string-end))
+
+    ;; Character literal: match the beginning ' of a character literal
+    ;; as group 7, and the ending one as group 8
+    (seq
+     (group "'")
+     (or
+      (seq
+       "\\"
+       (or
+        (: "U" (= 8 xdigit))
+        (: "u" (= 4 xdigit))
+        (: "x" (= 2 xdigit))
+        (any "'nrt0\"\\")))
+      (not (any "'\\"))
+      )
+     (group "'"))
+    )
+   ))
+
 (defun rust-look-for-non-standard-string (bound)
   ;; Find a raw string or character literal, but only if it's not in the middle
   ;; of another string or a comment.
 
-  (let* ((non-standard-str-regexp
-          (rx
-           (or
-            ;; Raw string: if it matches, it ends up with the starting character
-            ;; of the string as group 1, any ending backslashes as group 4, and
-            ;; the ending character as either group 5 or group 6.
-            (seq
-             ;; The "r" starts the raw string.  Capture it as group 1 to mark it as such syntactically:
-             (group "r")
-
-             ;; Then either:
-             (or
-              ;; a sequence at least one "#" (followed by quote).  Capture all
-              ;; but the last "#" as group 2 for this case.
-              (seq (group (* "#")) "#\"")
-
-              ;; ...or a quote without any "#".  Capture it as group 3. This is
-              ;; used later to match the opposite quote only if this capture
-              ;; occurred
-              (group "\""))
-
-             ;; The contents of the string:
-             (*? anything)
-
-             ;; If there are any backslashes at the end of the string, capture
-             ;; them as group 4 so we can suppress the normal escape syntax
-             ;; parsing:
-             (group (* "\\"))
-
-             ;; Then the end of the string--the backreferences ensure that we
-             ;; only match the kind of ending that corresponds to the beginning
-             ;; we had:
-             (or
-              ;; There were "#"s - capture the last one as group 5 to mark it as
-              ;; the end of the string:
-              (seq "\"" (backref 2) (group "#"))
-
-              ;; No "#"s - capture the ending quote (using a backref to group 3,
-              ;; so that we can't match a quote if we had "#"s) as group 6
-              (group (backref 3))))
-
-            ;; Character literal: match the beginning ' of a character literal
-            ;; as group 7, and the ending one as group 8
-            (seq
-             (group "'")
-             (or
-              (seq
-               "\\"
-               (or
-                (: "U" (= 8 xdigit))
-                (: "u" (= 4 xdigit))
-                (: "x" (= 2 xdigit))
-                (any "'nrt0\"\\")))
-              (not (any "'\\"))
-              )
-             (group "'"))
-            )
-           )))
-    (rust-conditional-re-search-forward
-     non-standard-str-regexp bound
-     (lambda ()
-       (let ((pstate (syntax-ppss (match-beginning 0))))
-         (not
-          (or
-           (nth 4 pstate) ;; Skip if in a comment
-           (and (nth 3 pstate) (wholenump (nth 8 pstate)) (< (nth 8 pstate) (match-beginning 0))) ;; Skip if in a string that isn't starting here
-           )))))))
+  (rust-conditional-re-search-forward
+   rust-re-non-standard-string
+   bound
+   (lambda ()
+     (let ((pstate (syntax-ppss (match-beginning 0))))
+       (not
+        (or
+         (nth 4 pstate) ;; Skip if in a comment
+         (and (nth 3 pstate) (wholenump (nth 8 pstate)) (< (nth 8 pstate) (match-beginning 0))) ;; Skip if in a string that isn't starting here
+         ))))))
 
 (defun rust-syntax-class-before-point ()
   (when (> (point) 1)
