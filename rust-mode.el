@@ -70,13 +70,6 @@
 
     table))
 
-(defvar rust-mode-character-literal-syntax-table
-  (let ((table (make-syntax-table rust-mode-syntax-table)))
-    (modify-syntax-entry ?' "\"" table)
-    (modify-syntax-entry ?\" "_" table)
-
-    table))
-
 (defgroup rust-mode nil
   "Support for Rust code."
   :link '(url-link "http://www.rust-lang.org/")
