@@ -359,11 +359,14 @@
     "bool"
     "str" "char"))
 
-(defconst rust-re-CamelCase "[[:upper:]][[:word:][:multibyte:]_[:digit:]]*")
+(defconst rust-re-type-or-constructor
+  (rx symbol-start
+      (group upper (0+ (any word nonascii digit "_")))
+      symbol-end))
+
 (defconst rust-re-pre-expression-operators "[-=!%&*/:<>[{(|.^;}]")
 (defun rust-re-word (inner) (concat "\\<" inner "\\>"))
 (defun rust-re-grab (inner) (concat "\\(" inner "\\)"))
-(defun rust-re-grabword (inner) (rust-re-grab (rust-re-word inner)))
 (defun rust-re-item-def (itype)
   (concat (rust-re-word itype) "[[:space:]]+" (rust-re-grab rust-re-ident)))
 
@@ -400,7 +403,7 @@
      (,(concat "'" (rust-re-grab rust-re-ident) "[^']") 1 font-lock-variable-name-face)
 
      ;; CamelCase Means Type Or Constructor
-     (,(rust-re-grabword rust-re-CamelCase) 1 font-lock-type-face)
+     (,rust-re-type-or-constructor 1 font-lock-type-face)
      )
 
    ;; Item definitions

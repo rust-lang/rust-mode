@@ -979,6 +979,12 @@ list of substrings of `STR' each followed by its face."
    '("'\"'" font-lock-string-face
      "let" font-lock-keyword-face)))
 
+(ert-deftest font-lock-fn-contains-capital ()
+  (rust-test-font-lock
+   "fn foo_Bar() {}"
+   '("fn" font-lock-keyword-face
+     "foo_Bar" font-lock-function-name-face)))
+
 (ert-deftest font-lock-single-quote-character-literal ()
   (rust-test-font-lock
    "fn main() { let ch = '\\''; }"
