@@ -31,4 +31,13 @@ $( $EMACS -batch --eval "(require 'ert)" > /dev/null 2>&1 ) || {
     exit 3
 };
 
+warnings="$( $EMACS -Q -batch -f batch-byte-compile rust-mode.el 2>&1 | grep -v '^Wrote ' )"
+if [ -n "$warnings" ]; then
+    echo "Byte-compilation failed:"
+    echo "$warnings"
+    exit 4
+else
+    echo "Byte-compilation passed."
+fi
+
 $EMACS -batch -l rust-mode.el -l rust-mode-tests.el -f ert-run-tests-batch-and-exit

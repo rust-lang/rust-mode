@@ -1,4 +1,4 @@
-;;; rust-mode.el --- A major emacs mode for editing Rust source code
+;;; rust-mode.el --- A major emacs mode for editing Rust source code -*-lexical-binding: t-*-
 
 ;; Version: 0.2.0
 ;; Author: Mozilla
@@ -11,7 +11,11 @@
 ;;; Code:
 
 (eval-when-compile (require 'misc)
-                   (require 'rx))
+                   (require 'rx)
+                   (require 'compile)
+                   (require 'url-vars))
+
+(defvar electric-pair-inhibit-predicate)
 
 ;; for GNU Emacs < 24.3
 (eval-when-compile
@@ -19,6 +23,70 @@
     (defmacro setq-local (var val)
       "Set variable VAR to value VAL in current buffer."
       (list 'set (list 'make-local-variable (list 'quote var)) val))))
+
+(defconst rust-re-ident "[[:word:][:multibyte:]_][[:word:][:multibyte:]_[:digit:]]*")
+
+(defconst rust-re-non-standard-string
+  (rx
+   (or
+    ;; Raw string: if it matches, it ends up with the starting character
+    ;; of the string as group 1, any ending backslashes as group 4, and
+    ;; the ending character as either group 5 or group 6.
+    (seq
+     ;; The "r" starts the raw string.  Capture it as group 1 to mark it as such syntactically:
+     (group "r")
+
+     ;; Then either:
+     (or
+      ;; a sequence at least one "#" (followed by quote).  Capture all
+      ;; but the last "#" as group 2 for this case.
+      (seq (group (* "#")) "#\"")
+
+      ;; ...or a quote without any "#".  Capture it as group 3. This is
+      ;; used later to match the opposite quote only if this capture
+      ;; occurred
+      (group "\""))
+
+     ;; The contents of the string:
+     (*? anything)
+
+     ;; If there are any backslashes at the end of the string, capture
+     ;; them as group 4 so we can suppress the normal escape syntax
+     ;; parsing:
+     (group (* "\\"))
+
+     ;; Then the end of the string--the backreferences ensure that we
+     ;; only match the kind of ending that corresponds to the beginning
+     ;; we had:
+     (or
+      ;; There were "#"s - capture the last one as group 5 to mark it as
+      ;; the end of the string:
+      (seq "\"" (backref 2) (group "#"))
+
+      ;; No "#"s - capture the ending quote (using a backref to group 3,
+      ;; so that we can't match a quote if we had "#"s) as group 6
+      (group (backref 3))
+
+      ;; If the raw string wasn't actually closed, go all the way to the end
+      string-end))
+
+    ;; Character literal: match the beginning ' of a character literal
+    ;; as group 7, and the ending one as group 8
+    (seq
+     (group "'")
+     (or
+      (seq
+       "\\"
+       (or
+        (: "U" (= 8 xdigit))
+        (: "u" (= 4 xdigit))
+        (: "x" (= 2 xdigit))
+        (any "'nrt0\"\\")))
+      (not (any "'\\"))
+      )
+     (group "'"))
+    )
+   ))
 
 (defun rust-looking-back-str (str)
   "Like `looking-back' but for fixed strings rather than regexps (so that it's not so slow)"
@@ -144,8 +212,6 @@
     (while (> (rust-paren-level) current-level)
       (backward-up-list)
       (back-to-indentation))))
-
-(defconst rust-re-ident "[[:word:][:multibyte:]_][[:word:][:multibyte:]_[:digit:]]*")
 
 (defun rust-align-to-method-chain ()
   (save-excursion
@@ -420,6 +486,9 @@
              ("fn" . font-lock-function-name-face)
              ("static" . font-lock-constant-face)))))
 
+(defvar font-lock-beg)
+(defvar font-lock-end)
+
 (defun rust-font-lock-extend-region ()
   "Extend the region given by `font-lock-beg' and `font-lock-end'
   to include the beginning of a string or comment if it includes
@@ -489,68 +558,6 @@
       (goto-char (nth 0 ret-list))
       (set-match-data (nth 1 ret-list))
       (nth 0 ret-list))))
-
-(defconst rust-re-non-standard-string
-  (rx
-   (or
-    ;; Raw string: if it matches, it ends up with the starting character
-    ;; of the string as group 1, any ending backslashes as group 4, and
-    ;; the ending character as either group 5 or group 6.
-    (seq
-     ;; The "r" starts the raw string.  Capture it as group 1 to mark it as such syntactically:
-     (group "r")
-
-     ;; Then either:
-     (or
-      ;; a sequence at least one "#" (followed by quote).  Capture all
-      ;; but the last "#" as group 2 for this case.
-      (seq (group (* "#")) "#\"")
-
-      ;; ...or a quote without any "#".  Capture it as group 3. This is
-      ;; used later to match the opposite quote only if this capture
-      ;; occurred
-      (group "\""))
-
-     ;; The contents of the string:
-     (*? anything)
-
-     ;; If there are any backslashes at the end of the string, capture
-     ;; them as group 4 so we can suppress the normal escape syntax
-     ;; parsing:
-     (group (* "\\"))
-
-     ;; Then the end of the string--the backreferences ensure that we
-     ;; only match the kind of ending that corresponds to the beginning
-     ;; we had:
-     (or
-      ;; There were "#"s - capture the last one as group 5 to mark it as
-      ;; the end of the string:
-      (seq "\"" (backref 2) (group "#"))
-
-      ;; No "#"s - capture the ending quote (using a backref to group 3,
-      ;; so that we can't match a quote if we had "#"s) as group 6
-      (group (backref 3))
-
-      ;; If the raw string wasn't actually closed, go all the way to the end
-      string-end))
-
-    ;; Character literal: match the beginning ' of a character literal
-    ;; as group 7, and the ending one as group 8
-    (seq
-     (group "'")
-     (or
-      (seq
-       "\\"
-       (or
-        (: "U" (= 8 xdigit))
-        (: "u" (= 4 xdigit))
-        (: "x" (= 2 xdigit))
-        (any "'nrt0\"\\")))
-      (not (any "'\\"))
-      )
-     (group "'"))
-    )
-   ))
 
 (defun rust-look-for-non-standard-string (bound)
   ;; Find a raw string or character literal, but only if it's not in the middle
@@ -769,7 +776,7 @@
            ;; Otherwise, if the ident: appeared with anything other than , or {
            ;; before it, it can't be part of a struct initializer and therefore
            ;; must be denoting a type.
-           nil
+	   (t nil)
            ))
          ))
 
@@ -1096,7 +1103,7 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
       (progn
         (goto-char (match-beginning 0))
         ;; Go to the closing brace
-        (condition-case err
+        (condition-case nil
             (forward-sexp)
           (scan-error
            ;; The parentheses are unbalanced; instead of being unable to fontify, just jump to the end of the buffer
@@ -1169,7 +1176,7 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
         (error-or-warning "\\(?:[Ee]rror\\|\\([Ww]arning\\)\\)"))
     (let ((re (concat "^" file ":" start-line ":" start-col
                       ": " end-line ":" end-col
-                      " \\(?:[Ee]rror\\|\\([Ww]arning\\)\\):")))
+                      " " error-or-warning ":")))
       (cons re '(1 (2 . 4) (3 . 5) (6)))))
   "Specifications for matching errors in rustc invocations.
 See `compilation-error-regexp-alist' for help on their format.")
