@@ -1173,11 +1173,11 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
         (start-col  "\\([0-9]+\\)")
         (end-line   "\\([0-9]+\\)")
         (end-col    "\\([0-9]+\\)")
-        (error-or-warning "\\(?:[Ee]rror\\|\\([Ww]arning\\)\\)"))
+        (msg-type   "\\(?:[Ee]rror\\|\\([Ww]arning\\)\\|\\([Nn]ote\\|[Hh]elp\\)\\)"))
     (let ((re (concat "^" file ":" start-line ":" start-col
                       ": " end-line ":" end-col
-                      " " error-or-warning ":")))
-      (cons re '(1 (2 . 4) (3 . 5) (6)))))
+                      " " msg-type ":")))
+      (cons re '(1 (2 . 4) (3 . 5) (6 . 7)))))
   "Specifications for matching errors in rustc invocations.
 See `compilation-error-regexp-alist' for help on their format.")
 
