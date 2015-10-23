@@ -10,8 +10,7 @@
 
 ;;; Code:
 
-(eval-when-compile (require 'misc)
-                   (require 'rx)
+(eval-when-compile (require 'rx)
                    (require 'compile)
                    (require 'url-vars))
 
