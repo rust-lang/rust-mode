@@ -71,3 +71,10 @@ To test it under emacs 23, which does not ship with ERT, download ert.el from
 https://raw.githubusercontent.com/ohler/ert/c619b56c5bc6a866e33787489545b87d79973205/lisp/emacs-lisp/ert.el
 and put it in a place where emacs can find it.  (ERT has shipped with emacs
 since emacs 24.)
+
+## License
+
+Like Rust, rust-mode is distributed under the terms of both the MIT license
+and the Apache License (Version 2.0). See LICENSE-APACHE and LICENSE-MIT for
+details. 
+
