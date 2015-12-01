@@ -600,6 +600,24 @@ fn foo() {
 "
    ))
 
+;; This is a test for #103: a comment after the last struct member that does
+;; not have a trailing comma. The comment used to be indented one stop too
+;; far.
+(ert-deftest indent-comment-after-last-struct-member ()
+  (test-indent
+   "
+struct A {
+    x: u8
+    // comment
+}
+
+struct A {
+    x: u8
+    /* comment */
+}
+"
+   ))
+
 (setq rust-test-motion-string
       "
 fn fn1(arg: int) -> bool {
