@@ -603,6 +603,17 @@ impl<'a, K, Q: ?Sized, V, S> Index<&'a Q> for HashMap<K, V, S>
 }
 "))
 
+(ert-deftest indent-align-where-clauses-first-line ()
+  (test-indent
+   "fn foo1(a: A, b: B) -> A
+    where A: Clone + Default, B: Eq {
+    let body;
+    Foo {
+        bar: 3
+    }
+}
+"))
+
 (ert-deftest indent-square-bracket-alignment ()
   (test-indent
    "

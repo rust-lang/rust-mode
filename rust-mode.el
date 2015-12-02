@@ -444,10 +444,11 @@ function or trait.  When nil, where will be aligned with fn or trait."
 
                        (save-excursion
                          (rust-rewind-irrelevant)
-                         ;; Point is now at the end of the previous ine
+                         ;; Point is now at the end of the previous line
                          (or
-                          ;; If we are at the first line, no indentation is needed, so stay at baseline...
-                          (= 1 (line-number-at-pos (point)))
+                          ;; If we are at the start of the buffer, no
+                          ;; indentation is needed, so stay at baseline...
+                          (= (point) 1)
                           ;; ..or if the previous line ends with any of these:
                           ;;     { ? : ( , ; [ }
                           ;; then we are at the beginning of an expression, so stay on the baseline...
