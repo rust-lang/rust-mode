@@ -157,6 +157,13 @@
   :group 'rust-mode
   :safe #'booleanp)
 
+(defcustom rust-indent-where-clause t
+  "Indent the line starting with the where keyword following a
+function or trait.  When nil, where will be aligned with fn or trait."
+  :type 'boolean
+  :group 'rust-mode
+  :safe #'booleanp)
+
 (defcustom rust-playpen-url-format "https://play.rust-lang.org/?code=%s"
   "Format string to use when submitting code to the playpen"
   :type 'string
@@ -213,7 +220,25 @@
       (back-to-indentation))
     (while (> (rust-paren-level) current-level)
       (backward-up-list)
-      (back-to-indentation))))
+      (back-to-indentation))
+    ;; When we're in the where clause, skip over it.  First find out the start
+    ;; of the function and its paren level.
+    (let ((function-start nil) (function-level nil))
+      (save-excursion
+        (rust-beginning-of-defun)
+        (back-to-indentation)
+        ;; Avoid using multiple-value-bind
+        (setq function-start (point)
+              function-level (rust-paren-level)))
+      ;; On a where clause
+      (when (or (looking-at "\\bwhere\\b")
+                ;; or in one of the following lines, e.g.
+                ;; where A: Eq
+                ;;       B: Hash <- on this line
+                (and (save-excursion
+                       (re-search-backward "\\bwhere\\b" function-start t))
+                     (= current-level function-level)))
+        (goto-char function-start)))))
 
 (defun rust-align-to-method-chain ()
   (save-excursion
@@ -348,6 +373,11 @@
               ((and (nth 4 (syntax-ppss)) (looking-at "*"))
                (+ 1 baseline))
 
+              ;; When the user chose not to indent the start of the where
+              ;; clause, put it on the baseline.
+              ((and (not rust-indent-where-clause) (looking-at "\\bwhere\\b"))
+               baseline)
+
               ;; If we're in any other token-tree / sexp, then:
               (t
                (or
@@ -361,6 +391,47 @@
                     ;; Point is now at the beginning of the containing set of braces
                     (rust-align-to-expr-after-brace)))
 
+                ;; When where-clauses are spread over multiple lines, clauses
+                ;; should be aligned on the type parameters.  In this case we
+                ;; take care of the second and following clauses (the ones
+                ;; that don't start with "where ")
+                (save-excursion
+                  ;; Find the start of the function, we'll use this to limit
+                  ;; our search for "where ".
+                  (let ((function-start nil) (function-level nil))
+                    (save-excursion
+                      (rust-beginning-of-defun)
+                      (back-to-indentation)
+                      ;; Avoid using multiple-value-bind
+                      (setq function-start (point)
+                            function-level (rust-paren-level)))
+                    ;; When we're not on a line starting with "where ", but
+                    ;; still on a where-clause line, go to "where "
+                    (when (and
+                           (not (looking-at "\\bwhere\\b"))
+                           ;; We're looking at something like "F: ..."
+                           (and (looking-at (concat rust-re-ident ":"))
+                                ;; There is a "where " somewhere after the
+                                ;; start of the function.
+                                (re-search-backward "\\bwhere\\b"
+                                                    function-start t)
+                                ;; Make sure we're not inside the function
+                                ;; already (e.g. initializing a struct) by
+                                ;; checking we are the same level.
+                                (= function-level level)))
+                      ;; skip over "where"
+                      (forward-char 5)
+                      ;; Unless "where" is at the end of the line
+                      (if (eolp)
+                          ;; in this case the type parameters bounds are just
+                          ;; indented once
+                          (+ baseline rust-indent-offset)
+                        ;; otherwise, skip over whitespace,
+                        (skip-chars-forward "[:space:]")
+                        ;; get the column of the type parameter and use that
+                        ;; as indentation offset
+                        (current-column)))))
+
                 (progn
                   (back-to-indentation)
                   ;; Point is now at the beginning of the current line
@@ -373,10 +444,11 @@
 
                        (save-excursion
                          (rust-rewind-irrelevant)
-                         ;; Point is now at the end of the previous ine
+                         ;; Point is now at the end of the previous line
                          (or
-                          ;; If we are at the first line, no indentation is needed, so stay at baseline...
-                          (= 1 (line-number-at-pos (point)))
+                          ;; If we are at the start of the buffer, no
+                          ;; indentation is needed, so stay at baseline...
+                          (= (point) 1)
                           ;; ..or if the previous line ends with any of these:
                           ;;     { ? : ( , ; [ }
                           ;; then we are at the beginning of an expression, so stay on the baseline...
