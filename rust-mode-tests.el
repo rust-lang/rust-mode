@@ -443,6 +443,166 @@ fn foo4(a:int,
 }
 "))
 
+(ert-deftest indent-body-after-where ()
+  (test-indent
+   "
+fn foo1(a: A, b: B) -> A
+    where A: Clone + Default, B: Eq {
+    let body;
+    Foo {
+        bar: 3
+    }
+}
+
+fn foo2(a: A, b: B) -> A
+    where A: Clone + Default, B: Eq
+{
+    let body;
+    Foo {
+        bar: 3
+    }
+}
+"))
+
+(ert-deftest indent-align-where-clauses-style1a ()
+  (test-indent
+   "
+fn foo1a(a: A, b: B, c: C) -> D
+    where A: Clone + Default,
+          B: Eq,
+          C: PartialEq,
+          D: PartialEq {
+    let body;
+    Foo {
+        bar: 3
+    }
+}
+"))
+
+(ert-deftest indent-align-where-clauses-style1b ()
+  (test-indent
+   "
+fn foo1b(a: A, b: B, c: C) -> D
+    where A: Clone + Default,
+          B: Eq,
+          C: PartialEq,
+          D: PartialEq
+{
+    let body;
+    Foo {
+        bar: 3
+    }
+}
+"))
+
+(ert-deftest indent-align-where-clauses-style2a ()
+  (test-indent
+   "
+fn foo2a(a: A, b: B, c: C) -> D where A: Clone + Default,
+                                      B: Eq,
+                                      C: PartialEq,
+                                      D: PartialEq {
+    let body;
+    Foo {
+        bar: 3
+    }
+}
+"))
+
+(ert-deftest indent-align-where-clauses-style2b ()
+  (test-indent
+   "
+fn foo2b(a: A, b: B, c: C) -> D where A: Clone + Default,
+                                      B: Eq,
+                                      C: PartialEq,
+                                      D: PartialEq
+{
+    let body;
+    Foo {
+        bar: 3
+    }
+}
+"))
+
+(ert-deftest indent-align-where-clauses-style3a ()
+  (test-indent
+   "
+fn foo3a(a: A, b: B, c: C) -> D where
+    A: Clone + Default,
+    B: Eq,
+    C: PartialEq,
+    D: PartialEq {
+    let body;
+    Foo {
+        bar: 3
+    }
+}
+"))
+
+(ert-deftest indent-align-where-clauses-style3b ()
+  (test-indent
+   "
+fn foo3b(a: A, b: B, c: C) -> D where
+    A: Clone + Default,
+    B: Eq,
+    C: PartialEq,
+    D: PartialEq
+{
+    let body;
+    Foo {
+        bar: 3
+    }
+}
+"))
+
+(ert-deftest indent-align-where-clauses-style4a ()
+  (let ((rust-indent-where-clause nil))
+    (test-indent
+     "
+fn foo4a(a: A, b: B, c: C) -> D
+where A: Clone + Default,
+      B: Eq,
+      C: PartialEq,
+      D: PartialEq {
+    let body;
+    Foo {
+        bar: 3
+    }
+}
+")))
+
+(ert-deftest indent-align-where-clauses-style4b ()
+  (let ((rust-indent-where-clause nil))
+    (test-indent
+     "
+fn foo4b(a: A, b: B, c: C) -> D
+where A: Clone + Default,
+      B: Eq,
+      C: PartialEq,
+      D: PartialEq
+{
+    let body;
+    Foo {
+        bar: 3
+    }
+}
+")))
+
+(ert-deftest indent-align-where-clauses-impl-example ()
+  (test-indent
+   "
+impl<'a, K, Q: ?Sized, V, S> Index<&'a Q> for HashMap<K, V, S>
+    where K: Eq + Hash + Borrow<Q>,
+          Q: Eq + Hash,
+          S: HashState,
+{
+    let body;
+    Foo {
+        bar: 3
+    }
+}
+"))
+
 (ert-deftest indent-square-bracket-alignment ()
   (test-indent
    "
