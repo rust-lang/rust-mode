@@ -440,7 +440,9 @@ function or trait.  When nil, where will be aligned with fn or trait."
                        ;; baseline as well (we are continuing an expression,
                        ;; but the "else" or "{" should align with the beginning
                        ;; of the expression it's in.)
-                       (looking-at "\\<else\\>\\|{")
+                       ;; Or, if this line starts a comment, stay on the
+                       ;; baseline as well.
+                       (looking-at "\\<else\\>\\|{\\|/[/*]")
 
                        (save-excursion
                          (rust-rewind-irrelevant)
