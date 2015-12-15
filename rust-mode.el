@@ -1229,7 +1229,9 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
   (setq-local beginning-of-defun-function 'rust-beginning-of-defun)
   (setq-local end-of-defun-function 'rust-end-of-defun)
   (setq-local parse-sexp-lookup-properties t)
-  (setq-local electric-pair-inhibit-predicate 'rust-electric-pair-inhibit-predicate-wrap))
+  (setq-local electric-pair-inhibit-predicate 'rust-electric-pair-inhibit-predicate-wrap)
+  (add-hook 'after-revert-hook 'rust--after-revert-hook 'LOCAL)
+  )
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.rs\\'" . rust-mode))
@@ -1239,6 +1241,17 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
   (unload-feature 'rust-mode)
   (require 'rust-mode)
   (rust-mode))
+
+;; Issue #104: When reverting the buffer, make sure all fontification is redone
+;; so that we don't end up missing a non-angle-bracket '<' or '>' character.
+(defun rust--after-revert-hook ()
+  (let
+      ;; Newer emacs versions (25 and later) make `font-lock-fontify-buffer'
+      ;; interactive-only, and want lisp code to call `font-lock-flush' or
+      ;; `font-lock-ensure'.  But those don't exist in emacs 24 and earlier.
+      ((font-lock-ensure-fn (if (fboundp 'font-lock-ensure) 'font-lock-ensure 'font-lock-fontify-buffer)))
+    (funcall font-lock-ensure-fn))
+  )
 
 ;; Issue #6887: Rather than inheriting the 'gnu compilation error
 ;; regexp (which is broken on a few edge cases), add our own 'rust
