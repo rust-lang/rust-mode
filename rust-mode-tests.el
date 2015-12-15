@@ -2427,6 +2427,29 @@ Fontification needs to include this whole string or none of it.
       (should (<= font-lock-beg 1))
       (should (>= font-lock-end 12)))))
 
+(ert-deftest redo-syntax-after-change-far-from-point ()  
+  (let*
+      ((tmp-file-name (make-temp-file "rust-mdoe-test-issue104"))
+       (base-contents (apply 'concat (append '("fn foo() {\n\n}\n") (make-list 500 "// More stuff...\n") '("fn bar() {\n\n}\n")))))
+    ;; Create the temp file...
+    (with-temp-file tmp-file-name
+      (insert base-contents))
+    (with-temp-buffer
+      (insert-file-contents tmp-file-name 'VISIT nil nil 'REPLACE)
+      (rust-mode)
+      (goto-char (point-max))
+      (should (= 0 (rust-paren-level)))
+      (with-temp-file tmp-file-name
+        (insert base-contents)
+        (goto-char 12) ;; On the blank line in the middle of fn foo
+        (insert "    let z = 1 < 3;")
+        )
+      (revert-buffer 'IGNORE-AUTO 'NOCONFIRM 'PRESERVE-MODES)
+      (should (= 0 (rust-paren-level)))
+      )
+    )
+  )
+
 ;; If electric-pair-mode is available, load it and run the tests that use it.  If not,
 ;; no error--the tests will be skipped.
 (require 'elec-pair nil t)
