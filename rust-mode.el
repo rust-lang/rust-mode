@@ -180,6 +180,11 @@ function or trait.  When nil, where will be aligned with fn or trait."
   :safe #'booleanp
   :group 'rust-mode)
 
+(defface rust-unsafe-face
+  '((t :inherit font-lock-warning-face))
+  "Face for the `unsafe' keyword."
+  :group 'rust-mode)
+
 (defun rust-paren-level () (nth 0 (syntax-ppss)))
 (defun rust-in-str-or-cmnt () (nth 8 (syntax-ppss)))
 (defun rust-rewind-past-str-cmnt () (goto-char (nth 8 (syntax-ppss))))
@@ -488,7 +493,7 @@ function or trait.  When nil, where will be aligned with fn or trait."
     "ref" "return"
     "self" "static" "struct" "super"
     "true" "trait" "type"
-    "unsafe" "use"
+    "use"
     "virtual"
     "where" "while"))
 
@@ -528,6 +533,9 @@ function or trait.  When nil, where will be aligned with fn or trait."
 
      ;; Special types
      (,(regexp-opt-symbols rust-special-types) . font-lock-type-face)
+
+     ;; The unsafe keyword
+     ("\\_<unsafe\\_>" . 'rust-unsafe-face)
 
      ;; Attributes like `#[bar(baz)]` or `#![bar(baz)]` or `#[bar = "baz"]`
      (,(rust-re-grab (concat "#\\!?\\[" rust-re-ident "[^]]*\\]"))
