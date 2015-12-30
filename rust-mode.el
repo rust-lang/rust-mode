@@ -549,7 +549,8 @@ function or trait.  When nil, where will be aligned with fn or trait."
      (,(concat (rust-re-grab rust-re-ident) ":[^:]") 1 font-lock-variable-name-face)
 
      ;; Module names like `foo::`, highlight including the ::
-     (,(rust-re-grab (concat rust-re-ident "::")) 1 font-lock-type-face)
+     ;; but ignore type annotations like foo::<i32>
+     (,(concat (rust-re-grab (concat rust-re-ident "::")) "[^<]") 1 font-lock-type-face)
 
      ;; Lifetimes like `'foo`
      (,(concat "'" (rust-re-grab rust-re-ident) "[^']") 1 font-lock-variable-name-face)
