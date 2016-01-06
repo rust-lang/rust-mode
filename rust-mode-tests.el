@@ -1403,6 +1403,27 @@ this_is_not_a_string();)"
    "\"/*! doc */\""
    '("\"/*! doc */\"" font-lock-string-face)))
 
+(ert-deftest font-lock-module ()
+  (rust-test-font-lock
+   "foo::bar"
+   '("foo" font-lock-type-face)))
+
+(ert-deftest font-lock-submodule ()
+  (rust-test-font-lock
+   "foo::bar::baz"
+   '("foo" font-lock-type-face
+     "bar" font-lock-type-face)))
+
+(ert-deftest font-lock-type-annotation ()
+  "Ensure type annotations are not confused with modules."
+  (rust-test-font-lock
+   "parse::<i32>();"
+   ;; Only the i32 should have been highlighted.
+   '("i32" font-lock-type-face))
+  (rust-test-font-lock
+   "foo:: <i32>"
+   ;; Only the i32 should have been highlighted.
+   '("i32" font-lock-type-face)))
 
 (ert-deftest indent-method-chains-no-align ()
   (let ((rust-indent-method-chain nil)) (test-indent
