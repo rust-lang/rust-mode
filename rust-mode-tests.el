@@ -631,6 +631,25 @@ fn args_on_the_next_line( // with a comment
 }
 "))
 
+(ert-deftest indent-closing-square-bracket ()
+  (test-indent
+   "fn blergh() {
+    let list = vec![
+        1,
+        2,
+        3,
+    ];
+}"))
+
+(ert-deftest indent-closing-paren ()
+  (test-indent
+   "fn blergh() {
+    call(
+        a,
+        function
+    );
+}"))
+
 (ert-deftest indent-nested-fns ()
   (test-indent
    "
