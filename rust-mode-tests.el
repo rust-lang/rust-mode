@@ -1422,16 +1422,34 @@ this_is_not_a_string();)"
    "\"/*! doc */\""
    '("\"/*! doc */\"" font-lock-string-face)))
 
-(ert-deftest font-lock-module ()
+(ert-deftest font-lock-module-def ()
+  (rust-test-font-lock
+   "mod foo;"
+   '("mod" font-lock-keyword-face
+     "foo" font-lock-constant-face)))
+
+(ert-deftest font-lock-module-use ()
+  (rust-test-font-lock
+   "use foo;"
+   '("use" font-lock-keyword-face
+     "foo" font-lock-constant-face)))
+
+(ert-deftest font-lock-module-path ()
   (rust-test-font-lock
    "foo::bar"
-   '("foo" font-lock-type-face)))
+   '("foo" font-lock-constant-face)))
 
-(ert-deftest font-lock-submodule ()
+(ert-deftest font-lock-submodule-path ()
   (rust-test-font-lock
    "foo::bar::baz"
-   '("foo" font-lock-type-face
-     "bar" font-lock-type-face)))
+   '("foo" font-lock-constant-face
+     "bar" font-lock-constant-face)))
+
+(ert-deftest font-lock-type ()
+  (rust-test-font-lock
+   "foo::Bar::baz"
+   '("foo" font-lock-constant-face
+     "Bar" font-lock-type-face)))
 
 (ert-deftest font-lock-type-annotation ()
   "Ensure type annotations are not confused with modules."
