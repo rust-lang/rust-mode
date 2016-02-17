@@ -28,6 +28,8 @@
       (list 'set (list 'make-local-variable (list 'quote var)) val))))
 
 (defconst rust-re-ident "[[:word:][:multibyte:]_][[:word:][:multibyte:]_[:digit:]]*")
+(defconst rust-re-lc-ident "[[:lower:][:multibyte:]_][[:word:][:multibyte:]_[:digit:]]*")
+(defconst rust-re-uc-ident "[[:upper:]][[:word:][:multibyte:]_[:digit:]]*")
 
 (defconst rust-re-non-standard-string
   (rx
@@ -536,19 +538,21 @@ function or trait.  When nil, where will be aligned with fn or trait."
 (defconst rust-re-special-types (regexp-opt-symbols rust-special-types))
 
 
-(defun rust-module-font-lock-matcher (limit)
-  "Matches module names \"foo::\" but does not match type annotations \"foo::<\"."
-  (block nil
-    (while t
-      (let* ((symbol-then-colons (rx-to-string `(seq (group (regexp ,rust-re-ident)) "::")))
-             (match (re-search-forward symbol-then-colons limit t)))
-        (cond
-         ;; If we didn't find a match, there are no more occurrences
-         ;; of foo::, so return.
-         ((null match) (return nil))
-         ;; If this isn't a type annotation foo::<, we've found a
-         ;; match, so a return it!
-         ((not (looking-at (rx (0+ space) "<"))) (return match)))))))
+(defun rust-path-font-lock-matcher (re-ident)
+  "Matches names like \"foo::\" or \"Foo::\" (depending on RE-IDENT, which should match
+the desired identifiers), but does not match type annotations \"foo::<\"."
+  `(lambda (limit)
+     (block nil
+       (while t
+         (let* ((symbol-then-colons (rx-to-string '(seq (group (regexp ,re-ident)) "::")))
+                (match (re-search-forward symbol-then-colons limit t)))
+           (cond
+            ;; If we didn't find a match, there are no more occurrences
+            ;; of foo::, so return.
+            ((null match) (return nil))
+            ;; If this isn't a type annotation foo::<, we've found a
+            ;; match, so a return it!
+            ((not (looking-at (rx (0+ space) "<"))) (return match))))))))
 
 (defvar rust-mode-font-lock-keywords
   (append
@@ -573,8 +577,11 @@ function or trait.  When nil, where will be aligned with fn or trait."
      ;; Field names like `foo:`, highlight excluding the :
      (,(concat (rust-re-grab rust-re-ident) ":[^:]") 1 font-lock-variable-name-face)
 
+     ;; Type names like `Foo::`, highlight excluding the ::
+     (,(rust-path-font-lock-matcher rust-re-uc-ident) 1 font-lock-type-face)
+
      ;; Module names like `foo::`, highlight excluding the ::
-     (rust-module-font-lock-matcher 1 font-lock-type-face)
+     (,(rust-path-font-lock-matcher rust-re-lc-ident) 1 font-lock-constant-face)
 
      ;; Lifetimes like `'foo`
      (,(concat "'" (rust-re-grab rust-re-ident) "[^']") 1 font-lock-variable-name-face)
@@ -590,10 +597,9 @@ function or trait.  When nil, where will be aligned with fn or trait."
            '(("enum" . font-lock-type-face)
              ("struct" . font-lock-type-face)
              ("type" . font-lock-type-face)
-             ("mod" . font-lock-type-face)
-             ("use" . font-lock-type-face)
-             ("fn" . font-lock-function-name-face)
-             ("static" . font-lock-constant-face)))))
+             ("mod" . font-lock-constant-face)
+             ("use" . font-lock-constant-face)
+             ("fn" . font-lock-function-name-face)))))
 
 (defvar font-lock-beg)
 (defvar font-lock-end)
