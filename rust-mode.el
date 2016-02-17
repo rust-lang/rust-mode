@@ -181,6 +181,15 @@ function or trait.  When nil, where will be aligned with fn or trait."
   :safe #'booleanp
   :group 'rust-mode)
 
+(defcustom rust-format-on-save nil
+  "Format future rust buffers before saving using rustfmt."
+  :type 'boolean
+  :safe #'booleanp)
+
+(defcustom rust-rustfmt-bin "rustfmt"
+  "Path to rustfmt executable."
+  :type 'string)
+
 (defface rust-unsafe-face
   '((t :inherit font-lock-warning-face))
   "Face for the `unsafe' keyword."
@@ -1211,13 +1220,55 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
     ;; There is no opening brace, so consider the whole buffer to be one "defun"
     (goto-char (point-max))))
 
+;; Formatting using rustfmt
+(defun rust--format-call (buf)
+  "Format BUF using rustfmt."
+  (with-current-buffer (get-buffer-create "*rustfmt*")
+    (erase-buffer)
+    (insert-buffer-substring buf)
+    (if (zerop (call-process-region (point-min) (point-max) rust-rustfmt-bin t t nil))
+        (progn (copy-to-buffer buf (point-min) (point-max))
+               (kill-buffer))
+      (error "Rustfmt failed, see *rustfmt* buffer for details"))))
+
+(defun rust-format-buffer ()
+  "Format the current buffer using rustfmt."
+  (interactive)
+  (unless (executable-find rust-rustfmt-bin)
+    (error "Could not locate executable \"%s\"" rust-rustfmt-bin))
+
+  (let ((cur-point (point))
+        (cur-win-start (window-start)))
+    (rust--format-call (current-buffer))
+    (goto-char cur-point)
+    (set-window-start (selected-window) cur-win-start))
+  (message "Formatted buffer with rustfmt."))
+
+(defun rust-enable-format-on-save ()
+  "Enable formatting using rustfmt when saving buffer."
+  (interactive)
+  (add-hook 'before-save-hook #'rust-format-buffer nil t))
+
+(defun rust-disable-format-on-save ()
+  "Disable formatting using rustfmt when saving buffer."
+  (interactive)
+  (remove-hook 'before-save-hook #'rust-format-buffer t))
+
 ;; For compatibility with Emacs < 24, derive conditionally
 (defalias 'rust-parent-mode
   (if (fboundp 'prog-mode) 'prog-mode 'fundamental-mode))
 
+(defvar rust-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "C-c C-f") 'rust-format-buffer)
+    map)
+  "Keymap for Rust major mode.")
+
 ;;;###autoload
 (define-derived-mode rust-mode rust-parent-mode "Rust"
-  "Major mode for Rust code."
+  "Major mode for Rust code.
+
+\\{rust-mode-map}"
   :group 'rust-mode
   :syntax-table rust-mode-syntax-table
 
@@ -1255,7 +1306,9 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
   (setq-local parse-sexp-lookup-properties t)
   (setq-local electric-pair-inhibit-predicate 'rust-electric-pair-inhibit-predicate-wrap)
   (add-hook 'after-revert-hook 'rust--after-revert-hook 'LOCAL)
-  )
+
+  (when rust-format-on-save
+    (rust-enable-format-on-save)))
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.rs\\'" . rust-mode))
