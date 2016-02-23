@@ -1187,7 +1187,7 @@ idomenu (imenu with `ido-mode') for best mileage.")
   (concat "^\\s-*\\(?:priv\\|pub\\)?\\s-*"
           (regexp-opt
            '("enum" "struct" "type" "mod" "use" "fn" "static" "impl"
-             "extern" "impl" "static" "trait"))))
+             "extern" "trait"))))
 
 (defun rust-beginning-of-defun (&optional arg)
   "Move backward to the beginning of the current defun.
