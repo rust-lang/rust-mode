@@ -83,8 +83,7 @@
       (seq
        "\\"
        (or
-        (: "U" (= 8 xdigit))
-        (: "u" (= 4 xdigit))
+        (: "u{" (** 1 6 xdigit) "}")
         (: "x" (= 2 xdigit))
         (any "'nrt0\"\\")))
       (not (any "'\\"))
