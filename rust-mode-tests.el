@@ -1217,6 +1217,18 @@ list of substrings of `STR' each followed by its face."
      "let" font-lock-keyword-face
      "'\\\\'" font-lock-string-face)))
 
+(ert-deftest font-lock-hex-escape-character-literal ()
+  (rust-test-font-lock
+   "let ch = '\\x1f';"
+   '("let" font-lock-keyword-face
+     "'\\x1f'" font-lock-string-face)))
+
+(ert-deftest font-lock-unicode-escape-character-literal ()
+  (rust-test-font-lock
+   "let ch = '\\u{1ffff}';"
+   '("let" font-lock-keyword-face
+     "'\\u{1ffff}'" font-lock-string-face)))
+
 (ert-deftest font-lock-raw-strings-no-hashes ()
   (rust-test-font-lock
    "r\"No hashes\";"
