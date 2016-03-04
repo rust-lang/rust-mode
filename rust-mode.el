@@ -1247,6 +1247,12 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
     (rust--format-call (current-buffer))
     (goto-char cur-point)
     (set-window-start (selected-window) cur-win-start))
+
+  ;; Issue #127: Running this on a buffer acts like a revert, and could cause
+  ;; the fontification to get out of sync.  Call the same hook to ensure it is
+  ;; restored.
+  (rust--after-revert-hook)
+
   (message "Formatted buffer with rustfmt."))
 
 (defun rust-enable-format-on-save ()
