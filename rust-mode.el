@@ -14,7 +14,6 @@
 ;;; Code:
 
 (eval-when-compile (require 'rx)
-                   (require 'cl)
                    (require 'compile)
                    (require 'url-vars))
 
@@ -541,17 +540,18 @@ function or trait.  When nil, where will be aligned with fn or trait."
   "Matches names like \"foo::\" or \"Foo::\" (depending on RE-IDENT, which should match
 the desired identifiers), but does not match type annotations \"foo::<\"."
   `(lambda (limit)
-     (block nil
+     (catch 'rust-path-font-lock-matcher
        (while t
          (let* ((symbol-then-colons (rx-to-string '(seq (group (regexp ,re-ident)) "::")))
                 (match (re-search-forward symbol-then-colons limit t)))
            (cond
             ;; If we didn't find a match, there are no more occurrences
             ;; of foo::, so return.
-            ((null match) (return nil))
+            ((null match) (throw 'rust-path-font-lock-matcher nil))
             ;; If this isn't a type annotation foo::<, we've found a
             ;; match, so a return it!
-            ((not (looking-at (rx (0+ space) "<"))) (return match))))))))
+            ((not (looking-at (rx (0+ space) "<")))
+	     (throw 'rust-path-font-lock-matcher match))))))))
 
 (defvar rust-mode-font-lock-keywords
   (append
