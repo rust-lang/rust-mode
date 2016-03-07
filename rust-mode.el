@@ -186,6 +186,7 @@ function or trait.  When nil, where will be aligned with fn or trait."
   "Format future rust buffers before saving using rustfmt."
   :type 'boolean
   :safe #'booleanp)
+(put 'rust-format-on-save 'safe-local-variable 'booleanp)
 
 (defcustom rust-rustfmt-bin "rustfmt"
   "Path to rustfmt executable."
@@ -1239,31 +1240,32 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
 (defun rust-format-buffer ()
   "Format the current buffer using rustfmt."
   (interactive)
-  (unless (executable-find rust-rustfmt-bin)
-    (error "Could not locate executable \"%s\"" rust-rustfmt-bin))
+  (when rust-format-on-save
+    (unless (executable-find rust-rustfmt-bin)
+      (error "Could not locate executable \"%s\"" rust-rustfmt-bin))
 
-  (let ((cur-point (point))
-        (cur-win-start (window-start)))
-    (rust--format-call (current-buffer))
-    (goto-char cur-point)
-    (set-window-start (selected-window) cur-win-start))
+    (let ((cur-point (point))
+          (cur-win-start (window-start)))
+      (rust--format-call (current-buffer))
+      (goto-char cur-point)
+      (set-window-start (selected-window) cur-win-start))
 
-  ;; Issue #127: Running this on a buffer acts like a revert, and could cause
-  ;; the fontification to get out of sync.  Call the same hook to ensure it is
-  ;; restored.
-  (rust--after-revert-hook)
+    ;; Issue #127: Running this on a buffer acts like a revert, and could cause
+    ;; the fontification to get out of sync.  Call the same hook to ensure it is
+    ;; restored.
+    (rust--after-revert-hook)
+    (message "Formatted buffer with rustfmt.")))
 
-  (message "Formatted buffer with rustfmt."))
 
 (defun rust-enable-format-on-save ()
   "Enable formatting using rustfmt when saving buffer."
   (interactive)
-  (add-hook 'before-save-hook #'rust-format-buffer nil t))
+  (setq-local rust-format-on-save t))
 
 (defun rust-disable-format-on-save ()
   "Disable formatting using rustfmt when saving buffer."
   (interactive)
-  (remove-hook 'before-save-hook #'rust-format-buffer t))
+  (setq-local rust-format-on-save nil))
 
 ;; For compatibility with Emacs < 24, derive conditionally
 (defalias 'rust-parent-mode
@@ -1317,9 +1319,7 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
   (setq-local parse-sexp-lookup-properties t)
   (setq-local electric-pair-inhibit-predicate 'rust-electric-pair-inhibit-predicate-wrap)
   (add-hook 'after-revert-hook 'rust--after-revert-hook 'LOCAL)
-
-  (when rust-format-on-save
-    (rust-enable-format-on-save)))
+  (add-hook 'before-save-hook 'rust-format-buffer nil t))
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.rs\\'" . rust-mode))
