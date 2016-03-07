@@ -1258,12 +1258,12 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
 (defun rust-enable-format-on-save ()
   "Enable formatting using rustfmt when saving buffer."
   (interactive)
-  (add-hook 'before-save-hook #'rust-format-buffer nil t))
+  (setq-local rust-format-on-save t))
 
 (defun rust-disable-format-on-save ()
   "Disable formatting using rustfmt when saving buffer."
   (interactive)
-  (remove-hook 'before-save-hook #'rust-format-buffer t))
+  (setq-local rust-format-on-save nil))
 
 ;; For compatibility with Emacs < 24, derive conditionally
 (defalias 'rust-parent-mode
@@ -1317,9 +1317,7 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
   (setq-local parse-sexp-lookup-properties t)
   (setq-local electric-pair-inhibit-predicate 'rust-electric-pair-inhibit-predicate-wrap)
   (add-hook 'after-revert-hook 'rust--after-revert-hook 'LOCAL)
-
-  (when rust-format-on-save
-    (rust-enable-format-on-save)))
+  (add-hook 'before-save-hook 'rust--before-save-hook nil t))
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.rs\\'" . rust-mode))
@@ -1340,6 +1338,9 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
       ((font-lock-ensure-fn (if (fboundp 'font-lock-ensure) 'font-lock-ensure 'font-lock-fontify-buffer)))
     (funcall font-lock-ensure-fn))
   )
+
+(defun rust--before-save-hook ()
+  (when rust-format-on-save (rust-format-buffer)))
 
 ;; Issue #6887: Rather than inheriting the 'gnu compilation error
 ;; regexp (which is broken on a few edge cases), add our own 'rust
