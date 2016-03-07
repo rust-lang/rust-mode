@@ -19,6 +19,7 @@
                    (require 'url-vars))
 
 (defvar electric-pair-inhibit-predicate)
+(defvar electric-indent-chars)
 
 ;; for GNU Emacs < 24.3
 (eval-when-compile
@@ -1298,6 +1299,11 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
   (setq-local comment-start "// ")
   (setq-local comment-end   "")
   (setq-local indent-tabs-mode nil)
+
+  ;; Auto indent on }
+  (setq-local
+   electric-indent-chars (cons ?} (and (boundp 'electric-indent-chars)
+                                       electric-indent-chars)))
 
   ;; Allow paragraph fills for comments
   (setq-local comment-start-skip "\\(?://[/!]*\\|/\\*[*!]?\\)[[:space:]]*")
