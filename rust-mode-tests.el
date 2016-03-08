@@ -2520,6 +2520,12 @@ Fontification needs to include this whole string or none of it.
     )
   )
 
+(when (fboundp 'prog-mode)
+  (ert-deftest rust-derived-mode ()
+    (with-temp-buffer
+      (rust-mode)
+      (should (derived-mode-p 'prog-mode)))))
+
 ;; If electric-pair-mode is available, load it and run the tests that use it.  If not,
 ;; no error--the tests will be skipped.
 (require 'elec-pair nil t)
