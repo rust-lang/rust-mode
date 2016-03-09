@@ -1409,6 +1409,28 @@ See `compilation-error-regexp-alist' for help on their format.")
   (interactive)
   (rust-playpen-region (point-min) (point-max)))
 
+(defun rust-promote-module-into-dir ()
+  "Promote the module file visited by the current buffer into its own directory.
+
+For example, if the current buffer is visiting the file `foo.rs',
+then this function creates the directory `foo' and renames the
+file to `foo/mod.rs'.  The current buffer will be updated to
+visit the new file."
+  (interactive)
+  (let ((filename (buffer-file-name)))
+    (if (not filename)
+        (message "Buffer is not visiting a file.")
+      (if (string-equal (file-name-nondirectory filename) "mod.rs")
+          (message "Won't promote a module file already named mod.rs.")
+        (let* ((basename (file-name-sans-extension
+                          (file-name-nondirectory filename)))
+               (mod-dir (file-name-as-directory
+                         (concat (file-name-directory filename) basename)))
+               (new-name (concat mod-dir "mod.rs")))
+          (mkdir mod-dir t)
+          (rename-file filename new-name 1)
+          (set-visited-file-name new-name))))))
+
 (provide 'rust-mode)
 
 ;;; rust-mode.el ends here
