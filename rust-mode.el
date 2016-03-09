@@ -1266,7 +1266,8 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
   (interactive)
   (setq-local rust-format-on-save nil))
 
-;; For compatibility with Emacs < 24, derive conditionally
+;; For compatibility with Emacs < 24, derive conditionally.
+;; Also see the hack after the rust-mode definition.
 (defalias 'rust-parent-mode
   (if (fboundp 'prog-mode) 'prog-mode 'fundamental-mode))
 
@@ -1324,6 +1325,11 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
   (setq-local electric-pair-inhibit-predicate 'rust-electric-pair-inhibit-predicate-wrap)
   (add-hook 'after-revert-hook 'rust--after-revert-hook nil t)
   (add-hook 'before-save-hook 'rust--before-save-hook nil t))
+
+;; We need this so that derived-mode-p does the right thing.
+;; This can be removed when rust-parent-mode is removed.
+(when (fboundp 'prog-mode)
+  (put 'rust-mode 'derived-mode-parent 'prog-mode))
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.rs\\'" . rust-mode))
