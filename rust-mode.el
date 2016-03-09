@@ -530,11 +530,7 @@ function or trait.  When nil, where will be aligned with fn or trait."
 (defun rust-re-item-def (itype)
   (concat (rust-re-word itype) "[[:space:]]+" (rust-re-grab rust-re-ident)))
 
-;; (See PR #42 -- this is just like `(regexp-opt words 'symbols)` from
-;; newer Emacs versions, but will work on Emacs 23.)
-(defun regexp-opt-symbols (words)
-  (concat "\\_<" (regexp-opt words t) "\\_>"))
-(defconst rust-re-special-types (regexp-opt-symbols rust-special-types))
+(defconst rust-re-special-types (regexp-opt rust-special-types 'symbols))
 
 
 (defun rust-path-font-lock-matcher (re-ident)
@@ -558,10 +554,10 @@ the desired identifiers), but does not match type annotations \"foo::<\"."
   (append
    `(
      ;; Keywords proper
-     (,(regexp-opt-symbols rust-mode-keywords) . font-lock-keyword-face)
+     (,(regexp-opt rust-mode-keywords 'symbols) . font-lock-keyword-face)
 
      ;; Special types
-     (,(regexp-opt-symbols rust-special-types) . font-lock-type-face)
+     (,(regexp-opt rust-special-types 'symbols) . font-lock-type-face)
 
      ;; The unsafe keyword
      ("\\_<unsafe\\_>" . 'rust-unsafe-face)
@@ -1266,10 +1262,6 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
   (interactive)
   (setq-local rust-format-on-save nil))
 
-;; For compatibility with Emacs < 24, derive conditionally
-(defalias 'rust-parent-mode
-  (if (fboundp 'prog-mode) 'prog-mode 'fundamental-mode))
-
 (defvar rust-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-c C-f") 'rust-format-buffer)
@@ -1277,7 +1269,7 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
   "Keymap for Rust major mode.")
 
 ;;;###autoload
-(define-derived-mode rust-mode rust-parent-mode "Rust"
+(define-derived-mode rust-mode prog-mode "Rust"
   "Major mode for Rust code.
 
 \\{rust-mode-map}"
