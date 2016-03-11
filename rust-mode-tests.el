@@ -2524,8 +2524,9 @@ Fontification needs to include this whole string or none of it.
 ;; no error--the tests will be skipped.
 (require 'elec-pair nil t)
 
-;; The emacs 23 version of ERT does not have test skipping functionality.  So
-;; don't even define these tests if elec-pair is not available.
+;; The emacs 23 and 24 versions of ERT do not have test skipping
+;; functionality.  So don't even define these tests if elec-pair is
+;; not available.
 (when (featurep 'elec-pair)
   (defun test-electric-pair-insert (original point-pos char closer)
     (let ((old-electric-pair-mode electric-pair-mode))

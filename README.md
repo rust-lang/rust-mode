@@ -2,8 +2,7 @@
 ============================================================
 
 `rust-mode` makes editing [Rust](http://rust-lang.org) code with Emacs
-enjoyable.
-
+enjoyable.  `rust-mode` requires Emacs 24 or later.
 
 ### Manual Installation
 
@@ -38,14 +37,6 @@ Then do this to load the package listing:
 * <kbd>M-x eval-buffer</kbd>
 * <kbd>M-x package-refresh-contents</kbd>
 
-If you use a version of Emacs prior to 24 that doesn't include
-`package.el`, you can get it from [here](http://git.savannah.gnu.org/gitweb/?p=emacs.git;a=blob_plain;hb=ba08b24186711eaeb3748f3d1f23e2c2d9ed0d09;f=lisp/emacs-lisp/package.el).
-
-If you have an older ELPA `package.el` installed from tromey.com, you
-should upgrade in order to support installation from multiple sources.
-The ELPA archive is deprecated and no longer accepting new packages,
-so the version there (1.7.1) is very outdated.
-
 #### Install `rust-mode`
 
 One you have `package.el`, you can install `rust-mode` or any other
@@ -72,11 +63,6 @@ The file `rust-mode-tests.el` contains tests that can be run via
 [ERT](http://www.gnu.org/software/emacs/manual/html_node/ert/index.html).
 You can use `run_rust_emacs_tests.sh` to run them in batch mode, if
 you set the environment variable EMACS to a program that runs emacs.
-
-To test it under emacs 23, which does not ship with ERT, download ert.el from
-https://raw.githubusercontent.com/ohler/ert/c619b56c5bc6a866e33787489545b87d79973205/lisp/emacs-lisp/ert.el
-and put it in a place where emacs can find it.  (ERT has shipped with emacs
-since emacs 24.)
 
 ## License
 
