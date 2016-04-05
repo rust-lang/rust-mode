@@ -1058,10 +1058,10 @@ the desired identifiers), but does not match type annotations \"foo::<\"."
   (let ((result
          ;; Replace /* with same number of spaces
          (replace-regexp-in-string
-          "\\(?:/\\*+\\)[!*]"
+          "\\(?:/\\*+\\)"
           (lambda (s)
             ;; We want the * to line up with the first * of the comment start
-            (concat (make-string (- (length s) 2) ?\x20) "*"))
+            (concat (make-string (- (length s) 1) ?\x20) "*"))
           line-start)))
     ;; Make sure we've got at least one space at the end
     (if (not (= (aref result (- (length result) 1)) ?\x20))
