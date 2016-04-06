@@ -164,6 +164,15 @@ Also, the result should be the same regardless of whether the code is at the beg
      //
      // This is the second really really really really really really long paragraph" 1 89))
 
+(ert-deftest fill-paragraph-multi-line-style-comment ()
+  (test-fill-paragraph
+   "/* This is a very very very very very very very very long string
+ */"
+   "/* This is a very very very very
+ * very very very very long
+ * string
+ */"))
+
 (ert-deftest fill-paragraph-multi-line-style-inner-doc-comment ()
   (test-fill-paragraph
    "/*! This is a very very very very very very very long string
