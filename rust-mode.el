@@ -253,7 +253,13 @@ function or trait.  When nil, where will be aligned with fn or trait."
                 ;; where A: Eq
                 ;;       B: Hash <- on this line
                 (and (save-excursion
-                       (re-search-backward "\\bwhere\\b" function-start t))
+                       (and
+                        ;; There is a where clause,
+                        (re-search-backward "\\bwhere\\b" function-start t)
+                        ;; but not inside a string,
+                        (not (nth 3 (syntax-ppss)))
+                        ;; nor inside a comment
+                        (not (nth 4 (syntax-ppss)))))
                      (= current-level function-level)))
         (goto-char function-start)))))
 
