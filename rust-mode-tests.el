@@ -623,6 +623,38 @@ impl<'a, K, Q: ?Sized, V, S> Index<&'a Q> for HashMap<K, V, S>
 }
 "))
 
+(ert-deftest indent-align-where-in-comment1 ()
+  (test-indent
+   "/// - there must not exist an edge U->V in the graph where:
+#[derive(Clone, PartialEq, Eq)]
+pub struct Region { // <-- this should be flush with left margin!
+    entry: BasicBlockIndex,
+    leaves: BTreeMap<BasicBlockIndex, usize>,
+}
+"))
+
+(ert-deftest indent-align-where-in-comment2 ()
+  (test-indent
+   "fn foo<F,G>(f:F, g:G)
+    where F:Send,
+// where
+          G:Sized
+{
+    let body;
+}
+"))
+
+(ert-deftest indent-align-where-in-comment3 ()
+  (test-indent
+   "fn foo<F,G>(f:F, g:G)
+    where F:Send,
+// where      F:ThisIsNotActualCode,
+          G:Sized
+{
+    let body;
+}
+"))
+
 (ert-deftest indent-square-bracket-alignment ()
   (test-indent
    "

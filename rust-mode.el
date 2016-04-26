@@ -218,6 +218,21 @@ function or trait.  When nil, where will be aligned with fn or trait."
           (rust-in-macro))
       )))
 
+(defun rust-looking-at-where ()
+  "Return T when looking at the \"where\" keyword."
+  (and (looking-at-p "\\bwhere\\b")
+       (not (rust-in-str-or-cmnt))))
+
+(defun rust-rewind-to-where (&optional limit)
+  "Rewind the point to the closest occurrence of the \"where\" keyword.
+Return T iff a where-clause was found.  Does not rewind past
+LIMIT when passed, otherwise only stops at the beginning of the
+buffer."
+  (when (re-search-backward "\\bwhere\\b" limit t)
+    (if (rust-in-str-or-cmnt)
+        (rust-rewind-to-where limit)
+      t)))
+
 (defun rust-align-to-expr-after-brace ()
   (save-excursion
     (forward-char)
@@ -248,12 +263,12 @@ function or trait.  When nil, where will be aligned with fn or trait."
         (setq function-start (point)
               function-level (rust-paren-level)))
       ;; On a where clause
-      (when (or (looking-at "\\bwhere\\b")
+      (when (or (rust-looking-at-where)
                 ;; or in one of the following lines, e.g.
                 ;; where A: Eq
                 ;;       B: Hash <- on this line
                 (and (save-excursion
-                       (re-search-backward "\\bwhere\\b" function-start t))
+                       (rust-rewind-to-where function-start))
                      (= current-level function-level)))
         (goto-char function-start)))))
 
@@ -392,7 +407,8 @@ function or trait.  When nil, where will be aligned with fn or trait."
 
               ;; When the user chose not to indent the start of the where
               ;; clause, put it on the baseline.
-              ((and (not rust-indent-where-clause) (looking-at "\\bwhere\\b"))
+              ((and (not rust-indent-where-clause)
+                    (rust-looking-at-where))
                baseline)
 
               ;; If we're in any other token-tree / sexp, then:
@@ -425,17 +441,16 @@ function or trait.  When nil, where will be aligned with fn or trait."
                     ;; When we're not on a line starting with "where ", but
                     ;; still on a where-clause line, go to "where "
                     (when (and
-                           (not (looking-at "\\bwhere\\b"))
+                           (not (rust-looking-at-where))
                            ;; We're looking at something like "F: ..."
-                           (and (looking-at (concat rust-re-ident ":"))
-                                ;; There is a "where " somewhere after the
-                                ;; start of the function.
-                                (re-search-backward "\\bwhere\\b"
-                                                    function-start t)
-                                ;; Make sure we're not inside the function
-                                ;; already (e.g. initializing a struct) by
-                                ;; checking we are the same level.
-                                (= function-level level)))
+                           (looking-at (concat rust-re-ident ":"))
+                           ;; There is a "where " somewhere after the
+                           ;; start of the function.
+                           (rust-rewind-to-where function-start)
+                           ;; Make sure we're not inside the function
+                           ;; already (e.g. initializing a struct) by
+                           ;; checking we are the same level.
+                           (= function-level level))
                       ;; skip over "where"
                       (forward-char 5)
                       ;; Unless "where" is at the end of the line
