@@ -1195,16 +1195,15 @@ the desired identifiers), but does not match type annotations \"foo::<\"."
 ;;; Imenu support
 (defvar rust-imenu-generic-expression
   (append (mapcar #'(lambda (x)
-                      (list nil (rust-re-item-def-imenu x) 1))
-                  '("enum" "struct" "type" "mod" "fn" "trait" "macro_rules!"))
-          `(("Impl" ,(rust-re-item-def-imenu "impl") 1)))
+                      (list (capitalize x) (rust-re-item-def-imenu x) 1))
+                  '("enum" "struct" "type" "mod" "fn" "trait" "impl"))
+          `(("Macro" ,(rust-re-item-def-imenu "macro_rules!") 1)))
   "Value for `imenu-generic-expression' in Rust mode.
 
-Create a flat index of the item definitions in a Rust file.
+Create a hierarchical index of the item definitions in a Rust file.
 
-Imenu will show all the enums, structs, etc. at the same level.
-Implementations will be shown under the `Impl` subheading.  Use
-idomenu (imenu with `ido-mode') for best mileage.")
+Imenu will show all the enums, structs, etc. in their own subheading.
+Use idomenu (imenu with `ido-mode') for best mileage.")
 
 ;;; Defun Motions
 
