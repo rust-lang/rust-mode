@@ -31,6 +31,7 @@
 (defconst rust-re-ident "[[:word:][:multibyte:]_][[:word:][:multibyte:]_[:digit:]]*")
 (defconst rust-re-lc-ident "[[:lower:][:multibyte:]_][[:word:][:multibyte:]_[:digit:]]*")
 (defconst rust-re-uc-ident "[[:upper:]][[:word:][:multibyte:]_[:digit:]]*")
+(defconst rust-re-vis "pub")
 
 (defconst rust-re-non-standard-string
   (rx
@@ -543,8 +544,13 @@ buffer."
 (defconst rust-re-pre-expression-operators "[-=!%&*/:<>[{(|.^;}]")
 (defun rust-re-word (inner) (concat "\\<" inner "\\>"))
 (defun rust-re-grab (inner) (concat "\\(" inner "\\)"))
+(defun rust-re-shy (inner) (concat "\\(?:" inner "\\)"))
 (defun rust-re-item-def (itype)
   (concat (rust-re-word itype) "[[:space:]]+" (rust-re-grab rust-re-ident)))
+(defun rust-re-item-def-imenu (itype)
+  (concat "^[[:space:]]*"
+          (rust-re-shy (concat (rust-re-word rust-re-vis) "[[:space:]]+")) "?"
+          (rust-re-item-def itype)))
 
 (defconst rust-re-special-types (regexp-opt rust-special-types 'symbols))
 
@@ -1189,9 +1195,9 @@ the desired identifiers), but does not match type annotations \"foo::<\"."
 ;;; Imenu support
 (defvar rust-imenu-generic-expression
   (append (mapcar #'(lambda (x)
-                      (list nil (rust-re-item-def x) 1))
+                      (list nil (rust-re-item-def-imenu x) 1))
                   '("enum" "struct" "type" "mod" "fn" "trait"))
-          `(("Impl" ,(rust-re-item-def "impl") 1)))
+          `(("Impl" ,(rust-re-item-def-imenu "impl") 1)))
   "Value for `imenu-generic-expression' in Rust mode.
 
 Create a flat index of the item definitions in a Rust file.
