@@ -1196,7 +1196,7 @@ the desired identifiers), but does not match type annotations \"foo::<\"."
 (defvar rust-imenu-generic-expression
   (append (mapcar #'(lambda (x)
                       (list nil (rust-re-item-def-imenu x) 1))
-                  '("enum" "struct" "type" "mod" "fn" "trait"))
+                  '("enum" "struct" "type" "mod" "fn" "trait" "macro_rules!"))
           `(("Impl" ,(rust-re-item-def-imenu "impl") 1)))
   "Value for `imenu-generic-expression' in Rust mode.
 
@@ -1340,6 +1340,7 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
   (setq-local comment-multi-line t)
   (setq-local comment-line-break-function 'rust-comment-indent-new-line)
   (setq-local imenu-generic-expression rust-imenu-generic-expression)
+  (setq-local imenu-syntax-alist '((?! . "w"))) ; For macro_rules!
   (setq-local beginning-of-defun-function 'rust-beginning-of-defun)
   (setq-local end-of-defun-function 'rust-end-of-defun)
   (setq-local parse-sexp-lookup-properties t)
