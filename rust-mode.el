@@ -31,6 +31,7 @@
 (defconst rust-re-ident "[[:word:][:multibyte:]_][[:word:][:multibyte:]_[:digit:]]*")
 (defconst rust-re-lc-ident "[[:lower:][:multibyte:]_][[:word:][:multibyte:]_[:digit:]]*")
 (defconst rust-re-uc-ident "[[:upper:]][[:word:][:multibyte:]_[:digit:]]*")
+(defconst rust-re-vis "pub")
 
 (defconst rust-re-non-standard-string
   (rx
@@ -543,8 +544,13 @@ buffer."
 (defconst rust-re-pre-expression-operators "[-=!%&*/:<>[{(|.^;}]")
 (defun rust-re-word (inner) (concat "\\<" inner "\\>"))
 (defun rust-re-grab (inner) (concat "\\(" inner "\\)"))
+(defun rust-re-shy (inner) (concat "\\(?:" inner "\\)"))
 (defun rust-re-item-def (itype)
   (concat (rust-re-word itype) "[[:space:]]+" (rust-re-grab rust-re-ident)))
+(defun rust-re-item-def-imenu (itype)
+  (concat "^[[:space:]]*"
+          (rust-re-shy (concat (rust-re-word rust-re-vis) "[[:space:]]+")) "?"
+          (rust-re-item-def itype)))
 
 (defconst rust-re-special-types (regexp-opt rust-special-types 'symbols))
 
@@ -1189,16 +1195,15 @@ the desired identifiers), but does not match type annotations \"foo::<\"."
 ;;; Imenu support
 (defvar rust-imenu-generic-expression
   (append (mapcar #'(lambda (x)
-                      (list nil (rust-re-item-def x) 1))
-                  '("enum" "struct" "type" "mod" "fn" "trait"))
-          `(("Impl" ,(rust-re-item-def "impl") 1)))
+                      (list (capitalize x) (rust-re-item-def-imenu x) 1))
+                  '("enum" "struct" "type" "mod" "fn" "trait" "impl"))
+          `(("Macro" ,(rust-re-item-def-imenu "macro_rules!") 1)))
   "Value for `imenu-generic-expression' in Rust mode.
 
-Create a flat index of the item definitions in a Rust file.
+Create a hierarchical index of the item definitions in a Rust file.
 
-Imenu will show all the enums, structs, etc. at the same level.
-Implementations will be shown under the `Impl` subheading.  Use
-idomenu (imenu with `ido-mode') for best mileage.")
+Imenu will show all the enums, structs, etc. in their own subheading.
+Use idomenu (imenu with `ido-mode') for best mileage.")
 
 ;;; Defun Motions
 
@@ -1334,6 +1339,7 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
   (setq-local comment-multi-line t)
   (setq-local comment-line-break-function 'rust-comment-indent-new-line)
   (setq-local imenu-generic-expression rust-imenu-generic-expression)
+  (setq-local imenu-syntax-alist '((?! . "w"))) ; For macro_rules!
   (setq-local beginning-of-defun-function 'rust-beginning-of-defun)
   (setq-local end-of-defun-function 'rust-end-of-defun)
   (setq-local parse-sexp-lookup-properties t)
