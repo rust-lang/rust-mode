@@ -1359,13 +1359,13 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
 ;; Issue #104: When reverting the buffer, make sure all fontification is redone
 ;; so that we don't end up missing a non-angle-bracket '<' or '>' character.
 (defun rust--after-revert-hook ()
-  (let
-      ;; Newer emacs versions (25 and later) make `font-lock-fontify-buffer'
-      ;; interactive-only, and want lisp code to call `font-lock-flush' or
-      ;; `font-lock-ensure'.  But those don't exist in emacs 24 and earlier.
-      ((font-lock-ensure-fn (if (fboundp 'font-lock-ensure) 'font-lock-ensure 'font-lock-fontify-buffer)))
-    (funcall font-lock-ensure-fn))
-  )
+  ;; In Emacs 25 and later, the preferred method to force fontification is
+  ;; to use `font-lock-ensure', which doesn't exist in Emacs 24 and earlier.
+  ;; If it's not available, fall back to calling `font-lock-fontify-region'
+  ;; on the whole buffer.
+  (if (fboundp 'font-lock-ensure)
+      (font-lock-ensure)
+    (font-lock-fontify-region (point-min) (point-max))))
 
 (defun rust--before-save-hook ()
   (when rust-format-on-save (rust-format-buffer)))
