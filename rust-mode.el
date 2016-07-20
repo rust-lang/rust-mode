@@ -1260,7 +1260,7 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
     (if (zerop (call-process-region (point-min) (point-max) rust-rustfmt-bin t t nil))
         (progn
           (if (not (string= (buffer-string) (with-current-buffer buf (buffer-string))))
-              (progn (copy-to-buffer buf (point-min) (point-max))))
+              (copy-to-buffer buf (point-min) (point-max)))
           (kill-buffer))
       (error "Rustfmt failed, see *rustfmt* buffer for details"))))
 
