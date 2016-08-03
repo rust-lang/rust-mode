@@ -1365,9 +1365,10 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
   ;; to use `font-lock-ensure', which doesn't exist in Emacs 24 and earlier.
   ;; If it's not available, fall back to calling `font-lock-fontify-region'
   ;; on the whole buffer.
-  (if (fboundp 'font-lock-ensure)
-      (font-lock-ensure)
-    (font-lock-fontify-region (point-min) (point-max))))
+  (save-excursion
+    (if (fboundp 'font-lock-ensure)
+        (font-lock-ensure)
+      (font-lock-fontify-region (point-min) (point-max)))))
 
 (defun rust--before-save-hook ()
   (when rust-format-on-save (rust-format-buffer)))
