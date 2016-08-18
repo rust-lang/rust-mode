@@ -2561,6 +2561,18 @@ Fontification needs to include this whole string or none of it.
     )
   )
 
+(ert-deftest rust-test-revert-hook-preserves-point ()
+  (with-temp-buffer
+    ;; Insert some code, and put point in the middle.
+    (insert "fn foo() {}\n")
+    (insert "fn bar() {}\n")
+    (insert "fn baz() {}\n")
+    (goto-char (point-min))
+    (forward-line 1)
+    (let ((initial-point (point)))
+      (rust--after-revert-hook)
+      (should (equal initial-point (point))))))
+
 ;; If electric-pair-mode is available, load it and run the tests that use it.  If not,
 ;; no error--the tests will be skipped.
 (require 'elec-pair nil t)
