@@ -1428,7 +1428,7 @@ See `compilation-error-regexp-alist' for help on their format.")
         (let ((start-of-error
                (save-excursion
                  (beginning-of-line)
-                 (while (not (looking-at "^[a-z]+:"))
+                 (while (not (looking-at "^[a-z]+:\\|^[a-z]+\\[E[0-9]+\\]:"))
                    (forward-line -1))
                  (point))))
           (set-window-start (selected-window) start-of-error))))))
