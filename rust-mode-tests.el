@@ -1162,6 +1162,23 @@ All positions are position symbols found in `rust-test-positions-alist'."
    'nonblank-line-indented-already-middle-target
    #'indent-for-tab-command))
 
+(ert-deftest no-stack-overflow-in-rust-rewind-irrelevant ()
+  (with-temp-buffer
+    (rust-mode)
+    (insert "fn main() {\n    let x = 1;")
+    ;; Insert 150 separate comments on the same line
+    (dotimes (i 150)
+      (insert "/* foo */ "))
+    ;; Rewinding from the last commment to the end of the let needs at least
+    ;; 150 iterations, but if we limit the stack depth to 100 (this appears to
+    ;; be some minimum), a recursive function would overflow, throwing an
+    ;; error.
+    (let ((max-lisp-eval-depth 100))
+      (rust-rewind-irrelevant)
+      ;; Only a non-stack overflowing function would make it this far.  Also
+      ;; check that we rewound till after the ;
+      (should (= (char-before) ?\;)))))
+
 (defun rust-test-fontify-string (str)
   (with-temp-buffer
     (rust-mode)
