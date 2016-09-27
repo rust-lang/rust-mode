@@ -4,6 +4,8 @@
 `rust-mode` makes editing [Rust](http://rust-lang.org) code with Emacs
 enjoyable.  `rust-mode` requires Emacs 24 or later.
 
+## Installation
+
 ### Manual Installation
 
 To install manually, check out this repository and add this to your
@@ -63,6 +65,18 @@ The file `rust-mode-tests.el` contains tests that can be run via
 [ERT](http://www.gnu.org/software/emacs/manual/html_node/ert/index.html).
 You can use `run_rust_emacs_tests.sh` to run them in batch mode, if
 you set the environment variable EMACS to a program that runs emacs.
+
+## Features
+
+### Formatting with [rustfmt][rfmt]
+
+The `rust-format-buffer` function will format your code with
+[rustfmt][rfmt] if installed.
+
+Placing `(setq rust-format-on-save t)` in your `~/.emacs` will enable automatic
+running of `rust-format-buffer` when you save a buffer.
+
+[rfmt]: https://crates.io/crates/rustfmt/
 
 ## License
 
