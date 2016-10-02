@@ -681,6 +681,12 @@ match data if found. Returns nil if not within a Rust string."
      ;; Field names like `foo:`, highlight excluding the :
      (,(concat (rust-re-grab rust-re-ident) ":[^:]") 1 font-lock-variable-name-face)
 
+     ;; Type-inferred constant
+     (,(concat "\\_<\\(?:let\\|ref\\)\\s-+" (rust-re-grab rust-re-ident) "\\_>") 1 font-lock-constant-face)
+
+     ;; Type-inferred variable
+     (,(concat "\\_<\\(?:let\\|ref\\)\\s-+mut\\s-+" (rust-re-grab rust-re-ident) "\\_>") 1 font-lock-variable-name-face)
+
      ;; Type names like `Foo::`, highlight excluding the ::
      (,(rust-path-font-lock-matcher rust-re-uc-ident) 1 font-lock-type-face)
 
