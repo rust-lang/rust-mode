@@ -616,6 +616,12 @@ the desired identifiers), but does not match type annotations \"foo::<\"."
      ;; Field names like `foo:`, highlight excluding the :
      (,(concat (rust-re-grab rust-re-ident) ":[^:]") 1 font-lock-variable-name-face)
 
+     ;; Type-inferred constant
+     (,(concat "\\_<\\(?:let\\|ref\\)\\s-+" (rust-re-grab rust-re-ident) "\\_>") 1 font-lock-constant-face)
+
+     ;; Type-inferred variable
+     (,(concat "\\_<\\(?:let\\|ref\\)\\s-+mut\\s-+" (rust-re-grab rust-re-ident) "\\_>") 1 font-lock-variable-name-face)
+
      ;; Type names like `Foo::`, highlight excluding the ::
      (,(rust-path-font-lock-matcher rust-re-uc-ident) 1 font-lock-type-face)
 
@@ -769,7 +775,7 @@ the desired identifiers), but does not match type annotations \"foo::<\"."
   can have a where clause, rewind back to just before the name of
   the subject of that where clause and return the new point.
   Otherwise return nil"
-  
+
   (let* ((ident-pos (point))
          (newpos (save-excursion
                    (rust-rewind-irrelevant)
@@ -812,7 +818,7 @@ the desired identifiers), but does not match type annotations \"foo::<\"."
       ;; A type alias or ascription could have a type param list.  Skip backwards past it.
       (when (member token '(ambiguous-operator open-brace))
         (rust-rewind-type-param-list))
-      
+
       (cond
 
        ;; Certain keywords always introduce expressions
@@ -827,7 +833,7 @@ the desired identifiers), but does not match type annotations \"foo::<\"."
        ;; An ident! followed by an open brace is a macro invocation.  Consider
        ;; it to be an expression.
        ((and (equal token 'open-brace) (rust-looking-back-macro)) t)
-       
+
        ;; An identifier is right after an ending paren, bracket, angle bracket
        ;; or curly brace.  It's a type if the last sexp was a type.
        ((and (equal token 'ident) (equal 5 (rust-syntax-class-before-point)))
@@ -841,7 +847,7 @@ the desired identifiers), but does not match type annotations \"foo::<\"."
         (backward-sexp)
         (rust-rewind-irrelevant)
         (looking-back "[{;]" (1- (point))))
-       
+
        ((rust-looking-back-ident)
         (rust-rewind-qualified-ident)
         (rust-rewind-irrelevant)
@@ -864,7 +870,7 @@ the desired identifiers), but does not match type annotations \"foo::<\"."
                         (rust-rewind-irrelevant)
                         (rust-looking-back-symbols '("enum" "struct" "trait" "type"))))))
            ))
-         
+
          ((equal token 'ambiguous-operator)
           (cond
            ;; An ampersand after an ident has to be an operator rather than a & at the beginning of a ref type
@@ -895,7 +901,7 @@ the desired identifiers), but does not match type annotations \"foo::<\"."
                   (rust-rewind-irrelevant)
                   (rust-looking-back-str "enum")))))
             t)
-           
+
            ;; Otherwise the ambiguous operator is a type if the identifier is a type
            ((rust-is-in-expression-context 'ident) t)))
 
@@ -944,7 +950,7 @@ the desired identifiers), but does not match type annotations \"foo::<\"."
 
        ;; A :: introduces a type (or module, but not an expression in any case)
        ((rust-looking-back-str "::") nil)
-       
+
        ((rust-looking-back-str ":")
         (backward-char)
         (rust-is-in-expression-context 'colon))
@@ -980,7 +986,7 @@ the desired identifiers), but does not match type annotations \"foo::<\"."
 (defun rust-is-lt-char-operator ()
   "Return t if the < sign just after point is an operator rather
   than an opening angle bracket, otherwise nil."
-  
+
   (let ((case-fold-search nil))
     (save-excursion
       (rust-rewind-irrelevant)
@@ -992,7 +998,7 @@ the desired identifiers), but does not match type annotations \"foo::<\"."
        ((and (rust-looking-back-str "<")
              (not (equal 4 (rust-syntax-class-before-point)))
              (not (rust-looking-back-str "<<"))))
-       
+
        ;; On the other hand, if we are after a closing paren/brace/bracket it
        ;; can only be an operator, not an angle bracket.  Likewise, if we are
        ;; after a string it's an operator.  (The string case could actually be
@@ -1017,7 +1023,7 @@ the desired identifiers), but does not match type annotations \"foo::<\"."
          ;; The special types can't take type param lists, so a < after one is
          ;; always an operator
          (looking-at rust-re-special-types)
-         
+
          (rust-is-in-expression-context 'ident)))
 
        ;; Otherwise, assume it's an angle bracket
@@ -1059,7 +1065,7 @@ the desired identifiers), but does not match type annotations \"foo::<\"."
       ;; to balance regardless of the < and >, so if we don't treat any < or >
       ;; as angle brackets it won't mess up any paren balancing.
       ((rust-in-macro) t)
-      
+
       ((looking-at "<")
        (rust-is-lt-char-operator))
 
