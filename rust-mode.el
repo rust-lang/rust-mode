@@ -1406,9 +1406,17 @@ See `compilation-error-regexp-alist' for help on their format.")
   (let ((file "\\([^\n]+\\)")
         (start-line "\\([0-9]+\\)")
         (start-col  "\\([0-9]+\\)"))
-    (let ((re (concat "^ *--> " file ":" start-line ":" start-col ; --> 1:2:3
-                      )))
-      (cons re '(1 2 3))))
+    (let ((arrow-filespec (concat " *--> " file ":" start-line ":" start-col ; --> 1:2:3
+                                  )))
+      (let ((error-re (concat "^[Ee]rror\\[E[0-9]+\\]: [^\n]*\n" arrow-filespec))
+            (warn-re  (concat "^[Ww]arning: [^\n]*\n" arrow-filespec)))
+        ;; Below, FILE, LINE, and COLUMN are all indexes of subexpressions in REGEXP,
+        ;; and TYPE is 2 for error, 1 for warning, 0 for info.
+        ;; (See `compilation-error-regexp-alist` doc for more details.)
+        ;;
+        ;; regexp format is:    REGEXP    FILE [LINE COLUMN TYPE HYPERLINK HIGHLIGHT ...]
+        (list `(rustc-new-error ,error-re 1     2    3      2)
+              `(rustc-new-warn  ,warn-re  1     2    3      1)))))
   "Specifications for matching errors in rustc invocations (new style).
 See `compilation-error-regexp-alist' for help on their format.")
 
@@ -1419,32 +1427,11 @@ See `compilation-error-regexp-alist' for help on their format.")
   "Specifications for matching panics in cargo test invocations.
 See `compilation-error-regexp-alist' for help on their format.")
 
-(defun rustc-scroll-down-after-next-error ()
-  "In the new style error messages, the regular expression
-   matches on the file name (which appears after `-->`), but the
-   start of the error appears a few lines earlier. This hook runs
-   after `M-x next-error`; it simply scrolls down a few lines in
-   the compilation window until the top of the error is visible."
-  (save-selected-window
-    (when (eq major-mode 'rust-mode)
-      (select-window (get-buffer-window next-error-last-buffer))
-      (when (save-excursion
-              (beginning-of-line)
-              (looking-at " *-->"))
-        (let ((start-of-error
-               (save-excursion
-                 (beginning-of-line)
-                 (while (not (looking-at "^[a-z]+:\\|^[a-z]+\\[E[0-9]+\\]:"))
-                   (forward-line -1))
-                 (point))))
-          (set-window-start (selected-window) start-of-error))))))
-
 (eval-after-load 'compile
   '(progn
-     (add-to-list 'compilation-error-regexp-alist-alist
-                  (cons 'rustc-new rustc-new-compilation-regexps))
-     (add-to-list 'compilation-error-regexp-alist 'rustc-new)
-     (add-hook 'next-error-hook 'rustc-scroll-down-after-next-error)
+     (dolist (entry rustc-new-compilation-regexps)
+       (add-to-list 'compilation-error-regexp-alist-alist entry)
+       (add-to-list 'compilation-error-regexp-alist (car entry)))
      (add-to-list 'compilation-error-regexp-alist-alist
                   (cons 'rustc rustc-compilation-regexps))
      (add-to-list 'compilation-error-regexp-alist 'rustc)
