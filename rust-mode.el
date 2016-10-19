@@ -32,6 +32,7 @@
 (defconst rust-re-lc-ident "[[:lower:][:multibyte:]_][[:word:][:multibyte:]_[:digit:]]*")
 (defconst rust-re-uc-ident "[[:upper:]][[:word:][:multibyte:]_[:digit:]]*")
 (defconst rust-re-vis "pub")
+(defconst rust-re-unsafe "unsafe")
 
 (defconst rust-re-non-standard-string
   (rx
@@ -556,6 +557,7 @@ buffer."
 (defun rust-re-item-def-imenu (itype)
   (concat "^[[:space:]]*"
           (rust-re-shy (concat (rust-re-word rust-re-vis) "[[:space:]]+")) "?"
+          (rust-re-shy (concat (rust-re-word rust-re-unsafe) "[[:space:]]+")) "?"
           (rust-re-item-def itype)))
 
 (defconst rust-re-special-types (regexp-opt rust-special-types 'symbols))
