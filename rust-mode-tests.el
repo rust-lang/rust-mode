@@ -1599,6 +1599,19 @@ fn main() {
 "
    )))
 
+(ert-deftest indent-method-chains-look-over-comment ()
+  (let ((rust-indent-method-chain t)) (test-indent
+   "
+fn main() {
+    thing.a.do_it
+    // A comment
+           .aligned
+    // Another comment
+           .more_alignment();
+}
+"
+   )))
+
 (ert-deftest indent-method-chains-comment ()
   (let ((rust-indent-method-chain t)) (test-indent
    "
@@ -1626,6 +1639,17 @@ fn main() { // comment here should not push next line out
 }
 "
    )))
+
+(ert-deftest indent-method-chains-after-comment2 ()
+  (let ((rust-indent-method-chain t)) (test-indent
+   "
+fn main() {
+    // Lorem ipsum lorem ipsum lorem ipsum lorem.ipsum
+    foo.bar()
+}
+"
+   )))
+
 
 (ert-deftest test-for-issue-36-syntax-corrupted-state ()
   "This is a test for a issue #36, which involved emacs's

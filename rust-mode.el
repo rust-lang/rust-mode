@@ -301,6 +301,17 @@ buffer."
     (when (looking-at (concat "\s*\." rust-re-ident))
       (forward-line -1)
       (end-of-line)
+      ;; Keep going up (looking for a line that could contain a method chain)
+      ;; while we're in a comment or on a blank line. Stop when the paren
+      ;; level changes.
+      (let ((level (rust-paren-level)))
+        (while (and (or (rust-in-str-or-cmnt)
+                        ;; Only whitespace (or nothing) from the beginning to
+                        ;; the end of the line.
+                        (looking-back "^\s*" (point-at-bol)))
+                    (= (rust-paren-level) level))
+          (forward-line -1)
+          (end-of-line)))
 
       (let
           ;; skip-dot-identifier is used to position the point at the
