@@ -37,6 +37,16 @@ Then do this to load the package listing:
 * <kbd>M-x eval-buffer</kbd>
 * <kbd>M-x package-refresh-contents</kbd>
 
+#### MELPA stable
+
+MELPA stable only updates when a new version tag is created.  There isn't a
+specified frequency for this project to release versions; if you are a MELPA
+stable user and feel that the last release tag is too far out of date, open a
+pull request that updates the version header in `rust-mode.el` and note that a
+new version tag should be added when the request is merged.
+See [Pull Request #178][https://github.com/rust-lang/rust-mode/pull/178] (the
+first such pull request) for an example of this.
+
 #### Install `rust-mode`
 
 One you have `package.el`, you can install `rust-mode` or any other
