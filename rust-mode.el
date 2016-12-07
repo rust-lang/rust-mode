@@ -1408,15 +1408,17 @@ See `compilation-error-regexp-alist' for help on their format.")
         (start-col  "\\([0-9]+\\)"))
     (let ((arrow-filespec (concat " *--> " file ":" start-line ":" start-col ; --> 1:2:3
                                   )))
-      (let ((error-re (concat "^[Ee]rror\\[E[0-9]+\\]: [^\n]*\n" arrow-filespec))
-            (warn-re  (concat "^[Ww]arning: [^\n]*\n" arrow-filespec)))
+      (let ((error-re (concat "^[Ee]rror\\(?:\\[E[0-9]+\\]\\)?: [^\n]*\n" arrow-filespec))
+            (warn-re  (concat "^[Ww]arning: [^\n]*\n" arrow-filespec))
+            (backup-error-re arrow-filespec))
         ;; Below, FILE, LINE, and COLUMN are all indexes of subexpressions in REGEXP,
         ;; and TYPE is 2 for error, 1 for warning, 0 for info.
         ;; (See `compilation-error-regexp-alist` doc for more details.)
         ;;
         ;; regexp format is:    REGEXP    FILE [LINE COLUMN TYPE HYPERLINK HIGHLIGHT ...]
         (list `(rustc-new-error ,error-re 1     2    3      2)
-              `(rustc-new-warn  ,warn-re  1     2    3      1)))))
+              `(rustc-new-warn  ,warn-re  1     2    3      1)
+              `(rustc-backup-error ,backup-error-re 1 2 3   2)))))
   "Specifications for matching errors in rustc invocations (new style).
 See `compilation-error-regexp-alist' for help on their format.")
 
