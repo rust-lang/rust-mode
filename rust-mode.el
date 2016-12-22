@@ -1287,17 +1287,60 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
   (unless (executable-find rust-rustfmt-bin)
     (error "Could not locate executable \"%s\"" rust-rustfmt-bin))
 
-  (let ((cur-line (line-number-at-pos))
-        (cur-column (current-column))
-        (cur-win-start (window-start)))
-    (rust--format-call (current-buffer))
-    ;; Move to the same line and column as before.  This is best
-    ;; effort: if rustfmt inserted lines before point, we end up in
-    ;; the wrong place. See issue #162.
-    (goto-char (point-min))
-    (forward-line (1- cur-line))
-    (forward-char cur-column)
-    (set-window-start (selected-window) cur-win-start))
+  (let* ((current (current-buffer))
+         (base (or (buffer-base-buffer current) current))
+         buffer-pos
+         window-pos)
+    (dolist (buffer (buffer-list))
+      (when (or (eq buffer base)
+                (eq (buffer-base-buffer buffer) base))
+        (with-current-buffer buffer
+          (push (list buffer
+                      (line-number-at-pos)
+                      (current-column))
+                buffer-pos))))
+    (dolist (window (window-list))
+      (let ((buffer (window-buffer window)))
+        (when (or (eq buffer base)
+                  (eq (buffer-base-buffer buffer) base))
+          (let ((start (window-start window))
+                (point (window-point window)))
+            (with-current-buffer buffer
+              (push (list window
+                          (line-number-at-pos start)
+                          (save-excursion (goto-char start) (current-column))
+                          (line-number-at-pos point)
+                          (save-excursion (goto-char point) (current-column)))
+                    window-pos))))))
+    (rust--format-call current)
+    (dolist (pos buffer-pos)
+      (let ((buffer (pop pos))
+            (line (pop pos))
+            (column (pop pos)))
+        (with-current-buffer buffer
+          ;; Move to the same line and column as before.  This is best
+          ;; effort: if rustfmt inserted lines before point, we end up in
+          ;; the wrong place. See issue #162.
+          (goto-char (point-min))
+          (forward-line (1- line))
+          (forward-char column))))
+    (dolist (pos window-pos)
+      (let ((window (pop pos))
+            (start-line (pop pos))
+            (start-column (pop pos))
+            (point-line (pop pos))
+            (point-column (pop pos)))
+        (with-current-buffer (window-buffer window)
+          (let ((start (save-excursion (goto-char (point-min))
+                                       (forward-line (1- start-line))
+                                       (forward-char start-column)
+                                       (point)))
+                (point (save-excursion (goto-char (point-min))
+                                       (forward-line (1- point-line))
+                                       (forward-char point-column)
+                                       (point))))
+            (set-window-start window start)
+            (set-window-point window point))))))
 
   ;; Issue #127: Running this on a buffer acts like a revert, and could cause
   ;; the fontification to get out of sync.  Call the same hook to ensure it is
