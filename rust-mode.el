@@ -187,11 +187,13 @@ function or trait.  When nil, where will be aligned with fn or trait."
 (defcustom rust-format-on-save nil
   "Format future rust buffers before saving using rustfmt."
   :type 'boolean
-  :safe #'booleanp)
+  :safe #'booleanp
+  :group 'rust-mode)
 
 (defcustom rust-rustfmt-bin "rustfmt"
   "Path to rustfmt executable."
-  :type 'string)
+  :type 'string
+  :group 'rust-mode)
 
 (defface rust-unsafe-face
   '((t :inherit font-lock-warning-face))
