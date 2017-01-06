@@ -146,7 +146,7 @@
 
 (defgroup rust-mode nil
   "Support for Rust code."
-  :link '(url-link "http://www.rust-lang.org/")
+  :link '(url-link "https://www.rust-lang.org/")
   :group 'languages)
 
 (defcustom rust-indent-offset 4
@@ -172,7 +172,7 @@ function or trait.  When nil, where will be aligned with fn or trait."
   "Format string to use when submitting code to the playpen"
   :type 'string
   :group 'rust-mode)
-(defcustom rust-shortener-url-format "http://is.gd/create.php?format=simple&url=%s"
+(defcustom rust-shortener-url-format "https://is.gd/create.php?format=simple&url=%s"
   "Format string to use for creating the shortened link of a playpen submission"
   :type 'string
   :group 'rust-mode)
