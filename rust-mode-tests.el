@@ -3,6 +3,7 @@
 (require 'rust-mode)
 (require 'ert)
 (require 'cl)
+(require 'imenu)
 
 (setq rust-test-fill-column 32)
 
@@ -2613,6 +2614,45 @@ Fontification needs to include this whole string or none of it.
     (let ((initial-point (point)))
       (rust--after-revert-hook)
       (should (equal initial-point (point))))))
+
+(defun test-imenu (code expected-items)
+  (with-temp-buffer
+    (rust-mode)
+    (insert code)
+    (let ((actual-items
+           ;; Replace ("item" . #<marker at ? in ?.rs) with "item"
+           (mapcar (lambda (class)
+                     (cons (car class)
+                           (mapcar #'car (cdr class))))
+                   (imenu--generic-function rust-imenu-generic-expression))))
+      (should (equal expected-items actual-items)))))
+
+(ert-deftest rust-test-imenu-extern-unsafe-fn ()
+  (test-imenu
+   "
+fn one() {
+}
+
+unsafe fn two() {
+}
+
+extern \"C\" fn three() {
+}
+
+pub extern fn four() {
+
+}
+
+extern \"rust-intrinsic\" fn five() {
+
+}
+"
+   '(("Fn"
+      "one"
+      "two"
+      "three"
+      "four"
+      "five"))))
 
 ;; If electric-pair-mode is available, load it and run the tests that use it.  If not,
 ;; no error--the tests will be skipped.
