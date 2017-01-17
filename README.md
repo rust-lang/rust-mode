@@ -44,8 +44,8 @@ specified frequency for this project to release versions; if you are a MELPA
 stable user and feel that the last release tag is too far out of date, open a
 pull request that updates the version header in `rust-mode.el` and note that a
 new version tag should be added when the request is merged.
-See [Pull Request #178][https://github.com/rust-lang/rust-mode/pull/178] (the
-first such pull request) for an example of this.
+See [Pull Request #178](https://github.com/rust-lang/rust-mode/pull/178) (the
+first such pull request)) for an example of this.
 
 #### Install `rust-mode`
 
