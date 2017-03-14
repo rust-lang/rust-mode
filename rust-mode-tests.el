@@ -951,7 +951,7 @@ Convert the line-column information from that list into a buffer position value.
 
 ;;; FIXME: Maybe add an ERT explainer function (something that shows the
 ;;; surrounding code of the final point, not just the position).
-(defun rust-test-motion (source-code init-pos final-pos manip-func &optional &rest args)
+(defun rust-test-motion (source-code init-pos final-pos manip-func &rest args)
   "Test that MANIP-FUNC moves point from INIT-POS to FINAL-POS.
 
 If ARGS are provided, send them to MANIP-FUNC.
@@ -965,7 +965,7 @@ INIT-POS, FINAL-POS are position symbols found in `rust-test-positions-alist'."
     (apply manip-func args)
     (should (equal (point) (rust-get-buffer-pos final-pos)))))
 
-(defun rust-test-region (source-code init-pos reg-beg reg-end manip-func &optional &rest args)
+(defun rust-test-region (source-code init-pos reg-beg reg-end manip-func &rest args)
   "Test that MANIP-FUNC marks region from REG-BEG to REG-END.
 
 INIT-POS is the initial position of point.
