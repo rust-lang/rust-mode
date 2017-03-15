@@ -309,9 +309,6 @@ very very very long string
      deindented
      1
      (lambda ()
-       ;; The indentation will fail in some cases if the syntax properties are
-       ;; not set.  This only happens when font-lock fontifies the buffer.
-       (font-lock-fontify-buffer)
        (indent-region 1 (+ 1 (buffer-size))))
      indented)))
 
@@ -960,7 +957,6 @@ INIT-POS, FINAL-POS are position symbols found in `rust-test-positions-alist'."
   (with-temp-buffer
     (rust-mode)
     (insert source-code)
-    (font-lock-fontify-buffer)
     (goto-char (rust-get-buffer-pos init-pos))
     (apply manip-func args)
     (should (equal (point) (rust-get-buffer-pos final-pos)))))
@@ -974,7 +970,6 @@ All positions are position symbols found in `rust-test-positions-alist'."
   (with-temp-buffer
     (rust-mode)
     (insert source-code)
-    (font-lock-fontify-buffer)
     (goto-char (rust-get-buffer-pos init-pos))
     (apply manip-func args)
     (should (equal (list (region-beginning) (region-end))
@@ -1376,24 +1371,6 @@ this_is_not_a_string();)"
    '("// " font-lock-comment-delimiter-face
      "r\" this is a comment\n" font-lock-comment-face
      "\"this is a string\"" font-lock-string-face)))
-
-(ert-deftest font-lock-raw-string-constant ()
-  ;; There was an issue in which a multi-line raw string would be fontified
-  ;; correctly if inserted, but then incorrectly if one of the lines was then
-  ;; edited.  This test replicates how font-lock responds when text in the
-  ;; buffer is modified in order to reproduce it.
-  (with-temp-buffer
-    (rust-mode)
-    (font-lock-fontify-buffer)
-    (insert "const BOO:&str = r#\"\nBOO\"#;")
-    (beginning-of-buffer)
-    (insert " ")
-    (font-lock-after-change-function 1 2 0)
-
-    (should (equal 'font-lock-string-face (get-text-property 19 'face))) ;; Opening "r" of raw string
-    (should (equal 'font-lock-string-face (get-text-property 27 'face))) ;; Closing "#" of raw string
-    (should (equal nil (get-text-property 28 'face))) ;; Semicolon--should not be part of the string
-    ))
 
 (ert-deftest font-lock-runaway-raw-string ()
   (rust-test-font-lock
@@ -2552,34 +2529,6 @@ type Foo<T> where T: Copy = Box<T>;
      '(7 9))))
 
 
-(ert-deftest font-lock-extend-region-in-string ()
-  
-  (with-temp-buffer
-    (rust-mode)
-    (insert "
-fn foo() {
-    let x = r\"
-Fontification needs to include this whole string or none of it.
-             \"
-}")
-    (font-lock-fontify-buffer)
-    (let ((font-lock-beg 13)
-          (font-lock-end 42))
-      (rust-font-lock-extend-region)
-      (should (<= font-lock-beg 13))
-      (should (>= font-lock-end 106))
-      )
-    (let ((font-lock-beg 42)
-          (font-lock-end 108))
-      (rust-font-lock-extend-region)
-      (should (<= font-lock-beg 25))
-      (should (>= font-lock-end 108)))
-    (let ((font-lock-beg 1)
-          (font-lock-end 12))
-      (rust-font-lock-extend-region)
-      (should (<= font-lock-beg 1))
-      (should (>= font-lock-end 12)))))
-
 (ert-deftest redo-syntax-after-change-far-from-point ()  
   (let*
       ((tmp-file-name (make-temp-file "rust-mdoe-test-issue104"))
@@ -2602,18 +2551,6 @@ Fontification needs to include this whole string or none of it.
       )
     )
   )
-
-(ert-deftest rust-test-revert-hook-preserves-point ()
-  (with-temp-buffer
-    ;; Insert some code, and put point in the middle.
-    (insert "fn foo() {}\n")
-    (insert "fn bar() {}\n")
-    (insert "fn baz() {}\n")
-    (goto-char (point-min))
-    (forward-line 1)
-    (let ((initial-point (point)))
-      (rust--after-revert-hook)
-      (should (equal initial-point (point))))))
 
 (defun test-imenu (code expected-items)
   (with-temp-buffer
