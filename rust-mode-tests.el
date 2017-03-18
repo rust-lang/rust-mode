@@ -1628,6 +1628,34 @@ fn main() {
 "
    )))
 
+(ert-deftest indent-function-after-where ()
+  (let ((rust-indent-method-chain t)) (test-indent
+   "
+fn each_split_within<'a, F>(ss: &'a str, lim: usize, mut it: F)
+                            -> bool where F: FnMut(&'a str) -> bool {
+}
+
+#[test]
+fn test_split_within() {
+}
+"
+   )))
+
+(ert-deftest indent-function-after-where-nested ()
+  (let ((rust-indent-method-chain t)) (test-indent
+   "
+fn outer() {
+    fn each_split_within<'a, F>(ss: &'a str, lim: usize, mut it: F)
+                                -> bool where F: FnMut(&'a str) -> bool {
+    }
+    #[test]
+    fn test_split_within() {
+    }
+    fn bar() {
+    }
+}
+"
+   )))
 
 (ert-deftest test-for-issue-36-syntax-corrupted-state ()
   "This is a test for a issue #36, which involved emacs's

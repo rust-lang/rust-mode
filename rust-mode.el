@@ -35,6 +35,14 @@
 (defconst rust-re-unsafe "unsafe")
 (defconst rust-re-extern "extern")
 
+;;; Start of a Rust item
+(defvar rust-top-item-beg-re
+  (concat "\\s-*\\(?:priv\\|pub\\)?\\s-*"
+          (regexp-opt
+           '("enum" "struct" "type" "mod" "use" "fn" "static" "impl"
+             "extern" "trait"))
+	  "\\_>"))
+
 (defun rust-looking-back-str (str)
   "Like `looking-back' but for fixed strings rather than regexps (so that it's not so slow)"
   (let ((len (length str)))
@@ -394,6 +402,10 @@ buffer."
                   ;; our search for "where ".
                   (let ((function-start nil) (function-level nil))
                     (save-excursion
+                      ;; If we're already at the start of a function,
+                      ;; don't go back any farther.  We can easily do
+                      ;; this by moving to the end of the line first.
+                      (end-of-line)
                       (rust-beginning-of-defun)
                       (back-to-indentation)
                       ;; Avoid using multiple-value-bind
@@ -436,6 +448,10 @@ buffer."
                        ;; Or, if this line starts a comment, stay on the
                        ;; baseline as well.
                        (looking-at "\\<else\\>\\|{\\|/[/*]")
+
+                       ;; If this is the start of a top-level item,
+                       ;; stay on the baseline.
+                       (looking-at rust-top-item-beg-re)
 
                        (save-excursion
                          (rust-rewind-irrelevant)
@@ -1136,13 +1152,6 @@ Use idomenu (imenu with `ido-mode') for best mileage.")
 
 ;;; Defun Motions
 
-;;; Start of a Rust item
-(defvar rust-top-item-beg-re
-  (concat "^\\s-*\\(?:priv\\|pub\\)?\\s-*"
-          (regexp-opt
-           '("enum" "struct" "type" "mod" "use" "fn" "static" "impl"
-             "extern" "trait"))))
-
 (defun rust-beginning-of-defun (&optional arg)
   "Move backward to the beginning of the current defun.
 
@@ -1153,7 +1162,7 @@ This is written mainly to be used as `beginning-of-defun-function' for Rust.
 Don't move to the beginning of the line. `beginning-of-defun',
 which calls this, does that afterwards."
   (interactive "p")
-  (re-search-backward (concat "^\\(" rust-top-item-beg-re "\\)\\_>")
+  (re-search-backward (concat "^\\(" rust-top-item-beg-re "\\)")
                       nil 'move (or arg 1)))
 
 (defun rust-end-of-defun ()
