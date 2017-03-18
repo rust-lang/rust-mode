@@ -1456,6 +1456,7 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
   (setq-local comment-start "// ")
   (setq-local comment-end   "")
   (setq-local indent-tabs-mode nil)
+  (setq-local open-paren-in-column-0-is-defun-start nil)
 
   ;; Auto indent on }
   (setq-local

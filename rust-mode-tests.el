@@ -1876,6 +1876,21 @@ pub fn foo<T,
     hello();
 }"))
 
+(ert-deftest indent-open-paren-in-column0 ()
+  ;; Just pass the same text for the "deindented" argument.  This
+  ;; avoids the extra spaces normally inserted, which would mess up
+  ;; the test because string contents aren't touched by reindentation.
+  (let ((text "
+const a: &'static str = r#\"
+{}\"#;
+fn main() {
+    let b = \"//\";
+    let c = \"\";
+
+}
+"))
+    (test-indent text text)))
+
 (defun rust-test-matching-parens (content pairs &optional nonparen-positions)
   "Assert that in rust-mode, given a buffer with the given `content',
   emacs's paren matching will find all of the pairs of positions
