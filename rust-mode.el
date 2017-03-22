@@ -1012,6 +1012,9 @@ the desired identifiers), but does not match type annotations \"foo::<\"."
        ((rust-looking-back-symbols rust-mode-keywords)
         (rust-looking-back-symbols '("self" "true" "false")))
 
+       ((rust-looking-back-str "?")
+	(rust-is-in-expression-context 'ambiguous-operator))
+
        ;; If we're looking back at an identifier, this depends on whether
        ;; the identifier is part of an expression or a type
        ((rust-looking-back-ident)
