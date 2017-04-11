@@ -71,7 +71,7 @@ you set the environment variable EMACS to a program that runs emacs.
 ### Formatting with [rustfmt][rfmt]
 
 The `rust-format-buffer` function will format your code with
-[rustfmt][rfmt] if installed.
+[rustfmt][rfmt] if installed. By default, this is bound to `C-c C-f`.
 
 Placing `(setq rust-format-on-save t)` in your `~/.emacs` will enable automatic
 running of `rust-format-buffer` when you save a buffer.
