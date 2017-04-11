@@ -1868,6 +1868,13 @@ fn main() {
 "))
     (test-indent text text)))
 
+(ert-deftest indent-question-mark-operator ()
+  (test-indent "fn foo() {
+    if bar()? < 1 {
+    }
+    baz();
+}"))
+
 (defun rust-test-matching-parens (content pairs &optional nonparen-positions)
   "Assert that in rust-mode, given a buffer with the given `content',
   emacs's paren matching will find all of the pairs of positions
