@@ -1195,12 +1195,13 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
   (with-current-buffer (get-buffer-create "*rustfmt*")
     (erase-buffer)
     (insert-buffer-substring buf)
-    (if (zerop (call-process-region (point-min) (point-max) rust-rustfmt-bin t t nil))
-        (progn
-          (if (not (string= (buffer-string) (with-current-buffer buf (buffer-string))))
-              (copy-to-buffer buf (point-min) (point-max)))
-          (kill-buffer))
-      (error "Rustfmt failed, see *rustfmt* buffer for details"))))
+    (let ((ret (call-process-region (point-min) (point-max) rust-rustfmt-bin t '(t nil) nil)))
+      (if (or (zerop ret) (= ret 3))
+          (progn
+            (if (not (string= (buffer-string) (with-current-buffer buf (buffer-string))))
+                (copy-to-buffer buf (point-min) (point-max)))
+            (kill-buffer))
+        (error "Rustfmt failed, see *rustfmt* buffer for details")))))
 
 (defconst rust--format-word "\\b\\(else\\|enum\\|fn\\|for\\|if\\|let\\|loop\\|match\\|struct\\|unsafe\\|while\\)\\b")
 (defconst rust--format-line "\\([\n]\\)")
