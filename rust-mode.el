@@ -1198,7 +1198,6 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
     (let ((tmpf (make-temp-file "rustfmt")))
       (let ((ret (call-process-region (point-min) (point-max) rust-rustfmt-bin
                                       t `(t ,tmpf) nil)))
-        (format-message "%d" ret)
         (cond
          ((zerop ret)
           (error "Rustfmt failed, see *rustfmt* buffer for details"))
