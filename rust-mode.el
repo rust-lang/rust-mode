@@ -39,7 +39,7 @@
 (defvar rust-top-item-beg-re
   (concat "\\s-*\\(?:priv\\|pub\\)?\\s-*"
           (regexp-opt
-           '("enum" "struct" "type" "mod" "use" "fn" "static" "impl"
+           '("enum" "struct" "type" "mod" "use" "fn" "static" "impl" "default"
              "extern" "trait"))
 	  "\\_>"))
 
@@ -487,7 +487,7 @@ buffer."
   '("as"
     "box" "break"
     "const" "continue" "crate"
-    "do"
+    "do" "default"
     "else" "enum" "extern"
     "false" "fn" "for"
     "if" "impl" "in"
@@ -645,7 +645,7 @@ the desired identifiers), but does not match type annotations \"foo::<\"."
                    (rust-rewind-irrelevant)
                    (rust-rewind-type-param-list)
                    (cond
-                       ((rust-looking-back-symbols '("fn" "trait" "enum" "struct" "impl" "type")) ident-pos)
+                       ((rust-looking-back-symbols '("fn" "trait" "default" "enum" "struct" "impl" "type")) ident-pos)
 
                        ((equal 5 (rust-syntax-class-before-point))
                         (backward-sexp)
