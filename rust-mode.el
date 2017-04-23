@@ -1200,7 +1200,10 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
                                       t `(t ,tmpf) nil)))
         (cond
          ((zerop ret)
-          (error "Rustfmt failed, see *rustfmt* buffer for details"))
+          (if (not (string= (buffer-string)
+                            (with-current-buffer buf (buffer-string))))
+              (copy-to-buffer buf (point-min) (point-max)))
+          (kill-buffer))
          ((= ret 3)
           (if (not (string= (buffer-string)
                             (with-current-buffer buf (buffer-string))))
@@ -1209,10 +1212,7 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
           (insert-file-contents tmpf)
           (error "Rustfmt could not format some lines, see *rustfmt* buffer for details"))
          (t
-          (if (not (string= (buffer-string)
-                            (with-current-buffer buf (buffer-string))))
-              (copy-to-buffer buf (point-min) (point-max)))
-          (kill-buffer)))))))
+          (error "Rustfmt failed, see *rustfmt* buffer for details")))))))
 
 (defconst rust--format-word "\\b\\(else\\|enum\\|fn\\|for\\|if\\|let\\|loop\\|match\\|struct\\|unsafe\\|while\\)\\b")
 (defconst rust--format-line "\\([\n]\\)")
