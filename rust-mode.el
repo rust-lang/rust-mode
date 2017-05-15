@@ -526,6 +526,7 @@ buffer."
 (defun rust-re-item-def-imenu (itype)
   (concat "^[[:space:]]*"
           (rust-re-shy (concat (rust-re-word rust-re-vis) "[[:space:]]+")) "?"
+          (rust-re-shy (concat (rust-re-word "default") "[[:space:]]+")) "?"
           (rust-re-shy (concat (rust-re-word rust-re-unsafe) "[[:space:]]+")) "?"
           (rust-re-shy (concat (rust-re-word rust-re-extern) "[[:space:]]+"
                                (rust-re-shy "\"[^\"]+\"[[:space:]]+") "?")) "?"
@@ -555,6 +556,7 @@ the desired identifiers), but does not match type annotations \"foo::<\"."
   (append
    `(
      ;; Keywords proper
+     ("\\_<\\(default\\)[[:space:]]+fn\\_>" 1 font-lock-keyword-face)
      (,(regexp-opt rust-mode-keywords 'symbols) . font-lock-keyword-face)
 
      ;; Special types

@@ -1510,6 +1510,15 @@ this_is_not_a_string();)"
    ;; Only the i32 should have been highlighted.
    '("i32" font-lock-type-face)))
 
+(ert-deftest rust-test-default-context-sensitive ()
+  (rust-test-font-lock
+   "let default = 7; impl foo { default fn f() { } }"
+   '("let" font-lock-keyword-face
+     "impl" font-lock-keyword-face
+     "default" font-lock-keyword-face
+     "fn" font-lock-keyword-face
+     "f" font-lock-function-name-face)))
+
 (ert-deftest indent-method-chains-no-align ()
   (let ((rust-indent-method-chain nil)) (test-indent
    "
