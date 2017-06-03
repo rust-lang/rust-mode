@@ -812,6 +812,9 @@ match data if found. Returns nil if not within a Rust string."
        ;; it to be an expression.
        ((and (equal token 'open-brace) (rust-looking-back-macro)) t)
        
+       ;; In a brace context a "]" introduces an expression.
+       ((and (eq token 'open-brace) (rust-looking-back-str "]")))
+
        ;; An identifier is right after an ending paren, bracket, angle bracket
        ;; or curly brace.  It's a type if the last sexp was a type.
        ((and (equal token 'ident) (equal 5 (rust-syntax-class-before-point)))

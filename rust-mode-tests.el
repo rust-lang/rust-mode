@@ -2034,6 +2034,17 @@ fn main() {
     baz();
 }"))
 
+;; Regression test for #212.
+(ert-deftest indent-left-shift ()
+  (test-indent "
+fn main() {
+    let a = [[0u32, 0u32]; 1];
+    let i = 0;
+    let x = a[i][(1 < i)];
+    let x = a[i][(1 << i)];
+}
+"))
+
 (defun rust-test-matching-parens (content pairs &optional nonparen-positions)
   "Assert that in rust-mode, given a buffer with the given `content',
   emacs's paren matching will find all of the pairs of positions
