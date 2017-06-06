@@ -1326,19 +1326,20 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
                         (rust--format-get-loc buffer start)
                         (rust--format-get-loc buffer point))
                   window-loc)))))
-    (rust--format-call (current-buffer))
-    (dolist (loc buffer-loc)
-      (let* ((buffer (pop loc))
-             (pos (rust--format-get-pos buffer (pop loc))))
-        (with-current-buffer buffer
-          (goto-char pos))))
-    (dolist (loc window-loc)
-      (let* ((window (pop loc))
-             (buffer (window-buffer window))
-             (start (rust--format-get-pos buffer (pop loc)))
-             (pos (rust--format-get-pos buffer (pop loc))))
-        (set-window-start window start)
-        (set-window-point window pos))))
+    (unwind-protect
+        (rust--format-call (current-buffer))
+      (dolist (loc buffer-loc)
+        (let* ((buffer (pop loc))
+               (pos (rust--format-get-pos buffer (pop loc))))
+          (with-current-buffer buffer
+            (goto-char pos))))
+      (dolist (loc window-loc)
+        (let* ((window (pop loc))
+               (buffer (window-buffer window))
+               (start (rust--format-get-pos buffer (pop loc)))
+               (pos (rust--format-get-pos buffer (pop loc))))
+          (set-window-start window start)
+          (set-window-point window pos)))))
 
   (message "Formatted buffer with rustfmt."))
 
