@@ -16,7 +16,8 @@
 
 (eval-when-compile (require 'rx)
                    (require 'compile)
-                   (require 'url-vars))
+                   (require 'url-vars)
+                   (require 'json))
 
 (defvar electric-pair-inhibit-predicate)
 (defvar electric-indent-chars)
