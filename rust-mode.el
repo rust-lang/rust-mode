@@ -16,11 +16,15 @@
 
 (eval-when-compile (require 'rx)
                    (require 'compile)
-                   (require 'url-vars)
-                   (require 'json))
+                   (require 'url-vars))
+
+(require 'json)
 
 (defvar electric-pair-inhibit-predicate)
 (defvar electric-indent-chars)
+
+(defvar rust-buffer-project)
+(make-variable-buffer-local 'rust-buffer-project)
 
 ;; for GNU Emacs < 24.3
 (eval-when-compile
