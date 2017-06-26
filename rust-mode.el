@@ -149,6 +149,11 @@ function or trait.  When nil, where will be aligned with fn or trait."
   :type 'string
   :group 'rust-mode)
 
+(defcustom rust-cargo-bin "cargo"
+  "Path to cargo executable."
+  :type 'string
+  :group 'rust-mode)
+
 (defcustom rust-always-locate-project-on-open nil
   "Whether to run `cargo locate-project' every time `rust-mode'
   is activated."
@@ -1569,7 +1574,7 @@ visit the new file."
   (interactive)
   (when (null rust-buffer-project)
     (rust-update-buffer-project))
-  (let* ((args (list "cargo" "clippy" (concat "--manifest-path=" rust-buffer-project)))
+  (let* ((args (list rust-cargo-bin "clippy" (concat "--manifest-path=" rust-buffer-project)))
          ;; set `compile-command' temporarily so `compile' doesn't
          ;; clobber the existing value
          (compile-command (mapconcat #'shell-quote-argument args " ")))
@@ -1581,7 +1586,7 @@ visit the new file."
 (defun rust-buffer-project ()
   "Get project root if possible."
   (with-temp-buffer
-    (let ((ret (call-process "cargo" nil t nil "locate-project")))
+    (let ((ret (call-process rust-cargo-bin nil t nil "locate-project")))
       (when (/= ret 0)
         (error "`cargo locate-project' returned %s status: %s" ret (buffer-string)))
       (goto-char 0)
