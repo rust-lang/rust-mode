@@ -144,6 +144,12 @@ function or trait.  When nil, where will be aligned with fn or trait."
   :type 'string
   :group 'rust-mode)
 
+(defcustom rust-always-locate-project-on-open nil
+  "Whether to run `cargo locate-project' every time `rust-mode'
+  is activated."
+  :type 'boolean
+  :group 'rust-mode)
+
 (defface rust-unsafe-face
   '((t :inherit font-lock-warning-face))
   "Face for the `unsafe' keyword."
@@ -1411,7 +1417,12 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
 
   (setq-local compile-command "cargo build")
 
-  (add-hook 'before-save-hook 'rust--before-save-hook nil t))
+  (add-hook 'before-save-hook 'rust--before-save-hook nil t)
+
+  (setq-local rust-buffer-project nil)
+
+  (when rust-always-locate-project-on-open
+    (rust-update-buffer-project)))
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.rs\\'" . rust-mode))
@@ -1547,6 +1558,30 @@ visit the new file."
           (mkdir mod-dir t)
           (rename-file filename new-name 1)
           (set-visited-file-name new-name))))))
+
+(defun rust-run-clippy ()
+  "Run `cargo clippy'."
+  (interactive)
+  (when (null rust-buffer-project)
+    (rust-update-buffer-project))
+  (let* ((args (list "cargo" "clippy" (concat "--manifest-path=" rust-buffer-project)))
+         ;; set `compile-command' temporarily so `compile' doesn't
+         ;; clobber the existing value
+         (compile-command (mapconcat #'shell-quote-argument args " ")))
+    (compile compile-command)))
+
+(defun rust-update-buffer-project ()
+  (setq-local rust-buffer-project (rust-buffer-project)))
+
+(defun rust-buffer-project ()
+  "Get project root if possible."
+  (with-temp-buffer
+    (let ((ret (call-process "cargo" nil t nil "locate-project")))
+      (when (/= ret 0)
+        (error "`cargo locate-project' returned %s status: %s" ret (buffer-string)))
+      (goto-char 0)
+      (let ((output (json-read)))
+        (cdr (assoc-string "root" output))))))
 
 (provide 'rust-mode)
 
