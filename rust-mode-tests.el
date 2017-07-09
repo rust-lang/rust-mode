@@ -891,6 +891,60 @@ struct Foo {
 }
 "
       rust-test-region-string rust-test-motion-string
+      rust-test-doctest-motion-string
+"
+//! This is crate-level documentation.
+//! This is some more crate-level documentation.
+//! This is a third line.
+//!
+//! This is a fourth line.
+//!
+//! ```rust
+//! prepare_something();
+//! do_something();
+//! ```
+
+/// This is a doc comment.
+/// This is more.
+fn is_documented() {
+    true;
+}
+
+// This is not a doc comment.
+fn undocumented() {
+    false;
+}
+
+struct Foo {}
+
+impl Foo {
+    /// Do a foo.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// assert!(foo());
+    /// ```
+    fn foo() {
+        true;
+    }
+}
+
+/// Do a bar (dangerous).
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// if (do_unsafe_things) {
+///     bar();
+/// } else {
+///     foo();
+/// }
+/// ```
+fn bar() {
+    // dangerous!
+    unsafe { }
+}"
       rust-test-indent-motion-string
       "
 fn blank_line(arg:i32) -> bool {
@@ -948,7 +1002,17 @@ fn indented_already() {
                                   (nonblank-line-indented-already-bol-start (21 0))
                                   (nonblank-line-indented-already-bol-target (21 4))
                                   (nonblank-line-indented-already-middle-start (21 2))
-                                  (nonblank-line-indented-already-middle-target (21 4))))
+                                  (nonblank-line-indented-already-middle-target (21 4))
+                                  (before-doctest1 (7 0))
+                                  (declaration-of-doctest1 (8 0))
+                                  (inside-doctest1 (9 10))
+                                  (inside-doctest1-slash (9 1))
+                                  (after-doctest1 (11 7))
+                                  (before-doctest2 (30 0))
+                                  (declaration-of-doctest2 (31 0))
+                                  (inside-doctest2 (32 10))
+                                  (inside-doctest2-slash (32 6))
+                                  (after-doctest2 (33 11))))
 
 (defun rust-get-buffer-pos (pos-symbol)
   "Get buffer position from POS-SYMBOL.
@@ -1122,6 +1186,78 @@ fn test4();")
    'middle-of-fn3
    'between-fn1-fn2
    #'end-of-defun -2))
+
+(ert-deftest rust-beginning-of-doctest-in-doctest ()
+  (rust-test-motion
+   rust-test-doctest-motion-string
+   'inside-doctest1
+   'declaration-of-doctest1
+   #'rust-beginning-of-doctest)
+  (rust-test-motion
+   rust-test-doctest-motion-string
+   'inside-doctest2
+   'declaration-of-doctest2
+   #'rust-beginning-of-doctest))
+
+(ert-deftest rust-beginning-of-doctest-in-doctest-slash ()
+  (rust-test-motion
+   rust-test-doctest-motion-string
+   'inside-doctest1-slash
+   'declaration-of-doctest1
+   #'rust-beginning-of-doctest)
+  (rust-test-motion
+   rust-test-doctest-motion-string
+   'inside-doctest2-slash
+   'declaration-of-doctest2
+   #'rust-beginning-of-doctest))
+
+(ert-deftest rust-beginning-of-doctest-after-doctest ()
+  (rust-test-motion
+   rust-test-doctest-motion-string
+   'after-doctest1
+   'declaration-of-doctest1
+   #'rust-beginning-of-doctest)
+  (rust-test-motion
+   rust-test-doctest-motion-string
+   'after-doctest2
+   'declaration-of-doctest2
+   #'rust-beginning-of-doctest))
+
+(ert-deftest rust-end-of-doctest-in-doctest ()
+  (rust-test-motion
+   rust-test-doctest-motion-string
+   'inside-doctest1
+   'after-doctest1
+   #'rust-end-of-doctest)
+  (rust-test-motion
+   rust-test-doctest-motion-string
+   'inside-doctest2
+   'after-doctest2
+   #'rust-end-of-doctest))
+
+(ert-deftest rust-end-of-doctest-in-doctest-slash ()
+  (rust-test-motion
+   rust-test-doctest-motion-string
+   'inside-doctest1-slash
+   'after-doctest1
+   #'rust-end-of-doctest)
+  (rust-test-motion
+   rust-test-doctest-motion-string
+   'inside-doctest2-slash
+   'after-doctest2
+   #'rust-end-of-doctest))
+
+(ert-deftest rust-end-of-doctest-after-doctest ()
+  (rust-test-motion
+   rust-test-doctest-motion-string
+   'before-doctest1
+   'after-doctest1
+   #'rust-end-of-doctest)
+  (rust-test-motion
+   rust-test-doctest-motion-string
+   'before-doctest2
+   'after-doctest2
+   #'rust-end-of-doctest))
 
 (ert-deftest rust-mark-defun-from-middle-of-fn ()
   (rust-test-region
@@ -3179,9 +3315,201 @@ impl Two<'a> {
                  ("file3.rs" "12" "34" compilation-warning "file3.rs:12:34"))
                matches)))))
 
+(ert-deftest rust-recognizes-doc-comment ()
+  (dolist (test '(("///" 0 1)
+                  ("\n///" 2 2)
+                  ("/// ```rust
+/// ```" 13 13)
+                  ("/// ```rust
+/// ```" 20 13)
+                  ("/// ```rust
+/// ```" 1 1)
+                  ("/// ```rust
+/// ```" 0 1)
+                  ("/// ```rust
+/// ```" 8 1)
+                  ("/// ```rust
+/// ```" 15 13)))
+    (with-temp-buffer
+      (destructuring-bind (str cursor expected) test
+        (insert str)
+        (goto-char cursor)
+        (should (eq (rust-in-doc-comment-p) t))
+        (should (= (point) expected)))))
+  (dolist (test '(("//!" 0 1)
+                  ("\n//!" 2 2)
+                  ("//! ```rust
+//! ```" 13 13)
+                  ("//! ```rust
+//! ```" 20 13)
+                  ("//! ```rust
+//! ```" 1 1)
+                  ("//! ```rust
+//! ```" 0 1)
+                  ("//! ```rust
+//! ```" 8 1)
+                  ("//! ```rust
+//! ```" 15 13)))
+    (with-temp-buffer
+      (destructuring-bind (str cursor expected) test
+        (insert str)
+        (goto-char cursor)
+        (should (eq (rust-in-doc-comment-p) t))
+        (should (= (point) expected))))))
+
+(ert-deftest rust-uncomments-doctest ()
+  (dolist (pair '(("" . "")             ; no-op
+                  ("// a" . "// a")     ; double-slashed, don't touch
+                  ("///" . "")
+                  ("/// " . "")
+                  ("///  " . "")
+                  ("///foo\(\);" . "foo\(\);")
+                  ("/// foo\(\);" . "foo\(\);")
+                  ("///  foo\(\);" . "foo\(\);")
+                  ("   ///foo\(\);" . "foo\(\);")
+                  ("   /// foo\(\);" . "foo\(\);")
+                  ("   ///  foo\(\);" . "foo\(\);")
+                  ("// a\n///foo\(\);" . "// a\nfoo\(\);")
+                  ("// a\n   ///foo\(\);" . "// a\nfoo\(\);")
+                  ("/// foo\(\);\n/// bar\(\);" . "foo\(\);\nbar\(\);")
+                  ("/// foo\(\);\n///  bar\(\);" . "foo\(\);\n bar\(\);")))
+    (with-temp-buffer
+      (insert (car pair))
+      (rust-uncomment-doctest (point-min) (point-max))
+      (should (string= (buffer-string) (cdr pair)))))
+  (dolist (pair '(("//!" . "")
+                  ("//! " . "")
+                  ("//!  " . "")
+                  ("//!foo\(\);" . "foo\(\);")
+                  ("//! foo\(\);" . "foo\(\);")
+                  ("//!  foo\(\);" . "foo\(\);")
+                  ("   //!foo\(\);" . "foo\(\);")
+                  ("   //! foo\(\);" . "foo\(\);")
+                  ("   //!  foo\(\);" . "foo\(\);")
+                  ("// a\n//!foo\(\);" . "// a\nfoo\(\);")
+                  ("// a\n   //!foo\(\);" . "// a\nfoo\(\);")
+                  ("//! foo\(\);\n//! bar\(\);" . "foo\(\);\nbar\(\);")
+                  ("//! foo\(\);\n//!  bar\(\);" . "foo\(\);\n bar\(\);")))
+    (with-temp-buffer
+      (insert (car pair))
+      (rust-uncomment-doctest (point-min) (point-max))
+      (should (string= (buffer-string) (cdr pair))))))
+
+(ert-deftest rust-comments-doctest ()
+  (dolist (pair '(("" . "/// ")
+                  ("// a" . "/// // a")
+                  ("///foo\(\);" . "/// ///foo\(\);")
+                  ("/// foo\(\);" . "/// /// foo\(\);")
+                  ("///  foo\(\);" . "/// ///  foo\(\);")
+                  ("   ///foo\(\);" . "///    ///foo\(\);")
+                  ("   /// foo\(\);" . "///    /// foo\(\);")
+                  ("   ///  foo\(\);" . "///    ///  foo\(\);")
+                  ("// a\n///foo\(\);" . "/// // a\n/// ///foo\(\);")
+                  ("// a\n   ///foo\(\);" . "/// // a\n///    ///foo\(\);")))
+    (with-temp-buffer
+      (insert (car pair))
+      (rust-comment-doctest (point-min) (point-max))
+      (should (string= (buffer-string) (cdr pair)))))
+  (dolist (pair '(("" . "//! ")
+                  ("// a" . "//! // a")
+                  ("//!foo\(\);" . "//! //!foo\(\);")
+                  ("//! foo\(\);" . "//! //! foo\(\);")
+                  ("//!  foo\(\);" . "//! //!  foo\(\);")
+                  ("   //!foo\(\);" . "//!    //!foo\(\);")
+                  ("   //! foo\(\);" . "//!    //! foo\(\);")
+                  ("   //!  foo\(\);" . "//!    //!  foo\(\);")
+                  ("// a\n//!foo\(\);" . "//! // a\n//! //!foo\(\);")
+                  ("// a\n   //!foo\(\);" . "//! // a\n//!    //!foo\(\);")))
+    (with-temp-buffer
+      (insert (car pair))
+      (rust-comment-doctest (point-min) (point-max) "//!")
+      (should (string= (buffer-string) (cdr pair))))))
+
+(ert-deftest rust-beginning-of-doc-comment-block-works ()
+  (dolist (test '(("///" 1 1)
+                  ("///" 2 1)
+                  ("///" 3 1)
+                  (" ///" 1 1)
+                  (" ///" 5 1)
+                  ("///\n///" 1 1)
+                  ("///\n///" 4 1)
+                  ("///\n///" 5 1)
+                  (" ///\n ///" 1 1)
+                  (" ///\n ///" 4 1)
+                  (" ///\n ///" 5 1)
+                  (" ///\n ///" 11 1)
+                  ("\n///" 2 2)
+                  ("\n///" 4 2)
+                  ("\n///" 5 2)
+                  ("\n///\n" 2 2)
+                  ("\n///\n" 4 2)
+                  ("\n///\n" 5 2)))
+    (with-temp-buffer
+      (destructuring-bind (text cursor expected) test
+        (insert text)
+        (goto-char cursor)
+        (rust-beginning-of-doc-comment-block)
+        (should (= (point) expected)))))
+  (dolist (test '(("//!" 1 1)
+                  ("//!" 2 1)
+                  ("//!" 3 1)
+                  (" //!" 1 1)
+                  (" //!" 5 1)
+                  ("//!\n//!" 1 1)
+                  ("//!\n//!" 4 1)
+                  ("//!\n//!" 5 1)
+                  (" //!\n //!" 1 1)
+                  (" //!\n //!" 4 1)
+                  (" //!\n //!" 5 1)
+                  (" //!\n //!" 11 1)
+                  ("\n//!" 2 2)
+                  ("\n//!" 4 2)
+                  ("\n//!" 5 2)
+                  ("\n//!\n" 2 2)
+                  ("\n//!\n" 4 2)
+                  ("\n//!\n" 5 2)))
+    (with-temp-buffer
+      (destructuring-bind (text cursor expected) test
+        (insert text)
+        (goto-char cursor)
+        (rust-beginning-of-doc-comment-block)
+        (should (= (point) expected))))))
+
 ;; If electric-pair-mode is available, load it and run the tests that use it.  If not,
 ;; no error--the tests will be skipped.
 (require 'elec-pair nil t)
+
+(when (and (require 'noflet nil t)
+           (require 'edit-indirect nil t)) ; we won't use it in the
+                                        ; test but the function
+                                        ; won't be fully defined
+                                        ; without it
+  (lexical-let ((edit-doctest-string1 "/// ```rust\n/// foo\(\);\n/// ```")
+                (edit-doctest-string2 "/// ```rust\n/// ```")
+                (edit-doctest-string2-output "/// ```rust\n/// \n/// ```")
+                (edit-doctest-string3 "fn no_doc() {\n    println!(\"No documentation here\"); // nothing else to say\n}\n\n/// Prints `hello`.\n/// \n/// ```rust\n/// print_hello();\n/// ```\nfn print_hello() {\n    print!(\"hello\");\n}\n\n/// Doesn't print `hello`.\n/// \n/// ```rust\n/// if true {\n///     dont_print_hello();\n/// }\n/// ```\nfn dont_print_hello() {\n    print!(\"bye\");\n}")
+                (edit-doctest-string4 "fn no_doc() {\n    println!(\"No documentation here\"); // nothing else to say\n}\n\n//! Prints `hello`.\n//! \n//! ```rust\n//! print_hello();\n//! ```\nfn print_hello() {\n    print!(\"hello\");\n}\n\n//! Doesn't print `hello`.\n//! \n//! ```rust\n//! if true {\n//!     dont_print_hello();\n//! }\n//! ```\nfn dont_print_hello() {\n    print!(\"bye\");\n}"))
+    (ert-deftest rust-edit-doctest-works ()
+      (dolist (test `((,edit-doctest-string1 12 ,edit-doctest-string1 13 23)
+                      (,edit-doctest-string1 13 ,edit-doctest-string1 13 23)
+                      (,edit-doctest-string1 24 ,edit-doctest-string1 13 23)
+                      (,edit-doctest-string1 31 ,edit-doctest-string1 13 23)
+                      (,edit-doctest-string2 1 ,edit-doctest-string2-output 13 17)
+                      (,edit-doctest-string2 12 ,edit-doctest-string2-output 13 17)
+                      (,edit-doctest-string2 13 ,edit-doctest-string2-output 13 17)
+                      (,edit-doctest-string3 123 ,edit-doctest-string3 117 135)
+                      (,edit-doctest-string3 257 ,edit-doctest-string3 231 278)
+                      (,edit-doctest-string4 123 ,edit-doctest-string4 117 135)
+                      (,edit-doctest-string4 257 ,edit-doctest-string4 231 278)))
+        (destructuring-bind (initial-text cursor final-text expected-beg expected-end) test
+          (noflet ((edit-indirect-region (beg end &optional display-buffer)
+                                         (should (= beg expected-beg))
+                                         (should (= end expected-end))))
+            (with-temp-buffer
+              (insert initial-text)
+              (goto-char cursor)
+              (rust-edit-doctest)
+              (should (equal (buffer-string) final-text)))))))))
 
 ;; The emacs 23 and 24 versions of ERT do not have test skipping
 ;; functionality.  So don't even define these tests if elec-pair is

@@ -1617,7 +1617,10 @@ Return the created process."
   (setq-local rust-buffer-project nil)
 
   (when rust-always-locate-project-on-open
-    (rust-update-buffer-project)))
+    (rust-update-buffer-project))
+
+  (when (featurep 'edit-indirect)
+    (rust--setup-doctest-hooks)))
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.rs\\'" . rust-mode))
@@ -1775,6 +1778,182 @@ visit the new file."
       (goto-char 0)
       (let ((output (json-read)))
         (cdr (assoc-string "root" output))))))
+
+(defvar rust-doc-comment-re "\\(^[[:blank:]]*//[!/]\\)\\([[:blank:]]*\\)"
+  "Regular expression to match Rust doc comments.")
+
+(defvar rust-doctest-re "^[[:blank:]]*//[!/][[:blank:]]*```rust\\(,.*\\)?$"
+  "Regular expression to match Rust doctests.")
+
+(defvar rust-end-of-doctest-re "^[[:blank:]]*//[!/][[:blank:]]*```$"
+  "Regular expression to match the ends of Rust doctests.
+
+This is not enough on its own to find them as the closing quotes
+are ambiguous: they may belong to doctests or to any other
+Markdown code block.")
+
+(defun rust-in-doc-comment-p ()
+  "Return T if the current line is a Rust doc comment. Moves
+point to beginning of line."
+  (beginning-of-line)
+  (looking-at rust-doc-comment-re))
+
+(defun rust-beginning-of-doctest-p ()
+  "Return T if the current line is the beginning of a Rust doctest."
+  (save-excursion
+    (beginning-of-line)
+    (looking-at rust-doctest-re)))
+
+(defun rust-beginning-of-doc-comment-block ()
+  "Go to the start of the Rust doc comment block around point. If
+there is no such block, do nothing."
+  (let (pos
+        stop)
+    (while (and (null stop) (rust-in-doc-comment-p))
+      (setq pos (point))
+      (if (bobp)
+          (setq stop t)
+        (forward-char -1)))
+    (when pos
+      (goto-char pos))))
+
+(defun rust-beginning-of-doctest ()
+  "Go to the beginning of the Rust doctest around point. If there
+is no such block, do nothing."
+  (interactive)
+  (when (rust-in-doc-comment-p)
+    (let ((bound
+           (save-excursion (rust-beginning-of-doc-comment-block))))
+      (when (not (rust-beginning-of-doctest-p))
+        (re-search-backward rust-doctest-re bound)))))
+
+(defun rust-end-of-doctest ()
+  "Go to the end of the Rust doctest around point."
+  (interactive)
+  (beginning-of-line)
+  (re-search-forward rust-end-of-doctest-re))
+
+(defvar rust-doctest-mode-syntax-table
+  (let ((table (make-syntax-table rust-mode-syntax-table)))
+    (modify-syntax-entry ?# "< b" table)
+    table)
+  "Syntax table for `rust-doctest-mode'.
+
+Recognizes comments marked with `#' but cannot recognize escaped
+comments \(`##' and so on\).")
+
+;;;###autoload
+(define-derived-mode rust-doctest-mode rust-mode "Rust-Doctest"
+  "Major mode for Rust doctests.
+
+\\\{rust-mode-map\}"
+  :group 'rust-mode
+  :syntax-table rust-doctest-mode-syntax-table
+
+  (setq-local comment-start-skip "\\(?:\\(?:#\\)\\|//[/!]*\\|/\\*[*!]?\\)[[:space:]]*"))
+
+(defun rust-uncomment-doctest (beg end-position)
+  "Remove Rust doc comment markers and common whitespace from the
+start of each line between BEG and END-POSITION.
+
+Any lines not starting with the markers will be untouched.
+
+Only the amount of whitespace common to every line will be
+removed."
+  (interactive "r")
+  (save-excursion
+    (let ((end (make-marker)))
+      (set-marker end end-position)
+      (goto-char beg)
+      (let (minimum)
+        (while (re-search-forward rust-doc-comment-re end t)
+          (replace-match "" nil nil nil 1)
+          (let ((l (length (match-string 2))))
+            (when (or (null minimum) (< l minimum))
+              (setq minimum l))))
+        (when (not (null minimum))
+          (goto-char beg)
+          (catch 'done
+            (while (re-search-forward "^" end t)
+              (delete-char minimum)
+              (when (eobp)
+                (throw 'done nil))
+              (forward-line 1)))))))
+  (goto-char beg))
+
+(defun rust-comment-doctest (beg end-position &optional comment-marker)
+  "Add Rust doc comment markers to the start of each line between
+BEG and END-POSITION.
+
+If COMMENT-MARKER is non-nil, it will be used as the marker. If
+it is nil, the string `///' will be used.
+
+Interactively, will prompt for COMMENT-MARKER."
+  (interactive "r\nM")
+  (when (null comment-marker)
+    (setq comment-marker "///"))
+  (save-excursion
+    (let ((end (make-marker)))
+      (set-marker end end-position)
+      (set-marker-insertion-type end t)
+      (goto-char beg)
+      (while (re-search-forward "^" end t)
+        (insert (concat comment-marker " ")))
+      (set-marker end nil))))
+
+(defun rust--uncomment-doctest-in-buffer ()
+  "Run `rust-uncomment-doctest' on the text in the current buffer."
+  (rust-uncomment-doctest (point-min) (point-max)))
+
+(defun rust--comment-doctest-in-buffer ()
+  "Run `rust-comment-doctest' on the text in the current buffer."
+  (rust-comment-doctest (point-min) (point-max)))
+
+(defun rust-edit-doctest ()
+  "Edit the doctest around point in a separate indirect buffer.
+Requires the `edit-indirect' package."
+  (interactive)
+  (error "This feature requires the `edit-indirect' package."))
+
+(defun rust--setup-doctest-hooks ()
+  nil)
+
+(require 'edit-indirect nil t)
+
+(eval-after-load 'edit-indirect
+  '(progn
+     ;; silence warnings
+     (declare-function edit-indirect-region "edit-indirect.el")
+     (defvar edit-indirect-after-commit-functions)
+
+     (define-key rust-mode-map (kbd "C-c C-e") #'rust-edit-doctest)
+
+     (defun rust-edit-doctest ()
+       "Edit the doctest around point in a separate indirect
+buffer. Requires the `edit-indirect' package."
+       (interactive)
+       (let ((beg (save-excursion
+                    (rust-beginning-of-doctest)
+                    (forward-line)
+                    (line-beginning-position)))
+             (end (save-excursion
+                    (rust-end-of-doctest)
+                    (forward-line -1)
+                    (line-end-position))))
+         (when (<= end beg)
+           (rust-beginning-of-doctest)
+           (end-of-line)
+           (insert "\n/// ")
+           (setq end (point)))
+         (save-mark-and-excursion
+          (edit-indirect-region beg end t))))
+
+     (defun rust--setup-doctest-hooks ()
+       "Add hooks for doctest buffers created from current Rust buffer."
+       (add-hook 'edit-indirect-after-creation-hook #'rust-doctest-mode nil t)
+       (add-hook 'edit-indirect-after-creation-hook #'rust--uncomment-doctest-in-buffer nil t)
+       (add-hook 'edit-indirect-before-commit-hook #'rust--comment-doctest-in-buffer nil t)
+       (add-to-list 'edit-indirect-after-commit-functions #'indent-region))))
 
 (provide 'rust-mode)
 
