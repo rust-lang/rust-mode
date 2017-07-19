@@ -2650,6 +2650,13 @@ extern \"rust-intrinsic\" fn five() {
       "four"
       "five"))))
 
+(when (executable-find rust-cargo-bin)
+  (ert-deftest rust-test-project-located ()
+    (lexical-let* ((test-dir (expand-file-name "test-project" default-directory))
+                   (manifest-file (expand-file-name "Cargo.toml" test-dir)))
+      (let ((default-directory test-dir))
+        (should (equal (expand-file-name (rust-buffer-project)) manifest-file))))))
+
 ;; If electric-pair-mode is available, load it and run the tests that use it.  If not,
 ;; no error--the tests will be skipped.
 (require 'elec-pair nil t)
