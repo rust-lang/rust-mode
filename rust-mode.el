@@ -165,6 +165,11 @@ function or trait.  When nil, where will be aligned with fn or trait."
   "Face for the `unsafe' keyword."
   :group 'rust-mode)
 
+(defface rust-question-mark-face
+  '((t :weight bold :inherit font-lock-builtin-face))
+  "Face for the question mark operator."
+  :group 'rust-mode)
+
 (defun rust-paren-level () (nth 0 (syntax-ppss)))
 (defun rust-in-str-or-cmnt () (nth 8 (syntax-ppss)))
 (defun rust-rewind-past-str-cmnt () (goto-char (nth 8 (syntax-ppss))))
@@ -603,6 +608,9 @@ the desired identifiers), but does not match type annotations \"foo::<\"."
 
      ;; CamelCase Means Type Or Constructor
      (,rust-re-type-or-constructor 1 font-lock-type-face)
+
+     ;; Question mark operator
+     ("\\?" . 'rust-question-mark-face)
      )
 
    ;; Item definitions
