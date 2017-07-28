@@ -1284,12 +1284,46 @@ list of substrings of `STR' each followed by its face."
    '("fn" font-lock-keyword-face
      "foo_Bar" font-lock-function-name-face)))
 
+(ert-deftest font-lock-let-bindings ()
+  (rust-test-font-lock
+   "let foo;"
+   '("let" font-lock-keyword-face
+     "foo" font-lock-variable-name-face))
+  (rust-test-font-lock
+   "let mut foo;"
+   '("let" font-lock-keyword-face
+     "mut" font-lock-keyword-face
+     "foo" font-lock-variable-name-face))
+  (rust-test-font-lock
+   "let foo = 1;"
+   '("let" font-lock-keyword-face
+     "foo" font-lock-variable-name-face))
+  (rust-test-font-lock
+   "let mut foo = 1;"
+   '("let" font-lock-keyword-face
+     "mut" font-lock-keyword-face
+     "foo" font-lock-variable-name-face))
+  (rust-test-font-lock
+   "fn foo() { let bar = 1; }"
+   '("fn" font-lock-keyword-face
+     "foo" font-lock-function-name-face
+     "let" font-lock-keyword-face
+     "bar" font-lock-variable-name-face))
+  (rust-test-font-lock
+   "fn foo() { let mut bar = 1; }"
+   '("fn" font-lock-keyword-face
+     "foo" font-lock-function-name-face
+     "let" font-lock-keyword-face
+     "mut" font-lock-keyword-face
+     "bar" font-lock-variable-name-face)))
+
 (ert-deftest font-lock-single-quote-character-literal ()
   (rust-test-font-lock
    "fn main() { let ch = '\\''; }"
    '("fn" font-lock-keyword-face
      "main" font-lock-function-name-face
      "let" font-lock-keyword-face
+     "ch" font-lock-variable-name-face
      "'\\''" font-lock-string-face)))
 
 (ert-deftest font-lock-escaped-double-quote-character-literal ()
@@ -1298,6 +1332,7 @@ list of substrings of `STR' each followed by its face."
    '("fn" font-lock-keyword-face
      "main" font-lock-function-name-face
      "let" font-lock-keyword-face
+     "ch" font-lock-variable-name-face
      "'\\\"'" font-lock-string-face)))
 
 (ert-deftest font-lock-escaped-backslash-character-literal ()
@@ -1306,18 +1341,21 @@ list of substrings of `STR' each followed by its face."
    '("fn" font-lock-keyword-face
      "main" font-lock-function-name-face
      "let" font-lock-keyword-face
+     "ch" font-lock-variable-name-face
      "'\\\\'" font-lock-string-face)))
 
 (ert-deftest font-lock-hex-escape-character-literal ()
   (rust-test-font-lock
    "let ch = '\\x1f';"
    '("let" font-lock-keyword-face
+     "ch" font-lock-variable-name-face
      "'\\x1f'" font-lock-string-face)))
 
 (ert-deftest font-lock-unicode-escape-character-literal ()
   (rust-test-font-lock
    "let ch = '\\u{1ffff}';"
    '("let" font-lock-keyword-face
+     "ch" font-lock-variable-name-face
      "'\\u{1ffff}'" font-lock-string-face)))
 
 (ert-deftest font-lock-raw-strings-no-hashes ()
@@ -1583,6 +1621,7 @@ this_is_not_a_string();)"
   (rust-test-font-lock
    "let default = 7; impl foo { default fn f() { } }"
    '("let" font-lock-keyword-face
+     "default" font-lock-variable-name-face
      "impl" font-lock-keyword-face
      "default" font-lock-keyword-face
      "fn" font-lock-keyword-face
@@ -1592,7 +1631,8 @@ this_is_not_a_string();)"
   (rust-test-font-lock
    "let union = 7; union foo { x: &'union bar }"
    '("let" font-lock-keyword-face
-     ;; Ignore the first union, it's an unhighlighted variable.
+     ;; The first union is a variable name.
+     "union" font-lock-variable-name-face
      ;; The second union is a contextual keyword.
      "union" font-lock-keyword-face
      "foo" font-lock-type-face
