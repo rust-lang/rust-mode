@@ -1510,6 +1510,38 @@ this_is_not_a_string();)"
    ;; Only the i32 should have been highlighted.
    '("i32" font-lock-type-face)))
 
+(ert-deftest font-lock-question-mark ()
+  "Ensure question mark operator is highlighted."
+  (rust-test-font-lock
+   "?"
+   '("?" rust-question-mark-face))
+  (rust-test-font-lock
+   "foo\(\)?;"
+   '("?" rust-question-mark-face))
+  (rust-test-font-lock
+   "foo\(bar\(\)?\);"
+   '("?" rust-question-mark-face))
+  (rust-test-font-lock
+   "\"?\""
+   '("\"?\"" font-lock-string-face))
+  (rust-test-font-lock
+   "foo\(\"?\"\);"
+   '("\"?\"" font-lock-string-face))
+  (rust-test-font-lock
+   "// ?"
+   '("// " font-lock-comment-delimiter-face
+     "?" font-lock-comment-face))
+  (rust-test-font-lock
+   "/// ?"
+   '("/// ?" font-lock-doc-face))
+  (rust-test-font-lock
+   "foo\(\"?\"\);"
+   '("\"?\"" font-lock-string-face))
+  (rust-test-font-lock
+   "foo\(\"?\"\)?;"
+   '("\"?\"" font-lock-string-face
+     "?" rust-question-mark-face)))
+
 (ert-deftest rust-test-default-context-sensitive ()
   (rust-test-font-lock
    "let default = 7; impl foo { default fn f() { } }"
