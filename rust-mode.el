@@ -39,12 +39,18 @@
 (defconst rust-re-vis "pub")
 (defconst rust-re-unsafe "unsafe")
 (defconst rust-re-extern "extern")
+(defconst rust-re-union
+  (rx-to-string
+   `(seq
+    (or space line-start)
+    (group symbol-start "union" symbol-end)
+    (+ space) (regexp ,rust-re-ident))))
 
 ;;; Start of a Rust item
 (defvar rust-top-item-beg-re
   (concat "\\s-*\\(?:priv\\|pub\\)?\\s-*"
           (regexp-opt
-           '("enum" "struct" "type" "mod" "use" "fn" "static" "impl"
+           '("enum" "struct" "union" "type" "mod" "use" "fn" "static" "impl"
              "extern" "trait"))
 	  "\\_>"))
 
@@ -577,8 +583,11 @@ the desired identifiers), but does not match type annotations \"foo::<\"."
   (append
    `(
      ;; Keywords proper
-     ("\\_<\\(default\\)[[:space:]]+fn\\_>" 1 font-lock-keyword-face)
      (,(regexp-opt rust-mode-keywords 'symbols) . font-lock-keyword-face)
+
+     ;; Contextual keywords
+     ("\\_<\\(default\\)[[:space:]]+fn\\_>" 1 font-lock-keyword-face)
+     (,rust-re-union 1 font-lock-keyword-face)
 
      ;; Special types
      (,(regexp-opt rust-special-types 'symbols) . font-lock-type-face)
@@ -613,12 +622,13 @@ the desired identifiers), but does not match type annotations \"foo::<\"."
      ("\\?" . 'rust-question-mark-face)
      )
 
-   ;; Item definitions
+   ;; Ensure we highlight `Foo` in `struct Foo` as a type.
    (mapcar #'(lambda (x)
                (list (rust-re-item-def (car x))
                      1 (cdr x)))
            '(("enum" . font-lock-type-face)
              ("struct" . font-lock-type-face)
+             ("union" . font-lock-type-face)
              ("type" . font-lock-type-face)
              ("mod" . font-lock-constant-face)
              ("use" . font-lock-constant-face)
@@ -671,7 +681,7 @@ the desired identifiers), but does not match type annotations \"foo::<\"."
                    (rust-rewind-irrelevant)
                    (rust-rewind-type-param-list)
                    (cond
-                       ((rust-looking-back-symbols '("fn" "trait" "enum" "struct" "impl" "type")) ident-pos)
+                       ((rust-looking-back-symbols '("fn" "trait" "enum" "struct" "union" "impl" "type")) ident-pos)
 
                        ((equal 5 (rust-syntax-class-before-point))
                         (backward-sexp)
@@ -758,7 +768,7 @@ the desired identifiers), but does not match type annotations \"foo::<\"."
             (not (and (rust-rewind-to-decl-name)
                       (progn
                         (rust-rewind-irrelevant)
-                        (rust-looking-back-symbols '("enum" "struct" "trait" "type"))))))
+                        (rust-looking-back-symbols '("enum" "struct" "union" "trait" "type"))))))
            ))
          
          ((equal token 'ambiguous-operator)
@@ -1167,7 +1177,7 @@ raw string, or to `end', whichever comes first."
 (defvar rust-imenu-generic-expression
   (append (mapcar #'(lambda (x)
                       (list (capitalize x) (rust-re-item-def-imenu x) 1))
-                  '("enum" "struct" "type" "mod" "fn" "trait" "impl"))
+                  '("enum" "struct" "union" "type" "mod" "fn" "trait" "impl"))
           `(("Macro" ,(rust-re-item-def-imenu "macro_rules!") 1)))
   "Value for `imenu-generic-expression' in Rust mode.
 
@@ -1242,7 +1252,7 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
             (error "Rustfmt failed, see *rustfmt* buffer for details"))))
       (delete-file tmpf))))
 
-(defconst rust--format-word "\\b\\(else\\|enum\\|fn\\|for\\|if\\|let\\|loop\\|match\\|struct\\|unsafe\\|while\\)\\b")
+(defconst rust--format-word "\\b\\(else\\|enum\\|fn\\|for\\|if\\|let\\|loop\\|match\\|struct\\|union\\|unsafe\\|while\\)\\b")
 (defconst rust--format-line "\\([\n]\\)")
 
 ;; Counts number of matches of regex beginning up to max-beginning,
