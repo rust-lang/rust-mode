@@ -1551,6 +1551,19 @@ this_is_not_a_string();)"
      "fn" font-lock-keyword-face
      "f" font-lock-function-name-face)))
 
+(ert-deftest rust-test-union-context-sensitive ()
+  (rust-test-font-lock
+   "let union = 7; union foo { x: &'union bar }"
+   '("let" font-lock-keyword-face
+     ;; Ignore the first union, it's an unhighlighted variable.
+     ;; The second union is a contextual keyword.
+     "union" font-lock-keyword-face
+     "foo" font-lock-type-face
+     "x" font-lock-variable-name-face
+     ;; This union is the name of a lifetime.
+     "union" font-lock-variable-name-face
+     "bar" font-lock-type-face)))
+
 (ert-deftest indent-method-chains-no-align ()
   (let ((rust-indent-method-chain nil)) (test-indent
    "
