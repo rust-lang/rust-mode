@@ -1025,6 +1025,43 @@ All positions are position symbols found in `rust-test-positions-alist'."
    'beginning-of-fn3
    #'beginning-of-defun))
 
+(ert-deftest rust-beginning-of-defun-string-comment ()
+  (let (fn-1 fn-2 p-1 p-2)
+    (with-temp-buffer
+      (rust-mode)
+      (insert "fn test1() {
+  let s=r#\"
+fn test2();
+\"#;")
+      (setq p-1 (point))
+      (setq fn-1 (1+ p-1))
+      (insert "
+fn test3() {
+  /*
+fn test4();")
+      (setq p-2 (point))
+      (insert "\n*/\n}\n")
+      (setq fn-2 (point))
+      (insert "fn test5() { }")
+
+      (goto-char p-1)
+      (beginning-of-defun)
+      (should (eq (point) (point-min)))
+
+      (beginning-of-defun -2)
+      (should (eq (point) fn-2))
+
+      (goto-char p-2)
+      (beginning-of-defun)
+      (should (eq (point) fn-1))
+
+      (beginning-of-defun -1)
+      (should (eq (point) fn-2))
+
+      (goto-char (point-max))
+      (beginning-of-defun 2)
+      (should (eq (point) fn-1)))))
+
 (ert-deftest rust-end-of-defun-from-middle-of-fn ()
   (rust-test-motion
    rust-test-motion-string
