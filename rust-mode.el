@@ -176,7 +176,18 @@ function or trait.  When nil, where will be aligned with fn or trait."
   "Face for the question mark operator."
   :group 'rust-mode)
 
+(defface rust-builtin-formatting-macro-face
+  '((t :inherit font-lock-builtin-face))
+  "Face for builtin formatting macros (print! &c.)."
+  :group 'rust-mode)
+
+(defface rust-string-interpolation-face
+  '((t :slant italic :inherit font-lock-string-face))
+  "Face for interpolating braces in builtin formatting macro strings."
+  :group 'rust-mode)
+
 (defun rust-paren-level () (nth 0 (syntax-ppss)))
+(defun rust-in-str () (nth 3 (syntax-ppss)))
 (defun rust-in-str-or-cmnt () (nth 8 (syntax-ppss)))
 (defun rust-rewind-past-str-cmnt () (goto-char (nth 8 (syntax-ppss))))
 
@@ -579,6 +590,54 @@ the desired identifiers), but does not match type annotations \"foo::<\"."
             ((not (looking-at (rx (0+ space) "<")))
 	     (throw 'rust-path-font-lock-matcher match))))))))
 
+(defun rust-next-string-interpolation (limit)
+  "Search forward from point for next Rust interpolation marker
+before LIMIT.
+Set point to the end of the occurrence found, and return match beginning
+and end."
+  (catch 'match
+    (save-match-data
+      (save-excursion
+        (while (search-forward "{" limit t)
+          (if (eql (char-after (point)) ?{)
+              (forward-char)
+            (let ((start (match-beginning 0)))
+              ;; According to fmt_macros::Parser::next, an opening brace
+              ;; must be followed by an optional argument and/or format
+              ;; specifier, then a closing brace. A single closing brace
+              ;; without a corresponding unescaped opening brace is an
+              ;; error. We don't need to do anything special with
+              ;; arguments, specifiers, or errors, so we only search for
+              ;; the single closing brace.
+              (when (search-forward "}" limit t)
+                (throw 'match (list start (point)))))))))))
+
+(defun rust-string-interpolation-matcher (limit)
+  "Match next Rust interpolation marker before LIMIT and set
+match data if found. Returns nil if not within a Rust string."
+  (when (rust-in-str)
+    (let ((match (rust-next-string-interpolation limit)))
+      (when match
+        (set-match-data match)
+        (goto-char (cadr match))
+        match))))
+
+(defvar rust-builtin-formatting-macros
+  '("eprint"
+    "eprintln"
+    "format"
+    "print"
+    "println")
+  "List of builtin Rust macros for string formatting used by `rust-mode-font-lock-keywords'. (`write!' is handled separately.)")
+
+(defvar rust-formatting-macro-opening-re
+  "[[:space:]]*[({[][[:space:]]*"
+  "Regular expression to match the opening delimiter of a Rust formatting macro.")
+
+(defvar rust-start-of-string-re
+  "\\(?:r#*\\)?\""
+  "Regular expression to match the start of a Rust raw string.")
+
 (defvar rust-mode-font-lock-keywords
   (append
    `(
@@ -598,6 +657,22 @@ the desired identifiers), but does not match type annotations \"foo::<\"."
      ;; Attributes like `#[bar(baz)]` or `#![bar(baz)]` or `#[bar = "baz"]`
      (,(rust-re-grab (concat "#\\!?\\[" rust-re-ident "[^]]*\\]"))
       1 font-lock-preprocessor-face keep)
+
+     ;; Builtin formatting macros
+     (,(concat (rust-re-grab (concat (regexp-opt rust-builtin-formatting-macros) "!")) (concat rust-formatting-macro-opening-re rust-start-of-string-re))
+      (1 'rust-builtin-formatting-macro-face)
+      (rust-string-interpolation-matcher
+       (rust-end-of-string)
+       nil
+       (0 'rust-string-interpolation-face t nil)))
+
+     ;; write! macro
+     (,(concat (rust-re-grab "write\\(ln\\)?!") (concat rust-formatting-macro-opening-re "[[:space:]]*[^\"]+,[[:space:]]*" rust-start-of-string-re))
+      (1 'rust-builtin-formatting-macro-face)
+      (rust-string-interpolation-matcher
+       (rust-end-of-string)
+       nil
+       (0 'rust-string-interpolation-face t nil)))
 
      ;; Syntax extension invocations like `foo!`, highlight including the !
      (,(concat (rust-re-grab (concat rust-re-ident "!")) "[({[:space:][]")
@@ -1238,6 +1313,13 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
            (goto-char (point-max)))))
     ;; There is no opening brace, so consider the whole buffer to be one "defun"
     (goto-char (point-max))))
+
+(defun rust-end-of-string ()
+  "Skip to the end of the current string."
+  (save-excursion
+    (skip-syntax-forward "^\"|")
+    (skip-syntax-forward "\"|")
+    (point)))
 
 ;; Formatting using rustfmt
 (defun rust--format-call (buf)
