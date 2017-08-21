@@ -2345,6 +2345,15 @@ fn main() {
      "/* " font-lock-comment-delimiter-face
      "no-op */" font-lock-comment-face)))
 
+(ert-deftest rust-if-let-type-font-lock ()
+  (rust-test-font-lock
+   "if let Some(var) = some_var { /* no-op */ }"
+   '("if" font-lock-keyword-face
+     "let" font-lock-keyword-face
+     "Some" font-lock-type-face
+     "/* " font-lock-comment-delimiter-face
+     "no-op */" font-lock-comment-face)))
+
 (ert-deftest rust-test-basic-paren-matching ()
   (rust-test-matching-parens
    "
