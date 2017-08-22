@@ -1317,6 +1317,15 @@ list of substrings of `STR' each followed by its face."
      "mut" font-lock-keyword-face
      "bar" font-lock-variable-name-face)))
 
+(ert-deftest font-lock-if-let-binding ()
+  (rust-test-font-lock
+   "if let Some(var) = some_var { /* no-op */ }"
+   '("if" font-lock-keyword-face
+     "let" font-lock-keyword-face
+     "Some" font-lock-type-face
+     "/* " font-lock-comment-delimiter-face
+     "no-op */" font-lock-comment-face)))
+
 (ert-deftest font-lock-single-quote-character-literal ()
   (rust-test-font-lock
    "fn main() { let ch = '\\''; }"
