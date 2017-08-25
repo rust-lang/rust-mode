@@ -1353,7 +1353,6 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
                 (while (re-search-forward "stdin" nil t)
                   (replace-match path)))
               (compilation-mode)
-              (compilation-next-error 1)
               (pop-to-buffer fmt-buffer)
               (message "Rustfmt could not format some lines.")))))))))
 
