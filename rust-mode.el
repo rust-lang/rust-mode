@@ -1331,29 +1331,30 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
 ;; Formatting using rustfmt
 (defun rust--format-call (buf)
   "Format BUF using rustfmt."
-  (with-current-buffer (get-buffer-create "*rustfmt*")
-    (erase-buffer)
-    (insert-buffer-substring buf)
-    (let* ((tmpf (make-temp-file "rustfmt"))
-           (ret (call-process-region (point-min) (point-max) rust-rustfmt-bin
-                                     t `(t ,tmpf) nil)))
-      (unwind-protect
+  (let ((fmt-buffer (get-buffer-create "*rustfmt*")))
+    (with-current-buffer fmt-buffer
+      (let ((buffer-read-only nil))
+        (erase-buffer)
+        (insert-buffer-substring buf)
+        (let ((ret (shell-command-on-region (point-min) (point-max)
+                                            rust-rustfmt-bin fmt-buffer
+                                            nil nil nil)))
           (cond
            ((zerop ret)
             (if (not (string= (buffer-string)
                               (with-current-buffer buf (buffer-string))))
                 (copy-to-buffer buf (point-min) (point-max)))
-            (kill-buffer))
-           ((= ret 3)
-            (if (not (string= (buffer-string)
-                              (with-current-buffer buf (buffer-string))))
-                (copy-to-buffer buf (point-min) (point-max)))
-            (erase-buffer)
-            (insert-file-contents tmpf)
-            (error "Rustfmt could not format some lines, see *rustfmt* buffer for details"))
+            (kill-buffer)
+            (message "Formatted buffer with rustfmt."))
            (t
-            (error "Rustfmt failed, see *rustfmt* buffer for details"))))
-      (delete-file tmpf))))
+            (let ((path (buffer-file-name buf)))
+              (goto-char (point-min))
+              (save-excursion
+                (while (re-search-forward "--> stdin" nil t)
+                  (replace-match (concat "--> " path))))
+              (compilation-mode)
+              (pop-to-buffer fmt-buffer)
+              (message "Rustfmt could not format some lines.")))))))))
 
 (defconst rust--format-word "\\b\\(else\\|enum\\|fn\\|for\\|if\\|let\\|loop\\|match\\|struct\\|union\\|unsafe\\|while\\)\\b")
 (defconst rust--format-line "\\([\n]\\)")
@@ -1476,9 +1477,7 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
                (start (rust--format-get-pos buffer (pop loc)))
                (pos (rust--format-get-pos buffer (pop loc))))
           (set-window-start window start)
-          (set-window-point window pos)))))
-
-  (message "Formatted buffer with rustfmt."))
+          (set-window-point window pos))))))
 
 (defun rust-enable-format-on-save ()
   "Enable formatting using rustfmt when saving buffer."
