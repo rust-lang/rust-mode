@@ -316,11 +316,11 @@ very very very long string
 (ert-deftest indent-struct-fields-aligned ()
   (test-indent
    "
-struct Foo { bar: int,
-             baz: int }
+struct Foo { bar: i32,
+             baz: i32 }
 
-struct Blah {x:int,
-             y:int,
+struct Blah {x:i32,
+             y:i32,
              z:String"))
 
 (ert-deftest indent-doc-comments ()
@@ -345,12 +345,12 @@ fn foo() {
    "
 // struct fields out one level:
 struct foo {
-    a:int,
+    a:i32,
     // comments too
     b:char
 }
 
-fn bar(x:Box<int>) {   // comment here should not affect the next indent
+fn bar(x:Box<i32>) {   // comment here should not affect the next indent
     bla();
     bla();
 }"))
@@ -397,11 +397,11 @@ not_a_string();
    "
 // Indent out one level because no params appear on the first line
 fn xyzzy(
-    a:int,
+    a:i32,
     b:char) { }
 
 fn abcdef(
-    a:int,
+    a:i32,
     b:char)
     -> char
 { }"))
@@ -410,17 +410,17 @@ fn abcdef(
   (test-indent
    "
 // Align the second line of params to the first
-fn foo(a:int,
+fn foo(a:i32,
        b:char) { }
 
-fn bar(   a:int,
+fn bar(   a:i32,
           b:char)
-          -> int
+          -> i32
 { }
 
-fn baz(   a:int,  // should work with a comment here
+fn baz(   a:i32,  // should work with a comment here
           b:char)
-          -> int
+          -> i32
 { }
 "))
 
@@ -428,24 +428,24 @@ fn baz(   a:int,  // should work with a comment here
   (test-indent
    "
 // Indent function body only one level after `-> {`
-fn foo1(a:int, b:char) -> int {
+fn foo1(a:i32, b:char) -> i32 {
     let body;
 }
 
-fn foo2(a:int,
-        b:char) -> int {
+fn foo2(a:i32,
+        b:char) -> i32 {
     let body;
 }
 
-fn foo3(a:int,
+fn foo3(a:i32,
         b:char)
-        -> int {
+        -> i32 {
     let body;
 }
 
-fn foo4(a:int,
+fn foo4(a:i32,
         b:char)
-        -> int where int:A {
+        -> i32 where i32:A {
     let body;
 }
 "))
@@ -657,7 +657,7 @@ pub struct Region { // <-- this should be flush with left margin!
   (test-indent
    "
 fn args_on_the_next_line( // with a comment
-    a:int,
+    a:i32,
     b:String) {
     let aaaaaa = [
         1,
@@ -692,11 +692,11 @@ fn args_on_the_next_line( // with a comment
 (ert-deftest indent-nested-fns ()
   (test-indent
    "
-fn nexted_fns(a: fn(b:int,
+fn nexted_fns(a: fn(b:i32,
                     c:char)
-                    -> int,
-              d: int)
-              -> uint
+                    -> i32,
+              d: i32)
+              -> u128
 {
     0
 }
@@ -849,32 +849,32 @@ struct A {
 
 (setq rust-test-motion-string
       "
-fn fn1(arg: int) -> bool {
+fn fn1(arg: i32) -> bool {
     let x = 5;
     let y = b();
     true
 }
 
-fn fn2(arg: int) -> bool {
+fn fn2(arg: i32) -> bool {
     let x = 5;
     let y = b();
     true
 }
 
-pub fn fn3(arg: int) -> bool {
+pub fn fn3(arg: i32) -> bool {
     let x = 5;
     let y = b();
     true
 }
 
 struct Foo {
-    x: int
+    x: i32
 }
 "
       rust-test-region-string rust-test-motion-string
       rust-test-indent-motion-string
       "
-fn blank_line(arg:int) -> bool {
+fn blank_line(arg:i32) -> bool {
 
 }
 
@@ -1820,7 +1820,7 @@ pattern to what did and did not trip it."
   ;; would make the failure go away.
   (with-temp-buffer
     (rust-mode)
-    (insert "fn blank_line(arg:int) -> bool {
+    (insert "fn blank_line(arg:i32) -> bool {
 
 }
 
@@ -2774,7 +2774,7 @@ fn foo() -> Box<i32> {
 
 (ert-deftest rust-test-paren-matching-lt-operator-after-special-type ()
   (rust-test-matching-parens
-   "fn foo() { low as uint <= c }"
+   "fn foo() { low as u128 <= c }"
    '((10 29))
    '(24)))
 
@@ -2887,16 +2887,16 @@ fn f() {
   (rust-test-matching-parens
    "
 fn rfc803() {
-    let z = a < b:FunnkyThing<int>;
+    let z = a < b:FunnkyThing<i32>;
     let s = Foo {
         a: b < 3,
-        b: d:CrazyStuff<int> < 3,
-        c: 2 < x:CrazyStuff<uint>
+        b: d:CrazyStuff<i32> < 3,
+        c: 2 < x:CrazyStuff<u128>
     }
 }"
-   '((45 49) ;; FunkyThing<int>
-     (111 115) ;; CrazyStuff<int>
-     (149 154) ;; CrazyStuff<uint>
+   '((45 49) ;; FunkyThing<i32>
+     (111 115) ;; CrazyStuff<i32>
+     (149 154) ;; CrazyStuff<u128>
      )
    '(30 ;; a < b
      83 ;; b < 3

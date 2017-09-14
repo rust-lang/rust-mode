@@ -547,7 +547,7 @@ buffer."
     "u128" "i128"
 
     "f32" "f64"
-    "float" "int" "uint" "isize" "usize"
+    "isize" "usize"
     "bool"
     "str" "char"))
 
