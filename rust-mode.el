@@ -160,6 +160,12 @@ function or trait.  When nil, where will be aligned with fn or trait."
   :type 'string
   :group 'rust-mode)
 
+(defcustom rust-compile-command "cargo build"
+  "Default compile command when editing Rust."
+  :type '(choice (const :tag "Disabled" nil)
+				 (string :tag "Command"))
+  :group 'rust-mode)
+
 (defcustom rust-always-locate-project-on-open nil
   "Whether to run `cargo locate-project' every time `rust-mode'
   is activated."
@@ -1547,7 +1553,8 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
   (setq-local parse-sexp-lookup-properties t)
   (setq-local electric-pair-inhibit-predicate 'rust-electric-pair-inhibit-predicate-wrap)
 
-  (setq-local compile-command "cargo build")
+  (when rust-compile-command
+	  (setq-local compile-command rust-compile-command))
 
   (add-hook 'before-save-hook 'rust--before-save-hook nil t)
 
