@@ -1491,6 +1491,11 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
   (interactive)
   (setq-local rust-format-on-save nil))
 
+(defun rust-compile ()
+  "Compile using `cargo build`"
+  (interactive)
+  (compile "cargo build"))
+
 (defvar rust-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-c C-f") 'rust-format-buffer)
@@ -1546,8 +1551,6 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
   (setq-local end-of-defun-function 'rust-end-of-defun)
   (setq-local parse-sexp-lookup-properties t)
   (setq-local electric-pair-inhibit-predicate 'rust-electric-pair-inhibit-predicate-wrap)
-
-  (setq-local compile-command "cargo build")
 
   (add-hook 'before-save-hook 'rust--before-save-hook nil t)
 
