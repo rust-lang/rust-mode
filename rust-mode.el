@@ -1332,13 +1332,14 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
 ;; Formatting using rustfmt
 (defun rust--format-call (buf)
   "Format BUF using rustfmt."
-  (with-current-buffer (get-buffer-create "*rustfmt*")
-    (erase-buffer)
-    (insert-buffer-substring buf)
-    (let* ((tmpf (make-temp-file "rustfmt"))
-           (ret (call-process-region (point-min) (point-max) rust-rustfmt-bin
-                                     t `(t ,tmpf) nil)))
-      (unwind-protect
+  (let ((fmt-buffer (get-buffer-create "*rustfmt*")))
+    (with-current-buffer fmt-buffer
+      (let ((buffer-read-only nil))
+        (erase-buffer)
+        (insert-buffer-substring buf)
+        (let ((ret (shell-command-on-region (point-min) (point-max)
+                                            rust-rustfmt-bin fmt-buffer
+                                            nil nil t)))
           (cond
            ((zerop ret)
             (if (not (string= (buffer-string)
@@ -1346,15 +1347,34 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
                 (copy-to-buffer buf (point-min) (point-max)))
             (kill-buffer))
            ((= ret 3)
-            (if (not (string= (buffer-string)
-                              (with-current-buffer buf (buffer-string))))
-                (copy-to-buffer buf (point-min) (point-max)))
-            (erase-buffer)
-            (insert-file-contents tmpf)
-            (error "Rustfmt could not format some lines, see *rustfmt* buffer for details"))
+            (let ((path (buffer-file-name buf))
+                  (line-error "error: line exceeded maximum width[[:ascii:]]+")
+                  buf-string)
+              (copy-to-buffer buf (point-min) (point-max))
+              (with-current-buffer buf
+                (while (re-search-forward line-error nil t)
+                  (replace-match ""))
+                (setq buf-string (buffer-string)))
+              (goto-char (point-min))
+              (save-excursion
+                (while (re-search-forward buf-string nil t)
+                  (replace-match ""))
+                (while (re-search-forward "stdin" nil t)
+                  (replace-match path)
+                  (goto-char (line-end-position))
+                  (insert ":1")))
+              (compilation-mode)
+              (next-error)
+              (pop-to-buffer fmt-buffer)))
            (t
-            (error "Rustfmt failed, see *rustfmt* buffer for details"))))
-      (delete-file tmpf))))
+            (let ((path (buffer-file-name buf)))
+              (goto-char (point-min))
+              (save-excursion
+                (while (re-search-forward "stdin" nil t)
+                  (replace-match path)))
+              (compilation-mode)
+              (next-error)
+              (pop-to-buffer fmt-buffer)))))))))
 
 (defconst rust--format-word "\\b\\(else\\|enum\\|fn\\|for\\|if\\|let\\|loop\\|match\\|struct\\|union\\|unsafe\\|while\\)\\b")
 (defconst rust--format-line "\\([\n]\\)")
