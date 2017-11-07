@@ -28,5 +28,4 @@ script:
   - EMACS=`which emacs` ./run_rust_emacs_tests.sh
 
 notifications:
-  email:
-    on_success: never
+  email: false
