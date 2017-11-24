@@ -1552,8 +1552,7 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
   (setq-local parse-sexp-lookup-properties t)
   (setq-local electric-pair-inhibit-predicate 'rust-electric-pair-inhibit-predicate-wrap)
 
-  (add-hook 'before-save-hook 'rust--before-save-hook nil t)
-
+  (add-hook 'after-save-hook 'rust--after-save-hook nil t)
   (setq-local rust-buffer-project nil)
 
   (when rust-always-locate-project-on-open
@@ -1568,8 +1567,13 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
   (require 'rust-mode)
   (rust-mode))
 
-(defun rust--before-save-hook ()
-  (when rust-format-on-save (rust-format-buffer)))
+(defun rust--after-save-hook ()
+  (when rust-format-on-save
+    (condition-case rustfmt-err
+        (and
+         (rust-format-buffer)
+         (save-buffer))      
+      (error (error rustfmt-err)))))
 
 ;; Issue #6887: Rather than inheriting the 'gnu compilation error
 ;; regexp (which is broken on a few edge cases), add our own 'rust
