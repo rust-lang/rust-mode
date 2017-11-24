@@ -1475,7 +1475,8 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
                (buffer (window-buffer window))
                (start (rust--format-get-pos buffer (pop loc)))
                (pos (rust--format-get-pos buffer (pop loc))))
-          (set-window-start window start)
+          (unless (eq buffer current)
+            (set-window-start window start))
           (set-window-point window pos)))))
 
   (message "Formatted buffer with rustfmt."))
