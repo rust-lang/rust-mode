@@ -1353,6 +1353,8 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
             (insert-file-contents tmpf)
             (error "Rustfmt could not format some lines, see *rustfmt* buffer for details"))
            (t
+            (erase-buffer)
+            (insert-file-contents tmpf)
             (error "Rustfmt failed, see *rustfmt* buffer for details"))))
       (delete-file tmpf))))
 
