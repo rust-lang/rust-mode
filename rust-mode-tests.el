@@ -2186,6 +2186,19 @@ fn main() {
      "\"\"" font-lock-string-face
      "/* " font-lock-comment-delimiter-face
      "print!(\"\"); */" font-lock-comment-face))
+  ;; with newline directly following delimiter
+  (rust-test-font-lock
+   "print!(\n\"\"\n); { /* print!(\"\"); */ }"
+   '("print!" rust-builtin-formatting-macro-face
+     "\"\"" font-lock-string-face
+     "/* " font-lock-comment-delimiter-face
+     "print!(\"\"); */" font-lock-comment-face))
+  ;; with empty println!()
+  (rust-test-font-lock
+   "println!(); { /* println!(); */ }"
+   '("println!" rust-builtin-formatting-macro-face
+     "/* " font-lock-comment-delimiter-face
+     "println!(); */" font-lock-comment-face))
   ;; other delimiters
   (rust-test-font-lock
    "print!{\"\"}; { /* no-op */ }"
