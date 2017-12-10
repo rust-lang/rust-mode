@@ -1591,14 +1591,24 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
   "Specifications for matching errors in rustc invocations.
 See `compilation-error-regexp-alist' for help on their format.")
 
-(defvar rustc-new-compilation-regexps
-  (let ((file "\\([^\n]+\\)")
+(defvar rustc-new-error-regexps
+  (let ((message "\\(?:\\[[0-9A-Z]+\\]\\)?: .*\n *--> ")
+        (file "\\([^\n]+\\)")
         (start-line "\\([0-9]+\\)")
         (start-col  "\\([0-9]+\\)"))
-    (let ((re (concat "^ *--> " file ":" start-line ":" start-col ; --> 1:2:3
-                      )))
-      (cons re '(1 2 3))))
+    (let ((re (concat "^\\(error\\)" message file ":" start-line ":" start-col)))
+      (cons re '(2 3 4 2 nil (1 'compilation-error)))))
   "Specifications for matching errors in rustc invocations (new style).
+See `compilation-error-regexp-alist' for help on their format.")
+
+(defvar rustc-new-warning-regexps
+  (let ((message "\\(?:\\[[0-9A-Z]+\\]\\)?: .*\n *--> ")
+        (file "\\([^\n]+\\)")
+        (start-line "\\([0-9]+\\)")
+        (start-col  "\\([0-9]+\\)"))
+    (let ((re (concat "^\\(warning\\)" message file ":" start-line ":" start-col)))
+      (cons re '(2 3 4 1 nil (1 'compilation-warning)))))
+  "Specifications for matching warnings in rustc invocations (new style).
 See `compilation-error-regexp-alist' for help on their format.")
 
 ;; Match test run failures and panics during compilation as
@@ -1631,8 +1641,11 @@ See `compilation-error-regexp-alist' for help on their format.")
 (eval-after-load 'compile
   '(progn
      (add-to-list 'compilation-error-regexp-alist-alist
-                  (cons 'rustc-new rustc-new-compilation-regexps))
-     (add-to-list 'compilation-error-regexp-alist 'rustc-new)
+                  (cons 'rustc-new-error rustc-new-error-regexps))
+     (add-to-list 'compilation-error-regexp-alist 'rustc-new-error)
+     (add-to-list 'compilation-error-regexp-alist-alist
+                  (cons 'rustc-new-warning rustc-new-warning-regexps))
+     (add-to-list 'compilation-error-regexp-alist 'rustc-new-warning)
      (add-hook 'next-error-hook 'rustc-scroll-down-after-next-error)
      (add-to-list 'compilation-error-regexp-alist-alist
                   (cons 'rustc rustc-compilation-regexps))
