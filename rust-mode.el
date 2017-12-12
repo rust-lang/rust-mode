@@ -1592,7 +1592,7 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
 See `compilation-error-regexp-alist' for help on their format.")
 
 (defconst rustc-new-compilation-regexps-template
-  (let ((message "\\(?:\\[[0-9A-Z]+\\]\\)?: .*\n *--> ")
+  (let ((message "\\(?:\\[[0-9A-Z]+\\]\\)?: \\(.*\\)\n *--> ")
         (file "\\([^\n]+\\)")
         (start-line "\\([0-9]+\\)")
         (start-col  "\\([0-9]+\\)"))
@@ -1600,13 +1600,13 @@ See `compilation-error-regexp-alist' for help on their format.")
 
 (defvar rustc-new-error-regexps
     (let ((re (concat "^\\(error\\)" rustc-new-compilation-regexps-template)))
-      (cons re '(2 3 4 2 nil (1 'compilation-error))))
+      (cons re '(3 4 5 2 nil (1 'compilation-error) (2 'bold))))
   "Specifications for matching errors in rustc invocations (new style).
 See `compilation-error-regexp-alist' for help on their format.")
 
 (defvar rustc-new-warning-regexps
     (let ((re (concat "^\\(warning\\)" rustc-new-compilation-regexps-template)))
-      (cons re '(2 3 4 1 nil (1 'compilation-warning))))
+      (cons re '(3 4 5 1 nil (1 'compilation-warning) (2 'bold))))
   "Specifications for matching warnings in rustc invocations (new style).
 See `compilation-error-regexp-alist' for help on their format.")
 
