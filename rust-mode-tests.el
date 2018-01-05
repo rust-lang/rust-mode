@@ -451,7 +451,8 @@ fn foo4(a:i32,
 "))
 
 (ert-deftest indent-body-after-where ()
-  (test-indent
+  (let ((rust-indent-where-clause t))
+    (test-indent
    "
 fn foo1(a: A, b: B) -> A
     where A: Clone + Default, B: Eq {
@@ -469,10 +470,11 @@ fn foo2(a: A, b: B) -> A
         bar: 3
     }
 }
-"))
+")))
 
 (ert-deftest indent-align-where-clauses-style1a ()
-  (test-indent
+  (let ((rust-indent-where-clause t))
+    (test-indent
    "
 fn foo1a(a: A, b: B, c: C) -> D
     where A: Clone + Default,
@@ -484,10 +486,11 @@ fn foo1a(a: A, b: B, c: C) -> D
         bar: 3
     }
 }
-"))
+")))
 
 (ert-deftest indent-align-where-clauses-style1b ()
-  (test-indent
+  (let ((rust-indent-where-clause t))
+    (test-indent
    "
 fn foo1b(a: A, b: B, c: C) -> D
     where A: Clone + Default,
@@ -500,7 +503,7 @@ fn foo1b(a: A, b: B, c: C) -> D
         bar: 3
     }
 }
-"))
+")))
 
 (ert-deftest indent-align-where-clauses-style2a ()
   (test-indent
@@ -596,7 +599,8 @@ where A: Clone + Default,
 ")))
 
 (ert-deftest indent-align-where-clauses-impl-example ()
-  (test-indent
+  (let ((rust-indent-where-clause t))
+    (test-indent
    "
 impl<'a, K, Q: ?Sized, V, S> Index<&'a Q> for HashMap<K, V, S>
     where K: Eq + Hash + Borrow<Q>,
@@ -608,10 +612,11 @@ impl<'a, K, Q: ?Sized, V, S> Index<&'a Q> for HashMap<K, V, S>
         bar: 3
     }
 }
-"))
+")))
 
 (ert-deftest indent-align-where-clauses-first-line ()
-  (test-indent
+  (let ((rust-indent-where-clause t))
+    (test-indent
    "fn foo1(a: A, b: B) -> A
     where A: Clone + Default, B: Eq {
     let body;
@@ -619,7 +624,7 @@ impl<'a, K, Q: ?Sized, V, S> Index<&'a Q> for HashMap<K, V, S>
         bar: 3
     }
 }
-"))
+")))
 
 (ert-deftest indent-align-where-in-comment1 ()
   (test-indent
@@ -632,7 +637,8 @@ pub struct Region { // <-- this should be flush with left margin!
 "))
 
 (ert-deftest indent-align-where-in-comment2 ()
-  (test-indent
+  (let ((rust-indent-where-clause t))
+    (test-indent
    "fn foo<F,G>(f:F, g:G)
     where F:Send,
 // where
@@ -640,9 +646,10 @@ pub struct Region { // <-- this should be flush with left margin!
 {
     let body;
 }
-"))
+")))
 
 (ert-deftest indent-align-where-in-comment3 ()
+  (let ((rust-indent-where-clause t))
   (test-indent
    "fn foo<F,G>(f:F, g:G)
     where F:Send,
@@ -651,7 +658,7 @@ pub struct Region { // <-- this should be flush with left margin!
 {
     let body;
 }
-"))
+")))
 
 (ert-deftest indent-square-bracket-alignment ()
   (test-indent
