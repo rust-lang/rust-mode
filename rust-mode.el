@@ -121,7 +121,7 @@
   :group 'rust-mode
   :safe #'booleanp)
 
-(defcustom rust-indent-where-clause t
+(defcustom rust-indent-where-clause nil
   "Indent the line starting with the where keyword following a
 function or trait.  When nil, where will be aligned with fn or trait."
   :type 'boolean
