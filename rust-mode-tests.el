@@ -1668,12 +1668,36 @@ fn main() {
 "
    )))
 
+(ert-deftest indent-method-chains-no-align-with-question-mark-operator ()
+  (let ((rust-indent-method-chain nil)) (test-indent
+   "
+fn main() {
+    let x = thing.do_it()
+        .aligned()
+        .more_alignment()?
+        .more_alignment();
+}
+"
+   )))
+
 (ert-deftest indent-method-chains-with-align ()
   (let ((rust-indent-method-chain t)) (test-indent
    "
 fn main() {
     let x = thing.do_it()
                  .aligned()
+                 .more_alignment();
+}
+"
+   )))
+
+(ert-deftest indent-method-chains-with-align-with-question-mark-operator ()
+  (let ((rust-indent-method-chain t)) (test-indent
+   "
+fn main() {
+    let x = thing.do_it()
+                 .aligned()
+                 .more_alignment()?
                  .more_alignment();
 }
 "
