@@ -633,7 +633,7 @@ match data if found. Returns nil if not within a Rust string."
   "List of builtin Rust macros for string formatting used by `rust-mode-font-lock-keywords'. (`write!' is handled separately.)")
 
 (defvar rust-formatting-macro-opening-re
-  "[[:space:]]*[({[][[:space:]]*"
+  "[[:space:]\n]*[({[][[:space:]\n]*"
   "Regular expression to match the opening delimiter of a Rust formatting macro.")
 
 (defvar rust-start-of-string-re
@@ -661,7 +661,7 @@ match data if found. Returns nil if not within a Rust string."
       1 font-lock-preprocessor-face keep)
 
      ;; Builtin formatting macros
-     (,(concat (rust-re-grab (concat (regexp-opt rust-builtin-formatting-macros) "!")) (concat rust-formatting-macro-opening-re rust-start-of-string-re))
+     (,(concat (rust-re-grab (concat (regexp-opt rust-builtin-formatting-macros) "!")) (concat rust-formatting-macro-opening-re "\\(?:" rust-start-of-string-re) "\\)?")
       (1 'rust-builtin-formatting-macro-face)
       (rust-string-interpolation-matcher
        (rust-end-of-string)
