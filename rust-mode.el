@@ -320,7 +320,7 @@ buffer."
                 (- (current-column) rust-indent-offset)))))
         (cond
          ;; foo.bar(...)
-         ((rust-looking-back-str ")")
+         ((looking-back "[)?]" (1- (point)))
           (backward-list 1)
           (funcall skip-dot-identifier))
 
@@ -501,7 +501,7 @@ buffer."
                           ;; ..or if the previous line ends with any of these:
                           ;;     { ? : ( , ; [ }
                           ;; then we are at the beginning of an expression, so stay on the baseline...
-                          (looking-back "[(,:;?[{}]\\|[^|]|" (- (point) 2))
+                          (looking-back "[(,:;[{}]\\|[^|]|" (- (point) 2))
                           ;; or if the previous line is the end of an attribute, stay at the baseline...
                           (progn (rust-rewind-to-beginning-of-current-level-expr) (looking-at "#")))))
                       baseline
