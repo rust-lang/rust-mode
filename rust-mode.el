@@ -1585,10 +1585,12 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
 See `compilation-error-regexp-alist' for help on their format.")
 
 (defvar rustc-colon-compilation-regexps
-  (let ((file "\\([^\n]+\\)"))
-    (let ((re (concat "^ *::: " file ; ::: foo/bar.rs
+  (let ((file "\\([^\n]+\\)")
+        (start-line "\\([0-9]+\\)")
+        (start-col  "\\([0-9]+\\)"))
+    (let ((re (concat "^ *::: " file ":" start-line ":" start-col ; ::: foo/bar.rs
                       )))
-      (cons re '(1))))
+      (cons re '(1 2 3))))
   "Specifications for matching `:::` hints in rustc invocations.
 See `compilation-error-regexp-alist' for help on their format.")
 
