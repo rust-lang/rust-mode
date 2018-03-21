@@ -1590,7 +1590,7 @@ See `compilation-error-regexp-alist' for help on their format.")
         (start-col  "\\([0-9]+\\)"))
     (let ((re (concat "^ *::: " file ":" start-line ":" start-col ; ::: foo/bar.rs
                       )))
-      (cons re '(1 2 3))))
+      (cons re '(1 2 3 0)))) ;; 0 for info type
   "Specifications for matching `:::` hints in rustc invocations.
 See `compilation-error-regexp-alist' for help on their format.")
 
