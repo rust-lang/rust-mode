@@ -1466,14 +1466,14 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
                         (rust--format-get-loc buffer start)
                         (rust--format-get-loc buffer point))
                   window-loc)))))
-    (defvar w-start)
     (unwind-protect
         ;; save and restore window start position
         ;; after reformatting
         ;; to avoid the disturbing scrolling
-        (setq w-start (window-start))
-      (rust--format-call (current-buffer))
-      (set-window-start (selected-window) w-start)
+        (let ((w-start (window-start)))
+          (rust--format-call (current-buffer))
+          (set-window-start (selected-window) w-start)
+          )
       (dolist (loc buffer-loc)
         (let* ((buffer (pop loc))
                (pos (rust--format-get-pos buffer (pop loc))))
