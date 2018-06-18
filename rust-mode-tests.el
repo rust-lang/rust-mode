@@ -1297,6 +1297,11 @@ list of substrings of `STR' each followed by its face."
    '("let" font-lock-keyword-face
      "foo" font-lock-variable-name-face))
   (rust-test-font-lock
+   "let ref foo;"
+   '("let" font-lock-keyword-face
+     "ref" font-lock-keyword-face
+     "foo" font-lock-variable-name-face))
+  (rust-test-font-lock
    "let mut foo;"
    '("let" font-lock-keyword-face
      "mut" font-lock-keyword-face
