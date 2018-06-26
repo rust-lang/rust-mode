@@ -1338,6 +1338,16 @@ list of substrings of `STR' each followed by its face."
      "/* " font-lock-comment-delimiter-face
      "no-op */" font-lock-comment-face)))
 
+(ert-deftest font-lock-lambda-list ()
+  (rust-test-font-lock
+   "fn foo(bar : Typ, baz: u32) {}"
+   '("fn" font-lock-keyword-face
+     "foo" font-lock-function-name-face
+     "bar" font-lock-variable-name-face
+     "Typ" font-lock-type-face
+     "baz" font-lock-variable-name-face
+     "u32" font-lock-type-face)))
+
 (ert-deftest font-lock-single-quote-character-literal ()
   (rust-test-font-lock
    "fn main() { let ch = '\\''; }"
