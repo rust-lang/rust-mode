@@ -1574,7 +1574,7 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
 
 (defun rust-before-save-hook ()
   (when rust-format-on-save
-    (condition-case rustfmt-err
+    (condition-case nil
         (rust-format-buffer)
       (error nil))))
 
