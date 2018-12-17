@@ -679,11 +679,11 @@ Returns nil if the point is not within a Rust string."
      (,(concat (rust-re-grab (concat rust-re-ident "!")) "[({[:space:][]")
       1 font-lock-preprocessor-face)
 
-     ;; Field names like `foo:`, highlight excluding the :
-     (,(concat (rust-re-grab rust-re-ident) ":[^:]") 1 font-lock-variable-name-face)
-
      ;; CamelCase Means Type Or Constructor
      (,rust-re-type-or-constructor 1 font-lock-type-face)
+
+     ;; Field names like `foo:`, highlight excluding the :
+     (,(concat (rust-re-grab rust-re-ident) ":[^:]") 1 font-lock-variable-name-face)
 
      ;; Type-inferred binding
      (,(concat "\\_<\\(?:let\\s-+ref\\|let\\|ref\\)\\s-+\\(?:mut\\s-+\\)?" (rust-re-grab rust-re-ident) "\\_>") 1 font-lock-variable-name-face)
@@ -1581,7 +1581,7 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
   (when rust-format-on-save
     (unless (executable-find rust-rustfmt-bin)
       (error "Could not locate executable \"%s\"" rust-rustfmt-bin))))
-  
+
 (defvar rustc-compilation-regexps
   (let ((file "\\([^\n]+\\)")
         (start-line "\\([0-9]+\\)")
