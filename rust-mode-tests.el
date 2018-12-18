@@ -3061,6 +3061,20 @@ extern \"rust-intrinsic\" fn five() {
       "four"
       "five"))))
 
+(ert-deftest rust-test-imenu-impl-with-lifetime ()
+  (test-imenu
+   "
+impl<'a> One<'a> {
+    fn one() {}
+}
+
+impl Two<'a> {
+    fn two() {}
+}
+"
+   '(("Impl" "One" "Two")
+     ("Fn" "one" "two"))))
+
 (when (executable-find rust-cargo-bin)
   (ert-deftest rust-test-project-located ()
     (lexical-let* ((test-dir (expand-file-name "test-project" default-directory))
