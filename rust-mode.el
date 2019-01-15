@@ -131,6 +131,13 @@ When nil, `where' will be aligned with `fn' or `trait'."
   :group 'rust-mode
   :safe #'booleanp)
 
+(defcustom rust-indent-return-type-to-arguments t
+  "Indent a line starting with the `->' (RArrow) following a function, aligning
+to the function arguments.  When nil, `->' will be indented one level."
+  :type 'boolean
+  :group 'rust-mode
+  :safe #'booleanp)
+
 (defcustom rust-playpen-url-format "https://play.rust-lang.org/?code=%s"
   "Format string to use when submitting code to the playpen."
   :type 'string
@@ -399,8 +406,10 @@ buffer."
                        (back-to-indentation)
                        (current-column))))))
 
-              ;; A function return type is indented to the corresponding function arguments
-              ((looking-at "->")
+              ;; A function return type is indented to the corresponding
+	      ;; function arguments, if -to-arguments is selected.
+              ((and rust-indent-return-type-to-arguments
+		    (looking-at "->"))
                (save-excursion
                  (backward-list)
                  (or (rust-align-to-expr-after-brace)
