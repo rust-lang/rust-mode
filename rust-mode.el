@@ -664,7 +664,7 @@ Returns nil if the point is not within a Rust string."
       1 font-lock-preprocessor-face keep)
 
      ;; Builtin formatting macros
-     (,(concat (rust-re-grab (concat (regexp-opt rust-builtin-formatting-macros) "!")) (concat rust-formatting-macro-opening-re "\\(?:" rust-start-of-string-re) "\\)?")
+     (,(concat (rust-re-grab (concat (rust-re-word (regexp-opt rust-builtin-formatting-macros)) "!")) (concat rust-formatting-macro-opening-re "\\(?:" rust-start-of-string-re) "\\)?")
       (1 'rust-builtin-formatting-macro-face)
       (rust-string-interpolation-matcher
        (rust-end-of-string)
@@ -672,7 +672,7 @@ Returns nil if the point is not within a Rust string."
        (0 'rust-string-interpolation-face t nil)))
 
      ;; write! macro
-     (,(concat (rust-re-grab "write\\(ln\\)?!") (concat rust-formatting-macro-opening-re "[[:space:]]*[^\"]+,[[:space:]]*" rust-start-of-string-re))
+     (,(concat (rust-re-grab (concat (rust-re-word "write\\(ln\\)?") "!")) (concat rust-formatting-macro-opening-re "[[:space:]]*[^\"]+,[[:space:]]*" rust-start-of-string-re))
       (1 'rust-builtin-formatting-macro-face)
       (rust-string-interpolation-matcher
        (rust-end-of-string)
