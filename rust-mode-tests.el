@@ -450,6 +450,17 @@ fn foo4(a:i32,
 }
 "))
 
+(ert-deftest indent-return-type-non-visual ()
+  (let ((rust-indent-return-type-to-arguments nil))
+(test-indent
+   "
+fn imagine_long_enough_to_wrap_at_arrow(a:i32, b:char)
+    -> i32
+{
+    let body;
+}
+")))
+
 (ert-deftest indent-body-after-where ()
   (let ((rust-indent-where-clause t))
     (test-indent
