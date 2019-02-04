@@ -1599,8 +1599,7 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
   (let ((file "\\([^\n]+\\)")
         (start-line "\\([0-9]+\\)")
         (start-col  "\\([0-9]+\\)"))
-    (let ((re (concat "^\\(?:error\\|\\(warning\\)\\)[^-]+--> \\(" file ":" start-line ":" start-col "\\)" ; --> 1:2:3
-                      )))
+    (let ((re (concat "^\\(?:error\\|\\(warning\\)\\)[^-]+--> \\(" file ":" start-line ":" start-col "\\)")))
       (cons re '(3 4 5 (1) 2))))
   "Specifications for matching errors in rustc invocations.
 See `compilation-error-regexp-alist' for help on their format.")
