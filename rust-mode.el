@@ -1594,14 +1594,14 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
   (when rust-format-on-save
     (unless (executable-find rust-rustfmt-bin)
       (error "Could not locate executable \"%s\"" rust-rustfmt-bin))))
-  
+
 (defvar rustc-compilation-regexps
   (let ((file "\\([^\n]+\\)")
         (start-line "\\([0-9]+\\)")
         (start-col  "\\([0-9]+\\)"))
-    (let ((re (concat "^ *--> " file ":" start-line ":" start-col ; --> 1:2:3
+    (let ((re (concat "^\\(?:error\\|\\(warning\\)\\)[^-]+--> \\(" file ":" start-line ":" start-col "\\)" ; --> 1:2:3
                       )))
-      (cons re '(1 2 3))))
+      (cons re '(3 4 5 (1) 2))))
   "Specifications for matching errors in rustc invocations.
 See `compilation-error-regexp-alist' for help on their format.")
 
