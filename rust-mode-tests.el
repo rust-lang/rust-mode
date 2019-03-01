@@ -1234,7 +1234,7 @@ fn test4();")
   (with-temp-buffer
     (rust-mode)
     (insert str)
-    (font-lock-ensure)
+    (font-lock-fontify-buffer)
     (buffer-string)))
 
 (defun rust-test-group-str-by-face (str)
@@ -1503,7 +1503,7 @@ this_is_not_a_string();)"
 1......................500......................50
 \"#;
 ")
-    (font-lock-ensure)
+    (font-lock-fontify-buffer)
     (goto-char 530)
     (insert "#")
     ;; We have now closed the raw string.  Check that the whole string is
@@ -1880,7 +1880,7 @@ fn indented_already() {
     \n    // The previous line already has its spaces
 }
 ")
-    (font-lock-ensure)
+    (font-lock-fontify-buffer)
     (goto-line 11)
     (move-to-column 0)
     (indent-for-tab-command)
@@ -2115,7 +2115,7 @@ fn main() {
   (with-temp-buffer
     (rust-mode)
     (insert content)
-    (font-lock-ensure)
+    (font-lock-fontify-buffer)
     (dolist (pair pairs)
       (let* ((open-pos (nth 0 pair))
              (close-pos (nth 1 pair)))
@@ -2148,7 +2148,7 @@ fn main() {
 (ert-deftest rust-test-two-character-quotes-in-a-row ()
   (with-temp-buffer
     (rust-mode)
-    (font-lock-ensure)
+    (font-lock-fontify-buffer)
     (insert "'\\n','a', fn")
     (font-lock-after-change-function 1 12 0)
 
@@ -3116,7 +3116,7 @@ impl Two<'a> {
           (with-temp-buffer
             (rust-mode)
             (insert original)
-            (font-lock-ensure)
+            (font-lock-fontify-buffer)
 
             (goto-char point-pos)
             (deactivate-mark)
