@@ -80,7 +80,7 @@ Like `looking-back' but for fixed strings rather than regexps (so that it's not 
 
 (defun rust-looking-back-macro ()
   "Non-nil if looking back at an ident followed by a !"
-  (if (> (point) 2)
+  (if (> (- (point) (point-min)) 1)
       (save-excursion (backward-char) (and (= ?! (char-after)) (rust-looking-back-ident)))))
 
 ;; Syntax definitions and helpers
