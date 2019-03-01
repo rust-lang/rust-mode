@@ -1511,6 +1511,16 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
   (interactive)
   (compile "cargo build"))
 
+(defun rust-run ()
+  "Run using `cargo run`"
+  (interactive)
+  (compile "cargo run"))
+
+(defun rust-test ()
+  "Test using `cargo test`"
+  (interactive)
+  (compile "cargo test"))
+
 (defvar rust-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-c C-f") 'rust-format-buffer)
