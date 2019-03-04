@@ -2414,6 +2414,14 @@ fn main() {
      "/* " font-lock-comment-delimiter-face
      "no-op */" font-lock-comment-face)))
 
+(ert-deftest font-lock-fontify-angle-brackets ()
+    "Test that angle bracket fontify"
+    (should (equal (rust-test-fontify-string "<>") "<>"))
+    (should (equal (rust-test-fontify-string "<foo>") "<foo>"))
+    (should (equal (rust-test-fontify-string "<<>>") "<<>>"))
+    (should (equal (rust-test-fontify-string "<>>") "<>>"))
+    (should (equal (rust-test-fontify-string "<<>") "<<>")))
+
 (ert-deftest rust-test-basic-paren-matching ()
   (rust-test-matching-parens
    "

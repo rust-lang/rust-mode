@@ -80,7 +80,8 @@ Like `looking-back' but for fixed strings rather than regexps (so that it's not 
 
 (defun rust-looking-back-macro ()
   "Non-nil if looking back at an ident followed by a !"
-  (save-excursion (backward-char) (and (= ?! (char-after)) (rust-looking-back-ident))))
+  (if (> (- (point) (point-min)) 1)
+      (save-excursion (backward-char) (and (= ?! (char-after)) (rust-looking-back-ident)))))
 
 ;; Syntax definitions and helpers
 (defvar rust-mode-syntax-table
@@ -1604,7 +1605,7 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
   (when rust-format-on-save
     (unless (executable-find rust-rustfmt-bin)
       (error "Could not locate executable \"%s\"" rust-rustfmt-bin))))
-  
+
 (defvar rustc-compilation-regexps
   (let ((file "\\([^\n]+\\)")
         (start-line "\\([0-9]+\\)")
