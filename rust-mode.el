@@ -1115,9 +1115,12 @@ raw string, or to END, whichever comes first."
     (when str-start
       (when (save-excursion
 	      (goto-char str-start)
-	      (looking-at "r\\(#*\\)\\(\"\\)"))
+	      (looking-back "r\\(#*\\)" nil))
 	;; In a raw string, so try to find the end.
-	(let ((hashes (match-string 1)))
+	(let* ((hashes (match-string 1))
+                (raw-str-start (- str-start (1+ (length hashes)))))
+	  (put-text-property raw-str-start (1+ raw-str-start)
+	                     'syntax-table (string-to-syntax "|"))
 	  ;; Match \ characters at the end of the string to suppress
 	  ;; their normal character-quote syntax.
 	  (when (re-search-forward (concat "\\(\\\\*\\)\\(\"" hashes "\\)") end t)
@@ -1137,7 +1140,7 @@ raw string, or to END, whichever comes first."
     (rust--char-literal-rx (1 "\"") (2 "\""))
     ;; Raw strings.
     ("\\(r\\)#*\""
-     (1 (prog1 "|"
+     (1 (ignore
 	  (goto-char (match-end 0))
 	  (rust--syntax-propertize-raw-string end))))
     ("[<>]"
