@@ -1137,9 +1137,12 @@ raw string, or to END, whichever comes first."
     (rust--char-literal-rx (1 "\"") (2 "\""))
     ;; Raw strings.
     ("\\(r\\)#*\""
-     (1 (prog1 (if (nth 8 (syntax-ppss (match-beginning 0))) nil (string-to-syntax "|"))
-	  (goto-char (match-end 0))
-	  (rust--syntax-propertize-raw-string end))))
+     (0 (ignore
+          (goto-char (match-end 0))
+          (unless (save-excursion (nth 8 (syntax-ppss (match-beginning 0))))
+            (put-text-property (match-beginning 1) (match-end 1)
+			       'syntax-table (string-to-syntax "|"))
+            (rust--syntax-propertize-raw-string end)))))
     ("[<>]"
      (0 (ignore
 	 (when (save-match-data
