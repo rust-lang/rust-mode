@@ -1507,6 +1507,12 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
   (interactive)
   (setq-local rust-format-on-save nil))
 
+(defun rust-import-crate (crate)
+  "Add an import crate statement to the top of the file"
+  (interactive "sCrate to import: ")
+  (goto-char (point-min))
+  (insert "extern crate " crate ";\n"))
+
 (defun rust-compile ()
   "Compile using `cargo build`"
   (interactive)
@@ -1525,6 +1531,7 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
 (defvar rust-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-c C-f") 'rust-format-buffer)
+    (define-key map (kbd "C-c C-a") 'rust-import-crate)
     map)
   "Keymap for Rust major mode.")
 
