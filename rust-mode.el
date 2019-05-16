@@ -533,7 +533,7 @@ buffer."
 
 ;; Font-locking definitions and helpers
 (defconst rust-mode-keywords
-  '("as" "async"
+  '("as" "async" "await"
     "box" "break"
     "const" "continue" "crate"
     "do" "dyn"
