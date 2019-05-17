@@ -1452,6 +1452,19 @@ fn g() {
      "g" font-lock-function-name-face
      "\"xs\"" font-lock-string-face)))
 
+(ert-deftest font-lock-string-ending-with-r-word-boundary ()
+  (with-temp-buffer
+    (rust-mode)
+    (insert "const foo = \"foo bar\"")
+    (font-lock-fontify-buffer)
+    ;; right-word should move the point to the end of the words.
+    (goto-char 14)
+    (right-word)
+    (should (equal 17 (point)))
+    (right-word)
+    (should (equal 21 (point)))
+    ))
+
 (ert-deftest font-lock-raw-string-trick-ending-followed-by-string-with-quote ()
   (rust-test-font-lock
    "r\"With what looks like the start of a raw string at the end r#\";
