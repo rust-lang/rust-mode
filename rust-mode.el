@@ -1456,6 +1456,27 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
             (forward-char columns)))
         (min (point) max-pos)))))
 
+(defun rust-format-diff-buffer ()
+  "Show diff to current buffer from rustfmt."
+  (interactive)
+  (unless (executable-find rust-rustfmt-bin)
+    (error "Could not locate executable \%s\"" rust-rustfmt-bin))
+  (make-process
+   :name "rustfmt-diff"
+   :command (list rust-rustfmt-bin "--check" (buffer-file-name))
+   :buffer
+   (with-current-buffer
+       (get-buffer-create "*rustfmt-diff*")
+     (erase-buffer)
+     (current-buffer))
+   :sentinel 'rust-format-diff-buffer-sentinel))
+
+(defun rust-format-diff-buffer-sentinel (process e)
+  (when (eq 'exit (process-status process))
+    (if (> (process-exit-status process) 0)
+        (display-buffer "*rustfmt-diff*")
+      (message "rustfmt check passed."))))
+
 (defun rust-format-buffer ()
   "Format the current buffer using rustfmt."
   (interactive)
