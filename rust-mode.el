@@ -1471,7 +1471,7 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
      (current-buffer))
    :sentinel 'rust-format-diff-buffer-sentinel))
 
-(defun rust-format-diff-buffer-sentinel (process e)
+(defun rust-format-diff-buffer-sentinel (process _e)
   (when (eq 'exit (process-status process))
     (if (> (process-exit-status process) 0)
         (display-buffer "*rustfmt-diff*")
