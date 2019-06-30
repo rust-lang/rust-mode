@@ -39,6 +39,8 @@
 (defconst rust-re-vis "pub")
 (defconst rust-re-unsafe "unsafe")
 (defconst rust-re-extern "extern")
+(defconst rust-re-generic
+  (concat "<[[:space:]]*'" rust-re-ident "[[:space:]]*>"))
 (defconst rust-re-union
   (rx-to-string
    `(seq
@@ -78,7 +80,8 @@ Like `looking-back' but for fixed strings rather than regexps (so that it's not 
 
 (defun rust-looking-back-macro ()
   "Non-nil if looking back at an ident followed by a !"
-  (save-excursion (backward-char) (and (= ?! (char-after)) (rust-looking-back-ident))))
+  (if (> (- (point) (point-min)) 1)
+      (save-excursion (backward-char) (and (= ?! (char-after)) (rust-looking-back-ident)))))
 
 ;; Syntax definitions and helpers
 (defvar rust-mode-syntax-table
@@ -125,6 +128,13 @@ Like `looking-back' but for fixed strings rather than regexps (so that it's not 
 (defcustom rust-indent-where-clause nil
   "Indent lines starting with the `where' keyword following a function or trait.
 When nil, `where' will be aligned with `fn' or `trait'."
+  :type 'boolean
+  :group 'rust-mode
+  :safe #'booleanp)
+
+(defcustom rust-indent-return-type-to-arguments t
+  "Indent a line starting with the `->' (RArrow) following a function, aligning
+to the function arguments.  When nil, `->' will be indented one level."
   :type 'boolean
   :group 'rust-mode
   :safe #'booleanp)
@@ -397,8 +407,10 @@ buffer."
                        (back-to-indentation)
                        (current-column))))))
 
-              ;; A function return type is indented to the corresponding function arguments
-              ((looking-at "->")
+              ;; A function return type is indented to the corresponding
+	      ;; function arguments, if -to-arguments is selected.
+              ((and rust-indent-return-type-to-arguments
+		    (looking-at "->"))
                (save-excursion
                  (backward-list)
                  (or (rust-align-to-expr-after-brace)
@@ -521,7 +533,7 @@ buffer."
 
 ;; Font-locking definitions and helpers
 (defconst rust-mode-keywords
-  '("as" "async"
+  '("as" "async" "await"
     "box" "break"
     "const" "continue" "crate"
     "do" "dyn"
@@ -561,7 +573,9 @@ buffer."
 (defun rust-re-grab (inner) (concat "\\(" inner "\\)"))
 (defun rust-re-shy (inner) (concat "\\(?:" inner "\\)"))
 (defun rust-re-item-def (itype)
-  (concat (rust-re-word itype) "[[:space:]]+" (rust-re-grab rust-re-ident)))
+  (concat (rust-re-word itype)
+	  (rust-re-shy rust-re-generic) "?"
+	  "[[:space:]]+" (rust-re-grab rust-re-ident)))
 (defun rust-re-item-def-imenu (itype)
   (concat "^[[:space:]]*"
           (rust-re-shy (concat (rust-re-word rust-re-vis) "[[:space:]]+")) "?"
@@ -1091,41 +1105,44 @@ should be considered a paired angle bracket."
 	 (group "'")))
     "A regular expression matching a character literal."))
 
-(defun rust--syntax-propertize-raw-string (end)
+(defun rust--syntax-propertize-raw-string (str-start end)
   "A helper for rust-syntax-propertize.
 
-If point is already in a raw string, this will apply the
-appropriate string syntax to the character up to the end of the
-raw string, or to END, whichever comes first."
-  (let ((str-start (nth 8 (syntax-ppss))))
-    (when str-start
-      (when (save-excursion
-	      (goto-char str-start)
-	      (looking-at "r\\(#*\\)\\(\"\\)"))
-	;; In a raw string, so try to find the end.
-	(let ((hashes (match-string 1)))
-	  ;; Match \ characters at the end of the string to suppress
-	  ;; their normal character-quote syntax.
-	  (when (re-search-forward (concat "\\(\\\\*\\)\\(\"" hashes "\\)") end t)
-	    (put-text-property (match-beginning 1) (match-end 1)
-			       'syntax-table (string-to-syntax "_"))
-	    (put-text-property (1- (match-end 2)) (match-end 2)
-			       'syntax-table (string-to-syntax "|"))
-	    (goto-char (match-end 0))))))))
+This will apply the appropriate string syntax to the character
+from the STR-START up to the end of the raw string, or to END,
+whichever comes first."
+  (when (save-excursion
+	  (goto-char str-start)
+	  (looking-at "r\\(#*\\)\\(\"\\)"))
+    ;; In a raw string, so try to find the end.
+    (let ((hashes (match-string 1)))
+      ;; Match \ characters at the end of the string to suppress
+      ;; their normal character-quote syntax.
+      (when (re-search-forward (concat "\\(\\\\*\\)\\(\"" hashes "\\)") end t)
+	(put-text-property (match-beginning 1) (match-end 1)
+			   'syntax-table (string-to-syntax "_"))
+	(put-text-property (1- (match-end 2)) (match-end 2)
+			   'syntax-table (string-to-syntax "|"))
+	(goto-char (match-end 0))))))
 
 (defun rust-syntax-propertize (start end)
   "A `syntax-propertize-function' to apply properties from START to END."
   (goto-char start)
-  (rust--syntax-propertize-raw-string end)
+  (let ((str-start (rust-in-str-or-cmnt)))
+    (when str-start
+      (rust--syntax-propertize-raw-string str-start end)))
   (funcall
    (syntax-propertize-rules
     ;; Character literals.
     (rust--char-literal-rx (1 "\"") (2 "\""))
     ;; Raw strings.
     ("\\(r\\)#*\""
-     (1 (prog1 "|"
-	  (goto-char (match-end 0))
-	  (rust--syntax-propertize-raw-string end))))
+     (0 (ignore
+          (goto-char (match-end 0))
+          (unless (save-excursion (nth 8 (syntax-ppss (match-beginning 0))))
+            (put-text-property (match-beginning 1) (match-end 1)
+			       'syntax-table (string-to-syntax "|"))
+            (rust--syntax-propertize-raw-string (match-beginning 0) end)))))
     ("[<>]"
      (0 (ignore
 	 (when (save-match-data
@@ -1504,6 +1521,16 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
   (interactive)
   (compile "cargo build"))
 
+(defun rust-run ()
+  "Run using `cargo run`"
+  (interactive)
+  (compile "cargo run"))
+
+(defun rust-test ()
+  "Test using `cargo test`"
+  (interactive)
+  (compile "cargo test"))
+
 (defvar rust-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-c C-f") 'rust-format-buffer)
@@ -1587,14 +1614,13 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
   (when rust-format-on-save
     (unless (executable-find rust-rustfmt-bin)
       (error "Could not locate executable \"%s\"" rust-rustfmt-bin))))
-  
+
 (defvar rustc-compilation-regexps
   (let ((file "\\([^\n]+\\)")
         (start-line "\\([0-9]+\\)")
         (start-col  "\\([0-9]+\\)"))
-    (let ((re (concat "^ *--> " file ":" start-line ":" start-col ; --> 1:2:3
-                      )))
-      (cons re '(1 2 3))))
+    (let ((re (concat "^\\(?:error\\|\\(warning\\)\\)[^-]+--> \\(" file ":" start-line ":" start-col "\\)")))
+      (cons re '(3 4 5 (1) 2))))
   "Specifications for matching errors in rustc invocations.
 See `compilation-error-regexp-alist' for help on their format.")
 
