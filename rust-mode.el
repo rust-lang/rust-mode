@@ -198,6 +198,18 @@ to the function arguments.  When nil, `->' will be indented one level."
   :safe #'booleanp
   :group 'rust-mode)
 
+(defcustom rust-format-show-buffer nil
+  "Show *rustfmt* buffer if formatting detected problems."
+  :type 'boolean
+  :safe #'booleanp
+  :group 'rust-mode)
+
+(defcustom rust-format-goto-problem t
+  "Jump to location of first detected probem when formatting buffer."
+  :type 'boolean
+  :safe #'booleanp
+  :group 'rust-mode)
+
 (defcustom rust-rustfmt-bin "rustfmt"
   "Path to rustfmt executable."
   :type 'string
@@ -1455,12 +1467,75 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
                 (copy-to-buffer buf (point-min) (point-max)))
             (erase-buffer)
             (insert-file-contents tmpf)
+            (rust--format-fix-rustfmt-buffer (buffer-name buf))
             (error "Rustfmt could not format some lines, see *rustfmt* buffer for details"))
            (t
             (erase-buffer)
             (insert-file-contents tmpf)
+            (rust--format-fix-rustfmt-buffer (buffer-name buf))
             (error "Rustfmt failed, see *rustfmt* buffer for details"))))
       (delete-file tmpf))))
+
+;; Since we run rustfmt through stdin we get <stdin> markers in the
+;; output. This replaces them with the buffer name instead.
+(defun rust--format-fix-rustfmt-buffer (buffer-name)
+  (with-current-buffer (get-buffer "*rustfmt*")
+    (goto-char (point-min))
+    (while (re-search-forward "--> <stdin>:")
+      (replace-match (format "--> %s:" buffer-name)))))
+
+;; If rust-mode has been configured to navigate to source of the error
+;; or display it, do so -- and return true. Otherwise return nil to
+;; indicate nothing was done.
+(defun rust--format-error-handler ()
+  (let ((ok nil))
+    (when rust-format-show-buffer
+      (display-buffer (get-buffer "*rustfmt*"))
+      (setq ok t))
+    (when rust-format-goto-problem
+      (rust-goto-format-problem)
+      (setq ok t))
+    ok))
+
+(defun rust-goto-format-problem ()
+  "Jumps to problem reported by rustfmt, if any.
+
+In case of multiple problems cycles through them. Displays the
+rustfmt complain in the echo area."
+  (interactive)
+  ;; This uses position in *rustfmt* buffer to know which is the next
+  ;; error to jump to, and source: line in the buffer to figure which
+  ;; buffer it is from.
+  (let ((rustfmt (get-buffer "*rustfmt*")))
+    (if (not rustfmt)
+        (message "No *rustfmt*, no problems.")
+      (let ((target-buffer (with-current-buffer rustfmt
+                             (save-excursion
+                               (goto-char (point-min))
+                               (when (re-search-forward "--> \\([^:]+\\):")
+                                 (match-string 1)))))
+            (target-point (with-current-buffer rustfmt
+                            ;; No save-excursion, this is how we cycle through!
+                            (let ((regex "--> [^:]+:\\([0-9]+\\):\\([0-9]+\\)"))
+                              (when (or (re-search-forward regex nil t)
+                                        (progn (goto-char (point-min))
+                                               (re-search-forward regex nil t)))
+                                (cons (string-to-number (match-string 1))
+                                      (string-to-number (match-string 2)))))))
+            (target-problem (with-current-buffer rustfmt
+                              (save-excursion
+                                (when (re-search-backward "^error:.+\n" nil t)
+                                  (forward-char (length "error: "))
+                                  (let ((p0 (point)))
+                                    (if (re-search-forward "\nerror:.+\n" nil t)
+                                        (buffer-substring p0 (point))
+                                      (buffer-substring p0 (point-max)))))))))
+        (when (and target-buffer target-point)
+          (switch-to-buffer target-buffer)
+          (goto-char (point-min))
+          (forward-line (1- (car target-point)))
+          (forward-char (1- (cdr target-point))))
+        (message target-problem)))))
 
 (defconst rust--format-word "\
 \\b\\(else\\|enum\\|fn\\|for\\|if\\|let\\|loop\\|\
@@ -1606,28 +1681,31 @@ Return the created process."
                           (rust--format-get-loc buffer start)
                           (rust--format-get-loc buffer point))
                     window-loc))))))
-    (unwind-protect
-        ;; save and restore window start position
-        ;; after reformatting
-        ;; to avoid the disturbing scrolling
-        (let ((w-start (window-start)))
-          (rust--format-call (current-buffer))
-          (set-window-start (selected-window) w-start))
-      (dolist (loc buffer-loc)
-        (let* ((buffer (pop loc))
-               (pos (rust--format-get-pos buffer (pop loc))))
-          (with-current-buffer buffer
-            (goto-char pos))))
-      (dolist (loc window-loc)
-        (let* ((window (pop loc))
-               (buffer (window-buffer window))
-               (start (rust--format-get-pos buffer (pop loc)))
-               (pos (rust--format-get-pos buffer (pop loc))))
-          (unless (eq buffer current)
-            (set-window-start window start))
-          (set-window-point window pos)))))
-
-  (message "Formatted buffer with rustfmt."))
+    (condition-case err
+        (unwind-protect
+            ;; save and restore window start position
+            ;; after reformatting
+            ;; to avoid the disturbing scrolling
+            (let ((w-start (window-start)))
+              (rust--format-call (current-buffer))
+              (set-window-start (selected-window) w-start)
+              (message "Formatted buffer with rustfmt."))
+          (dolist (loc buffer-loc)
+            (let* ((buffer (pop loc))
+                   (pos (rust--format-get-pos buffer (pop loc))))
+              (with-current-buffer buffer
+                (goto-char pos))))
+          (dolist (loc window-loc)
+            (let* ((window (pop loc))
+                   (buffer (window-buffer window))
+                   (start (rust--format-get-pos buffer (pop loc)))
+                   (pos (rust--format-get-pos buffer (pop loc))))
+              (unless (eq buffer current)
+                (set-window-start window start))
+              (set-window-point window pos))))
+      (error
+       (or (rust--format-error-handler)
+           (signal (car err) (cdr err)))))))
 
 (defun rust-enable-format-on-save ()
   "Enable formatting using rustfmt when saving buffer."
@@ -1658,6 +1736,7 @@ Return the created process."
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-c C-f") 'rust-format-buffer)
     (define-key map (kbd "C-c C-d") 'rust-dbg-wrap-or-unwrap)
+    (define-key map (kbd "C-c C-n") 'rust-goto-format-problem)
     map)
   "Keymap for Rust major mode.")
 
@@ -1736,8 +1815,13 @@ Return the created process."
 
 (defun rust-after-save-hook ()
   (when rust-format-on-save
-    (unless (executable-find rust-rustfmt-bin)
-      (error "Could not locate executable \"%s\"" rust-rustfmt-bin))))
+    (if (not (executable-find rust-rustfmt-bin))
+        (error "Could not locate executable \"%s\"" rust-rustfmt-bin)
+      (when (get-buffer "*rustfmt*")
+        ;; KLDUGE: re-run the error handlers -- otherwise message area
+        ;; would show "Wrote ..." instead of the error description.
+        (or (rust--format-error-handler)
+            (message "rustfmt detected problems, see *rustfmt* for more."))))))
 
 (defvar rustc-compilation-regexps
   (let ((file "\\([^\n]+\\)")
