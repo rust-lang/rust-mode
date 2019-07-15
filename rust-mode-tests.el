@@ -964,6 +964,12 @@ Convert the line-column information from that list into a buffer position value.
       (move-to-column column)
       (point))))
 
+(defun buffer-pos (pos)
+  "Convert POS into a list (LINE COLUMN) of the current buffer."
+  (save-excursion
+    (goto-char pos)
+    (list (line-number-at-pos) (current-column))))
+
 ;;; FIXME: Maybe add an ERT explainer function (something that shows the
 ;;; surrounding code of the final point, not just the position).
 (defun rust-test-motion (source-code init-pos final-pos manip-func &rest args)
@@ -977,7 +983,8 @@ INIT-POS, FINAL-POS are position symbols found in `rust-test-positions-alist'."
     (insert source-code)
     (goto-char (rust-get-buffer-pos init-pos))
     (apply manip-func args)
-    (should (equal (point) (rust-get-buffer-pos final-pos)))))
+    (should (equal (buffer-pos (point))
+                   (buffer-pos (rust-get-buffer-pos final-pos))))))
 
 (defun rust-test-region (source-code init-pos reg-beg reg-end manip-func &rest args)
   "Test that MANIP-FUNC marks region from REG-BEG to REG-END.
@@ -990,9 +997,10 @@ All positions are position symbols found in `rust-test-positions-alist'."
     (insert source-code)
     (goto-char (rust-get-buffer-pos init-pos))
     (apply manip-func args)
-    (should (equal (list (region-beginning) (region-end))
-                   (list (rust-get-buffer-pos reg-beg)
-                         (rust-get-buffer-pos reg-end))))))
+    (should (equal (list (buffer-pos (region-beginning))
+                         (buffer-pos (region-end)))
+                   (list (buffer-pos (rust-get-buffer-pos reg-beg))
+                         (buffer-pos (rust-get-buffer-pos reg-end)))))))
 
 (ert-deftest rust-beginning-of-defun-from-middle-of-fn ()
   (rust-test-motion
