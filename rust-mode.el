@@ -31,7 +31,19 @@
   (unless (fboundp 'setq-local)
     (defmacro setq-local (var val)
       "Set variable VAR to value VAL in current buffer."
-      (list 'set (list 'make-local-variable (list 'quote var)) val))))
+      (list 'set (list 'make-local-variable (list 'quote var)) val)))
+
+  (unless (fboundp 'gensym)
+    (defvar rust-gensym-counter 0
+      "Number used to construct the name of the next symbol created by `gensym'.")
+    
+    (defun gensym (&optional prefix)
+      "Return a new uninterned symbol.
+The name is made by appending `rust-gensym-counter' to PREFIX.
+PREFIX is a string, and defaults to \"g\"."
+      (let ((num (prog1 rust-gensym-counter
+		   (setq rust-gensym-counter (1+ rust-gensym-counter)))))
+	(make-symbol (format "%s%d" (or prefix "g") num))))))
 
 (defconst rust-re-ident "[[:word:][:multibyte:]_][[:word:][:multibyte:]_[:digit:]]*")
 (defconst rust-re-lc-ident "[[:lower:][:multibyte:]_][[:word:][:multibyte:]_[:digit:]]*")
