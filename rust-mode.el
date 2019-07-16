@@ -48,6 +48,9 @@
     (group symbol-start "union" symbol-end)
     (+ space) (regexp ,rust-re-ident))))
 
+(defconst rust-attribute-re
+  "#\\[[[:word:]\\|(\\)\\|,\\[:space:]]+]")
+
 ;;; Start of a Rust item
 (defvar rust-top-item-beg-re
   (concat "\\s-*\\(?:priv\\|pub\\)?\\s-*"
@@ -1287,6 +1290,13 @@ Use idomenu (imenu with `ido-mode') for best mileage.")
 
 ;;; Defun Motions
 
+(defmacro repeat-while-point-moves (&rest body)
+  (let ((opoint (gensym "opoint")))
+    `(let ((,opoint (point)))
+       (while (progn (progn ,@body)
+                     (not (= (point) ,opoint)))
+	 (setq ,opoint (point))))))
+
 (defun rust-beginning-of-defun (&optional arg)
   "Move backward to the beginning of the current defun.
 
@@ -1311,8 +1321,40 @@ which calls this, does that afterwards."
 				       nil 'move sign)
 		   (rust-in-str-or-cmnt)
 		 ;; Did not find it.
-		 (throw 'done nil)))))
+                 (throw 'done nil)))))
+    (rust-backward-attributes)
     t))
+
+(defun rust-backward-attributes ()
+  "Move the point to the start of the attributes preceding point."
+  (repeat-while-point-moves (rust-backward-attribute)))
+
+(defun rust-backward-attribute ()
+  "Move the point to the start of the preceding attribute.
+
+The point will move only if the attribute is right before the point.
+Comments are skipped."
+  (let ((opoint (point)))
+    ;; keep looking for the start of the attribute while we are in a
+    ;; comment
+    (while (and (re-search-backward "#" nil t)
+                (rust-in-str-or-cmnt)))
+    (cond ((looking-at rust-attribute-re)
+           (let ((npoint (point)))
+             (forward-sexp)             ; skip the attribute
+             (rust-skip-comments)       ; and the comments
+             (goto-char
+              (if (= (point) opoint)
+                  npoint
+                ;; we skipped backward too much; rollback to the start
+                opoint))))
+          ;; did not find any attribute, restore point
+          (t
+           (goto-char opoint)))))
+
+(defun rust-skip-comments ()
+  "Skip forward all comments following the point."
+  (repeat-while-point-moves (forward-comment 1)))
 
 (defun rust-end-of-defun ()
   "Move forward to the next end of defun.

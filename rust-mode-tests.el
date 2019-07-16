@@ -888,6 +888,11 @@ pub fn fn3(arg: i32) -> bool {
 struct Foo {
     x: i32
 }
+
+#[test]
+fn fn4() {
+    assert_eq!(1 + 1, 2);
+}
 "
       rust-test-region-string rust-test-motion-string
       rust-test-indent-motion-string
@@ -927,6 +932,9 @@ fn indented_already() {
                                   (after-end-of-fn2 (13 0))
                                   (beginning-of-fn3 (14 0))
                                   (middle-of-fn3 (16 4))
+                                  (before-start-of-fn4 (23 0))
+                                  (middle-of-fn4 (26 4))
+                                  (end-of-fn4 (28 0))
                                   (middle-of-struct (21 10))
                                   (before-start-of-struct (19 0))
                                   (after-end-of-struct (23 0))
@@ -947,7 +955,10 @@ fn indented_already() {
                                   (nonblank-line-indented-already-bol-start (21 0))
                                   (nonblank-line-indented-already-bol-target (21 4))
                                   (nonblank-line-indented-already-middle-start (21 2))
-                                  (nonblank-line-indented-already-middle-target (21 4))))
+                                  (nonblank-line-indented-already-middle-target (21 4))
+                                  (beginning-of-test-fn (24 0))
+                                  (middle-of-test-fn (26 0))
+                                  (end-of-test-fn (28 0))))
 
 (defun rust-get-buffer-pos (pos-symbol)
   "Get buffer position from POS-SYMBOL.
@@ -1156,6 +1167,13 @@ fn test4();")
    rust-test-region-string
    'middle-of-struct
    'before-start-of-struct 'after-end-of-struct
+   #'mark-defun))
+
+(ert-deftest rust-mark-defun-with-attributes ()
+  (rust-test-region
+   rust-test-region-string
+   'middle-of-fn4
+   'before-start-of-fn4 'end-of-fn4
    #'mark-defun))
 
 (ert-deftest indent-line-blank-line-motion ()
@@ -3164,3 +3182,83 @@ impl Two<'a> {
   (ert-deftest rust-test-electric-pair-lt-expression-capitalized-keyword ()
     (test-electric-pair-insert "fn foo() -> Box" 16 ?< ?>))
   )
+
+
+(ert-deftest attribute-matching ()
+  (let* ((code "
+#[derive]
+
+#[derive(
+    Clone,
+    Copy,
+]")
+         (matches nil))
+    (with-temp-buffer
+      (insert code)
+      (goto-char (point-min))
+      (while (re-search-forward rust-attribute-re nil t)
+        (push (match-string 0) matches))
+      (assert (equal
+               '("#[derive]" "#[derive(
+    Clone,
+    Copy,
+]")
+               (nreverse matches))))))
+
+(ert-deftest attribute-matching ()
+  (let* ((code "
+#[test]
+// #[test]
+/* #[test] */
+fn foo() {}")
+         attribute-pos
+         before-fn-pos
+         after-fn-pos)
+    (with-temp-buffer
+      (insert code)
+      (rust-mode)
+      (goto-char (point-min))
+      (re-search-forward "#" nil t)
+      (setq attribute-pos (- (point) 1))
+      (re-search-forward "fn" nil t)
+      (setq after-fn-pos (point))
+      (setq before-fn-pos (- after-fn-pos 2))
+      ;; not right after an attribute: did not move
+      (rust-backward-attribute)
+      (assert (= (point) after-fn-pos))
+
+      ;; right after an attribute and comments: moved to the attribute
+      ;; position
+      (goto-char before-fn-pos)
+      (rust-backward-attribute)
+      (assert (= (point) attribute-pos)))))
+
+(ert-deftest attributes-matching ()
+  (let* ((code "
+#[test]
+#[other(attribute)]
+// #[test]
+/* #[test] */
+fn foo() {}")
+         first-attribute-pos
+         last-attribute-pos
+         before-fn-pos
+         )
+    (with-temp-buffer
+      (insert code)
+      (rust-mode)
+      (goto-char (point-min))
+      (re-search-forward "#" nil t)
+      (setq first-attribute-pos (- (point) 1))
+      (re-search-forward "#" nil t)
+      (setq last-attribute-pos (- (point) 1))
+      (re-search-forward "fn" nil t)
+      (setq before-fn-pos (- (point) 2))
+
+      (goto-char before-fn-pos)
+      (rust-backward-attribute)
+      (assert (= (point) last-attribute-pos))
+
+      (goto-char before-fn-pos)
+      (rust-backward-attributes)
+      (assert (= (point) first-attribute-pos)))))
