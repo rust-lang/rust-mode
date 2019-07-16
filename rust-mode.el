@@ -61,7 +61,7 @@ PREFIX is a string, and defaults to \"g\"."
     (+ space) (regexp ,rust-re-ident))))
 
 (defconst rust-attribute-re
-  "#\\[[[:word:]\\|(\\)\\|,\\[:space:]]+]")
+  "#\\[[[:word:](),[:space:]]+]")
 
 ;;; Start of a Rust item
 (defvar rust-top-item-beg-re
