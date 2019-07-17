@@ -1302,7 +1302,7 @@ Use idomenu (imenu with `ido-mode') for best mileage.")
 
 ;;; Defun Motions
 
-(defmacro repeat-while-point-moves (&rest body)
+(defmacro rust-repeat-while-point-moves (&rest body)
   (let ((opoint (gensym "opoint")))
     `(let ((,opoint (point)))
        (while (progn (progn ,@body)
@@ -1339,7 +1339,7 @@ which calls this, does that afterwards."
 
 (defun rust-backward-attributes ()
   "Move the point to the start of the attributes preceding point."
-  (repeat-while-point-moves (rust-backward-attribute)))
+  (rust-repeat-while-point-moves (rust-backward-attribute)))
 
 (defun rust-backward-attribute ()
   "Move the point to the start of the preceding attribute.
@@ -1366,7 +1366,7 @@ Comments are skipped."
 
 (defun rust-skip-comments ()
   "Skip forward all comments following the point."
-  (repeat-while-point-moves (forward-comment 1)))
+  (rust-repeat-while-point-moves (forward-comment 1)))
 
 (defun rust-end-of-defun ()
   "Move forward to the next end of defun.
