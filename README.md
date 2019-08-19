@@ -63,7 +63,7 @@ the packages for you (under `~/.emacs.d/elpa/`).
 
 * or using <kbd>M-x package-install rust-mode</kbd>
 
-### Package installation on Debian testing or unstable
+### Package installation on Debian
 
 ```bash
 apt install elpa-rust-mode
