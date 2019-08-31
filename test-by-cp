@@ -1,0 +1,7 @@
+#!/bin/sh
+
+cd ..
+mkdir copy
+cd copy
+cp -rf ../app/* .
+./run_rust_emacs_tests.sh

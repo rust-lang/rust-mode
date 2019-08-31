@@ -1,0 +1,7 @@
+#!/bin/sh
+
+cd ..
+mkdir git
+cd git
+git clone ../app .
+./run_rust_emacs_tests.sh
