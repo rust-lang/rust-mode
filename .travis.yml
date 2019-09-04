@@ -1,25 +1,16 @@
+dist: trusty
 language: generic
 
 env:
-  matrix:
-    - EMACS=emacs24
-    - EMACS=emacs-snapshot
-
+ - EVM_EMACS=emacs-25.1-travis
+ - EVM_EMACS=emacs-25.2-travis
+ - EVM_EMACS=emacs-25.3-travis
+ - EVM_EMACS=emacs-26.1-travis
+ - EVM_EMACS=emacs-26.2-travis
+ - EVM_EMACS=emacs-git-snapshot-travis
 install:
-  - if [ "$EMACS" = 'emacs24' ]; then
-       sudo add-apt-repository -y ppa:cassou/emacs &&
-       sudo apt-get -qq update &&
-       sudo apt-get -qq -f install &&
-       sudo apt-get -qq install emacs24 emacs24-el;
-    fi
-  - if [ "$EMACS" = 'emacs-snapshot' ]; then
-       sudo add-apt-repository -y ppa:ubuntu-elisp/ppa &&
-       sudo apt-get -qq update &&
-       sudo apt-get -qq -f install &&
-       sudo apt-get -qq install emacs-snapshot &&
-       sudo apt-get -qq install emacs-snapshot-el;
-    fi
-
+  - curl -fsSkL https://gist.github.com/rejeep/ebcd57c3af83b049833b/raw > travis.sh && source ./travis.sh
+  - evm install $EVM_EMACS --use --skip
 script:
   - ./run_rust_emacs_tests.sh
 
