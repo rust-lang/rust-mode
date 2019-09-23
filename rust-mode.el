@@ -1513,17 +1513,17 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
 (defun rust-compile ()
   "Compile using `cargo build`"
   (interactive)
-  (compile "cargo build"))
+  (compile (format "%s build" rust-cargo-bin)))
 
 (defun rust-run ()
   "Run using `cargo run`"
   (interactive)
-  (compile "cargo run"))
+  (compile (format "%s run" rust-cargo-bin)))
 
 (defun rust-test ()
   "Test using `cargo test`"
   (interactive)
-  (compile "cargo test"))
+  (compile (format "%s test" rust-cargo-bin)))
 
 (defvar rust-mode-map
   (let ((map (make-sparse-keymap)))
