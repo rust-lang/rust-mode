@@ -1467,7 +1467,8 @@ Return the created process."
          (start-process "rustfmt-diff"
                         (with-current-buffer
                             (get-buffer-create "*rustfmt-diff*")
-                          (erase-buffer)
+                          (let ((inhibit-read-only t))
+                            (erase-buffer))
                           (current-buffer))
                         rust-rustfmt-bin
                         "--check"
@@ -1478,7 +1479,10 @@ Return the created process."
 (defun rust-format-diff-buffer-sentinel (process _e)
   (when (eq 'exit (process-status process))
     (if (> (process-exit-status process) 0)
-        (display-buffer "*rustfmt-diff*")
+        (with-current-buffer "*rustfmt-diff*"
+          (let ((inhibit-read-only t))
+            (diff-mode))
+          (pop-to-buffer (current-buffer)))
       (message "rustfmt check passed."))))
 
 (defun rust-format-buffer ()
