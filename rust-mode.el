@@ -1457,19 +1457,23 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
         (min (point) max-pos)))))
 
 (defun rust-format-diff-buffer ()
-  "Show diff to current buffer from rustfmt."
+  "Show diff to current buffer from rustfmt.
+
+Return the created process."
   (interactive)
   (unless (executable-find rust-rustfmt-bin)
     (error "Could not locate executable \%s\"" rust-rustfmt-bin))
-  (make-process
-   :name "rustfmt-diff"
-   :command (list rust-rustfmt-bin "--check" (buffer-file-name))
-   :buffer
-   (with-current-buffer
-       (get-buffer-create "*rustfmt-diff*")
-     (erase-buffer)
-     (current-buffer))
-   :sentinel 'rust-format-diff-buffer-sentinel))
+  (let ((proc
+         (start-process "rustfmt-diff"
+                        (with-current-buffer
+                            (get-buffer-create "*rustfmt-diff*")
+                          (erase-buffer)
+                          (current-buffer))
+                        rust-rustfmt-bin
+                        "--check"
+                        (buffer-file-name))))
+    (set-process-sentinel proc 'rust-format-diff-buffer-sentinel)
+    proc))
 
 (defun rust-format-diff-buffer-sentinel (process _e)
   (when (eq 'exit (process-status process))
