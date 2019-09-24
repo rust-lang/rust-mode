@@ -19,6 +19,7 @@
                    (require 'url-vars))
 
 (require 'json)
+(require 'thingatpt)
 
 (defvar electric-pair-inhibit-predicate)
 (defvar electric-indent-chars)
