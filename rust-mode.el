@@ -1759,14 +1759,14 @@ visit the new file."
   (interactive)
   (save-excursion
     (if (region-active-p)
-        (my/insert-dbg)
+        (rust-insert-dbg)
 
       (goto-char (beginning-of-thing 'symbol))
       (if (looking-at "dbg!")
           (progn
             (delete-char 4)
             (delete-pair))
-        (my/insert-dbg)))))
+        (rust-insert-dbg)))))
 
 (provide 'rust-mode)
 
