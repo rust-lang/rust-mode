@@ -1528,6 +1528,7 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
 (defvar rust-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-c C-f") 'rust-format-buffer)
+    (define-key map (kbd "C-c d") 'rust-dbg-wrap-or-unwrap)
     map)
   "Keymap for Rust major mode.")
 
@@ -1745,6 +1746,27 @@ visit the new file."
       (goto-char 0)
       (let ((output (json-read)))
         (cdr (assoc-string "root" output))))))
+
+(defun rust-insert-dbg ()
+  "Insert the dbg! macro."
+  (insert-parentheses (unless (region-active-p) 1))
+  (backward-char 1)
+  (insert "dbg!"))
+
+;;;###autoload
+(defun rust-dbg-wrap-or-unwrap ()
+  "Either remove or add the dbg! macro."
+  (interactive)
+  (save-excursion
+    (if (region-active-p)
+        (my/insert-dbg)
+
+      (goto-char (beginning-of-thing 'symbol))
+      (if (looking-at "dbg!")
+          (progn
+            (delete-char 4)
+            (delete-pair))
+        (my/insert-dbg)))))
 
 (provide 'rust-mode)
 
