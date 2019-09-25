@@ -1763,7 +1763,7 @@ visit the new file."
         (rust-insert-dbg)
 
       (goto-char (beginning-of-thing 'symbol))
-      (if (looking-at "dbg!")
+      (if (or (looking-at "dbg!") (search-backward "dbg!"))
           (progn
             (delete-char 4)
             (delete-pair))
