@@ -6,6 +6,7 @@
 (require 'imenu)
 
 (setq rust-test-fill-column 32)
+(setq-default indent-tabs-mode nil)
 
 (defun rust-compare-code-after-manip (original point-pos manip-func expected got)
   (equal expected got))
