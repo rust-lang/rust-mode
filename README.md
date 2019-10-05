@@ -3,10 +3,26 @@
 `rust-mode`: A major Emacs mode for editing Rust source code
 ============================================================
 
-# Installation
+# Installation via MELPA
 
-`rust-mode` is available on MELPA. It is recommended to use 
-[use-package](https://github.com/jwiegley/use-package).
+`rust-mode` is available on MELPA. 
+
+``` elisp
+(require 'package)
+(add-to-list 'package-archives
+             '("melpa" . "https://melpa.org/packages/") t)
+(package-initialize)
+(package-refresh-contents)
+```
+
+# Manual Installation 
+
+Add this to your init.el:
+
+``` elisp
+(add-to-list 'load-path "/path/to/rust-mode/")
+(autoload 'rust-mode "rust-mode" nil t)
+```
 
 # rustfmt
 
