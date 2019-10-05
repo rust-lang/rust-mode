@@ -12,6 +12,8 @@
 # This runs the test for emacs rust-mode.
 # Either $EMACS must be set, or it must be possible to find emacs via PATH.
 
+echo "$0 EMACS_VERSION=$EMACS_VERSION"
+
 if [ -z "$EMACS" ]; then
     EMACS=emacs
 fi
