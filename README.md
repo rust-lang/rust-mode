@@ -5,7 +5,7 @@
 
 # Installation via MELPA
 
-`rust-mode` is available on MELPA. 
+`rust-mode` is available on MELPA. Add this to your init.el to automatically.
 
 ``` elisp
 (require 'package)
@@ -14,6 +14,10 @@
 (package-initialize)
 (package-refresh-contents)
 ```
+
+Now you can install `rust-mode` with:
+
+`M-x package-install rust-mode`
 
 # Manual Installation 
 
