@@ -1,11 +1,23 @@
 [![MELPA](https://melpa.org/packages/rust-mode-badge.svg)](https://melpa.org/#/rust-mode)
 
-`rust-mode`: A major Emacs mode for editing Rust source code
-============================================================
+# Emacs mode for editing Rust source code
+
+<!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-refresh-toc -->
+**Table of Contents**
+
+- [Installation via MELPA](#installation-via-melpa)
+- [Manual Installation](#manual-installation)
+- [rustfmt](#rustfmt)
+- [Tests](#tests)
+- [Other useful packages](#other-useful-packages)
+
+<!-- markdown-toc end -->
 
 # Installation via MELPA
 
-`rust-mode` is available on MELPA. Add this to your init.el to automatically.
+`rust-mode` makes editing [Rust](http://rust-lang.org) code with Emacs
+enjoyable. It requires Emacs 24 or later.
+The package is available on MELPA. Add this to your init.el.
 
 ``` elisp
 (require 'package)
@@ -18,6 +30,10 @@
 Now you can install `rust-mode` with:
 
 `M-x package-install rust-mode`
+
+And put this in your config to load rustic automatically:
+
+`(require 'rust-mode)`
 
 # Manual Installation 
 
