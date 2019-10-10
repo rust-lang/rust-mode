@@ -3118,6 +3118,18 @@ impl Two<'a> {
      "b" font-lock-variable-name-face
      "u32" font-lock-type-face)))
 
+(ert-deftest variable-in-for-loop ()
+  (rust-test-font-lock
+   "for var in iter"
+   '("for" font-lock-keyword-face
+     "var" font-lock-variable-name-face
+     "in" font-lock-keyword-face))
+  (rust-test-font-lock
+   "for Foo{var} in iter"
+   '("for" font-lock-keyword-face
+     "Foo" font-lock-type-face
+     "in" font-lock-keyword-face)))
+
 (when (executable-find rust-cargo-bin)
   (ert-deftest rust-test-project-located ()
     (lexical-let* ((test-dir (expand-file-name "test-project" default-directory))
