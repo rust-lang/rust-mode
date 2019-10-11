@@ -36,7 +36,7 @@ And put this in your config to load rust-mode automatically:
 
 `(require 'rust-mode)`
 
-# Manual Installation 
+# Manual Installation
 
 Add this to your init.el:
 
@@ -58,7 +58,7 @@ recommendation add this to your init.el:
 # rustfmt
 
 The `rust-format-buffer` function will format your code with
-[rustfmt](https://github.com/rust-lang/rustfmt) if installed. By default, 
+[rustfmt](https://github.com/rust-lang/rustfmt) if installed. By default,
 this is bound to `C-c C-f`.
 
 Placing `(setq rust-format-on-save t)` in your init.el will enable automatic
@@ -73,6 +73,6 @@ you set the environment variable EMACS to a program that runs emacs.
 
 # Other useful packages
 
-[cargo.el](https://github.com/kwrooijen/cargo.el) Emacs Minor Mode for Cargo, Rust's Package Manager
-[emacs-racer](https://github.com/racer-rust/emacs-racer) Racer support for Emacs
-[rustic](https://github.com/brotzeit/rustic) Rust development environment for Emacs 
+* [cargo.el](https://github.com/kwrooijen/cargo.el) Emacs Minor Mode for Cargo, Rust's Package Manager
+* [emacs-racer](https://github.com/racer-rust/emacs-racer) Racer support for Emacs
+* [rustic](https://github.com/brotzeit/rustic) Rust development environment for Emacs
