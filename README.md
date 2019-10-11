@@ -31,7 +31,7 @@ Now you can install `rust-mode` with:
 
 `M-x package-install rust-mode`
 
-And put this in your config to load rustic automatically:
+And put this in your config to load rust-mode automatically:
 
 `(require 'rust-mode)`
 
