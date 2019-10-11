@@ -7,6 +7,7 @@
 
 - [Installation via MELPA](#installation-via-melpa)
 - [Manual Installation](#manual-installation)
+- [Indentation](#indentation)
 - [rustfmt](#rustfmt)
 - [Tests](#tests)
 - [Other useful packages](#other-useful-packages)
@@ -42,6 +43,16 @@ Add this to your init.el:
 ``` elisp
 (add-to-list 'load-path "/path/to/rust-mode/")
 (autoload 'rust-mode "rust-mode" nil t)
+```
+
+# Indentation
+
+The Rust style guide recommends spaces for indentation; to follow the
+recommendation add this to your init.el:
+
+```elisp
+(add-hook 'rust-mode-hook
+          (lambda () (setq indent-tabs-mode nil)))
 ```
 
 # rustfmt
