@@ -3119,6 +3119,13 @@ impl Two<'a> {
    #'rust-dbg-wrap-or-unwrap
    "let x = add(dbg!(first), second);"))
 
+(ert-deftest rust-test-dbg-wrap-symbol-unbalanced ()
+  (rust-test-manip-code
+   "let x = add((first, second);"
+   14
+   #'rust-dbg-wrap-or-unwrap
+   "let x = add((dbg!(first), second);"))
+
 (ert-deftest rust-test-dbg-wrap-region ()
   (rust-test-manip-code
    "let x = add(first, second);"

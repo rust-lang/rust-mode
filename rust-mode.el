@@ -1750,8 +1750,15 @@ visit the new file."
 
 (defun rust-insert-dbg ()
   "Insert the dbg! macro."
-  (insert-parentheses (unless (region-active-p) 1))
-  (backward-char 1)
+  (if (region-active-p)
+      (progn
+        (insert-parentheses)
+        (backward-char 1))
+    (progn
+      (insert "(")
+      (forward-sexp)
+      (insert ")")
+      (backward-sexp)))
   (insert "dbg!"))
 
 ;;;###autoload
