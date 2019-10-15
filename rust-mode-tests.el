@@ -244,6 +244,11 @@ fn bar() { }"
 /// even more.
 fn bar() { }" 14 85))
 
+(defun test-dbg-wrap (initial expected position &optional end)
+  ""
+  (with-temp-buffer
+    (insert initial)))
+
 (defun test-auto-fill (initial position inserted expected)
   (rust-test-manip-code
    initial
@@ -3106,6 +3111,43 @@ impl Two<'a> {
 "
    '(("Impl" "One" "Two")
      ("Fn" "one" "two"))))
+
+(ert-deftest rust-test-dbg-wrap-symbol ()
+  (rust-test-manip-code
+   "let x = add(first, second);"
+   15
+   #'rust-dbg-wrap-or-unwrap
+   "let x = add(dbg!(first), second);"))
+
+(ert-deftest rust-test-dbg-wrap-region ()
+  (rust-test-manip-code
+   "let x = add(first, second);"
+   9
+   (lambda ()
+     (transient-mark-mode 1)
+     (push-mark nil t t)
+     (goto-char 26)
+     (rust-dbg-wrap-or-unwrap))
+   "let x = dbg!(add(first, second));"))
+
+(defun rust-test-dbg-unwrap (position)
+  (rust-test-manip-code
+   "let x = add(dbg!(first), second);"
+   position
+   #'rust-dbg-wrap-or-unwrap
+   "let x = add(first, second);"))
+
+(ert-deftest rust-test-dbg-uwnrap-within ()
+  (rust-test-dbg-unwrap 19))
+
+(ert-deftest rust-test-dbg-uwnrap-on-paren ()
+  (rust-test-dbg-unwrap 17))
+
+(ert-deftest rust-test-dbg-uwnrap-on-dbg-middle ()
+  (rust-test-dbg-unwrap 15))
+
+(ert-deftest rust-test-dbg-uwnrap-on-dbg-start ()
+  (rust-test-dbg-unwrap 13))
 
 (when (executable-find rust-cargo-bin)
   (ert-deftest rust-test-project-located ()
