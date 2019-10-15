@@ -1,6 +1,6 @@
 ;;; rust-mode.el --- A major emacs mode for editing Rust source code -*-lexical-binding: t-*-
 
-;; Version: 0.4.0
+;; Version: 0.5.0
 ;; Author: Mozilla
 ;; Url: https://github.com/rust-lang/rust-mode
 ;; Keywords: languages
@@ -695,13 +695,13 @@ Returns nil if the point is not within a Rust string."
       1 font-lock-preprocessor-face)
 
      ;; Field names like `foo:`, highlight excluding the :
-     (,(concat (rust-re-grab rust-re-ident) ":[^:]") 1 font-lock-variable-name-face)
+     (,(concat (rust-re-grab rust-re-ident) "[[:space:]]*:[^:]") 1 font-lock-variable-name-face)
 
      ;; CamelCase Means Type Or Constructor
      (,rust-re-type-or-constructor 1 font-lock-type-face)
 
      ;; Type-inferred binding
-     (,(concat "\\_<\\(?:let\\s-+ref\\|let\\|ref\\)\\s-+\\(?:mut\\s-+\\)?" (rust-re-grab rust-re-ident) "\\_>") 1 font-lock-variable-name-face)
+     (,(concat "\\_<\\(?:let\\s-+ref\\|let\\|ref\\|for\\)\\s-+\\(?:mut\\s-+\\)?" (rust-re-grab rust-re-ident) "\\_>") 1 font-lock-variable-name-face)
 
      ;; Type names like `Foo::`, highlight excluding the ::
      (,(rust-path-font-lock-matcher rust-re-uc-ident) 1 font-lock-type-face)
@@ -1457,6 +1457,35 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
             (forward-char columns)))
         (min (point) max-pos)))))
 
+(defun rust-format-diff-buffer ()
+  "Show diff to current buffer from rustfmt.
+
+Return the created process."
+  (interactive)
+  (unless (executable-find rust-rustfmt-bin)
+    (error "Could not locate executable \%s\"" rust-rustfmt-bin))
+  (let ((proc
+         (start-process "rustfmt-diff"
+                        (with-current-buffer
+                            (get-buffer-create "*rustfmt-diff*")
+                          (let ((inhibit-read-only t))
+                            (erase-buffer))
+                          (current-buffer))
+                        rust-rustfmt-bin
+                        "--check"
+                        (buffer-file-name))))
+    (set-process-sentinel proc 'rust-format-diff-buffer-sentinel)
+    proc))
+
+(defun rust-format-diff-buffer-sentinel (process _e)
+  (when (eq 'exit (process-status process))
+    (if (> (process-exit-status process) 0)
+        (with-current-buffer "*rustfmt-diff*"
+          (let ((inhibit-read-only t))
+            (diff-mode))
+          (pop-to-buffer (current-buffer)))
+      (message "rustfmt check passed."))))
+
 (defun rust-format-buffer ()
   "Format the current buffer using rustfmt."
   (interactive)
@@ -1514,17 +1543,17 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
 (defun rust-compile ()
   "Compile using `cargo build`"
   (interactive)
-  (compile "cargo build"))
+  (compile (format "%s build" rust-cargo-bin)))
 
 (defun rust-run ()
   "Run using `cargo run`"
   (interactive)
-  (compile "cargo run"))
+  (compile (format "%s run" rust-cargo-bin)))
 
 (defun rust-test ()
   "Test using `cargo test`"
   (interactive)
-  (compile "cargo test"))
+  (compile (format "%s test" rust-cargo-bin)))
 
 (defvar rust-mode-map
   (let ((map (make-sparse-keymap)))
@@ -1556,7 +1585,6 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
   ;; Misc
   (setq-local comment-start "// ")
   (setq-local comment-end   "")
-  (setq-local indent-tabs-mode nil)
   (setq-local open-paren-in-column-0-is-defun-start nil)
 
   ;; Auto indent on }
