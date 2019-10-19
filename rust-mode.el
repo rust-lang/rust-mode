@@ -529,8 +529,9 @@ buffer."
 
 (defun rust--same-line-p (pos1 pos2)
   "Return non-nil if POS1 and POS2 are on the same line."
-  (= (save-excursion (goto-char pos1) (line-end-position))
-     (save-excursion (goto-char pos2) (line-end-position))))
+  (save-excursion (= (progn (goto-char pos1) (line-end-position))
+                     (progn (goto-char pos2) (line-end-position)))))
+
 
 ;; Font-locking definitions and helpers
 (defconst rust-mode-keywords
