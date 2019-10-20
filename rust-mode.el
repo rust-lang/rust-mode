@@ -1807,12 +1807,11 @@ visit the new file."
                                (while (not (rust-looking-back-str "dbg!"))
                                  (backward-up-list))
                                (point))))))
-        (if dbg-point
-            (progn
-              (goto-char dbg-point)
-              (delete-char -4)
-              (delete-pair))
-          (rust-insert-dbg))))))
+        (cond (dbg-point
+               (goto-char dbg-point)
+               (delete-char -4)
+               (delete-pair))
+              (t (rust-insert-dbg)))))))
 
 (provide 'rust-mode)
 
