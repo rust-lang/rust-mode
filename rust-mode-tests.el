@@ -2426,7 +2426,15 @@ fn main() {
      "{1}" rust-string-interpolation-face
      "\"" font-lock-string-face
      "/* " font-lock-comment-delimiter-face
-     "no-op */" font-lock-comment-face)))
+     "no-op */" font-lock-comment-face))
+  (rust-test-font-lock
+   "println!(\"123\"); eprintln!(\"123\"); cprintln!(\"123\");"
+   '("println!" rust-builtin-formatting-macro-face
+     "\"123\"" font-lock-string-face
+     "eprintln!" rust-builtin-formatting-macro-face
+     "\"123\"" font-lock-string-face
+     "cprintln!" font-lock-preprocessor-face
+     "\"123\"" font-lock-string-face)))
 
 (ert-deftest font-lock-fontify-angle-brackets ()
     "Test that angle bracket fontify"
