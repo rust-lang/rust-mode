@@ -365,11 +365,8 @@ buffer."
               ((nth 3 (syntax-ppss))
                (let*
                    ((string-begin-pos (nth 8 (syntax-ppss)))
-                    (end-of-prev-line-pos (when (> (line-number-at-pos) 1)
-                                            (save-excursion
-                                              (forward-line -1)
-                                              (end-of-line)
-                                              (point)))))
+                    (end-of-prev-line-pos (unless (rust--same-line-p (point) (point-min))
+                                            (line-end-position 0))))
                  (when
                      (and
                       ;; If the string begins with an "r" it's a raw string and
@@ -389,7 +386,7 @@ buffer."
 
                    ;; Indent to the same level as the previous line, or the
                    ;; start of the string if the previous line starts the string
-                   (if (= (line-number-at-pos end-of-prev-line-pos) (line-number-at-pos string-begin-pos))
+                   (if (rust--same-line-p end-of-prev-line-pos string-begin-pos)
                        ;; The previous line is the start of the string.
                        ;; If the backslash is the only character after the
                        ;; string beginning, indent to the next indent
@@ -529,6 +526,11 @@ buffer."
       (if (<= (current-column) (current-indentation))
           (indent-line-to indent)
         (save-excursion (indent-line-to indent))))))
+
+(defun rust--same-line-p (pos1 pos2)
+  "Return non-nil if POS1 and POS2 are on the same line."
+  (save-excursion (= (progn (goto-char pos1) (line-end-position))
+                     (progn (goto-char pos2) (line-end-position)))))
 
 
 ;; Font-locking definitions and helpers
