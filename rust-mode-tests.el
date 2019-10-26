@@ -3220,4 +3220,18 @@ impl Two<'a> {
 
   (ert-deftest rust-test-electric-pair-lt-expression-capitalized-keyword ()
     (test-electric-pair-insert "fn foo() -> Box" 16 ?< ?>))
-  )
+
+  (ert-deftest rust-test-electric-pair-<-> ()
+    (let ((old-electric-pair-mode electric-pair-mode))
+      (electric-pair-mode 1)
+      (unwind-protect
+          (with-temp-buffer
+            (electric-pair-mode 1)
+            (rust-mode)
+            (mapc (lambda (c)
+                    (let ((last-command-event c)) (self-insert-command 1)))
+                  "tmp<T>")
+            (should
+             (equal "tmp<T>" (buffer-substring-no-properties (point-min)
+                                                             (point-max)))))
+        (electric-pair-mode (or old-electric-pair-mode 1))))))
