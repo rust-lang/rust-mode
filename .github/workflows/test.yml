@@ -1,0 +1,33 @@
+name: GitHub actions CI
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        rust_version: [stable]
+        emacs_version:
+          - 24.5
+          - 25.1
+          - 25.2
+          - 25.3
+          - 26.1
+          - 26.2
+          - 26.3
+          - snapshot
+    env:
+      EMACS_VERSION: ${{ matrix.emacs_version }}
+    steps:
+    - uses: hecrj/setup-rust-action@v1
+      with:
+        rust-version: ${{ matrix.rust_version }}
+    - uses: purcell/setup-emacs@master
+      with:
+        version: ${{ matrix.emacs_version }}
+
+    - uses: actions/checkout@v1
+    - name: Run tests
+      run: './run_rust_emacs_tests.sh'
