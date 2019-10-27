@@ -3132,7 +3132,7 @@ impl Two<'a> {
 
 (when (executable-find rust-cargo-bin)
   (ert-deftest rust-test-project-located ()
-    (lexical-let* ((test-dir (expand-file-name "test-project" default-directory))
+    (lexical-let* ((test-dir (expand-file-name "test-project/" default-directory))
                    (manifest-file (expand-file-name "Cargo.toml" test-dir)))
       (let ((default-directory test-dir))
         (should (equal (expand-file-name (rust-buffer-project)) manifest-file))))))
