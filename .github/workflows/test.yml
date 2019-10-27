@@ -8,6 +8,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        rust_version: [stable]
         emacs_version:
           - 24.5
           - 25.1
@@ -20,6 +21,9 @@ jobs:
     env:
       EMACS_VERSION: ${{ matrix.emacs_version }}
     steps:
+    - uses: hecrj/setup-rust-action@v1
+      with:
+        rust-version: ${{ matrix.rust_version }}
     - uses: purcell/setup-emacs@master
       with:
         version: ${{ matrix.emacs_version }}
