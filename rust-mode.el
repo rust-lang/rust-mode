@@ -165,6 +165,11 @@ to the function arguments.  When nil, `->' will be indented one level."
   :type 'string
   :group 'rust-mode)
 
+(defcustom rust-rustfmt-switches '("--edition" "2018")
+  "Arguments to pass when invoking the `rustfmt' executable."
+  :type '(repeat string)
+  :group 'rust-mode)
+
 (defcustom rust-cargo-bin "cargo"
   "Path to cargo executable."
   :type 'string
@@ -1354,8 +1359,14 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
     (erase-buffer)
     (insert-buffer-substring buf)
     (let* ((tmpf (make-temp-file "rustfmt"))
-           (ret (call-process-region (point-min) (point-max) rust-rustfmt-bin
-                                     t `(t ,tmpf) nil)))
+           (ret (apply 'call-process-region
+                       (point-min)
+                       (point-max)
+                       rust-rustfmt-bin
+                       t
+                       `(t ,tmpf)
+                       nil
+                       rust-rustfmt-switches)))
       (unwind-protect
           (cond
            ((zerop ret)
@@ -1465,16 +1476,20 @@ Return the created process."
   (interactive)
   (unless (executable-find rust-rustfmt-bin)
     (error "Could not locate executable \%s\"" rust-rustfmt-bin))
-  (let ((proc
-         (start-process "rustfmt-diff"
-                        (with-current-buffer
-                            (get-buffer-create "*rustfmt-diff*")
-                          (let ((inhibit-read-only t))
-                            (erase-buffer))
-                          (current-buffer))
-                        rust-rustfmt-bin
-                        "--check"
-                        (buffer-file-name))))
+  (let* ((buffer
+          (with-current-buffer
+              (get-buffer-create "*rustfmt-diff*")
+            (let ((inhibit-read-only t))
+              (erase-buffer))
+            (current-buffer)))
+         (proc
+          (apply 'start-process
+                 "rustfmt-diff"
+                 buffer
+                 rust-rustfmt-bin
+                 "--check"
+                 (cons (buffer-file-name)
+                       rust-rustfmt-switches))))
     (set-process-sentinel proc 'rust-format-diff-buffer-sentinel)
     proc))
 
