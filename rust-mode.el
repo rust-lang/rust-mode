@@ -19,6 +19,7 @@
                    (require 'url-vars))
 
 (require 'json)
+(require 'thingatpt)
 
 (defvar electric-pair-inhibit-predicate)
 (defvar electric-pair-skip-self)
@@ -1582,6 +1583,7 @@ Return the created process."
 (defvar rust-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-c C-f") 'rust-format-buffer)
+    (define-key map (kbd "C-c d") 'rust-dbg-wrap-or-unwrap)
     map)
   "Keymap for Rust major mode.")
 
@@ -1799,6 +1801,42 @@ visit the new file."
       (goto-char 0)
       (let ((output (json-read)))
         (cdr (assoc-string "root" output))))))
+
+(defun rust-insert-dbg ()
+  "Insert the dbg! macro."
+  (cond ((region-active-p)
+         (insert-parentheses)
+         (backward-char 1))
+        (t
+         (insert "(")
+         (forward-sexp)
+         (insert ")")
+         (backward-sexp)))
+  (insert "dbg!"))
+
+;;;###autoload
+(defun rust-dbg-wrap-or-unwrap ()
+  "Either remove or add the dbg! macro."
+  (interactive)
+  (save-excursion
+    (if (region-active-p)
+        (rust-insert-dbg)
+
+      (let ((beginning-of-symbol (ignore-errors (beginning-of-thing 'symbol))))
+        (when beginning-of-symbol
+          (goto-char beginning-of-symbol)))
+
+      (let ((dbg-point (save-excursion
+                         (or (and (looking-at-p "dbg!") (+ 4 (point)))
+                             (ignore-errors
+                               (while (not (rust-looking-back-str "dbg!"))
+                                 (backward-up-list))
+                               (point))))))
+        (cond (dbg-point
+               (goto-char dbg-point)
+               (delete-char -4)
+               (delete-pair))
+              (t (rust-insert-dbg)))))))
 
 (provide 'rust-mode)
 
