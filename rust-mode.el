@@ -21,6 +21,7 @@
 (require 'json)
 
 (defvar electric-pair-inhibit-predicate)
+(defvar electric-pair-skip-self)
 (defvar electric-indent-chars)
 
 (defvar rust-buffer-project)
@@ -1049,6 +1050,13 @@ This wraps the default defined by `electric-pair-inhibit-predicate'."
        (rust-is-lt-char-operator)))
    (funcall (default-value 'electric-pair-inhibit-predicate) char)))
 
+(defun rust-electric-pair-skip-self-wrap (char)
+  "Skip CHAR instead of inserting a second closing character.
+This wraps the default defined by `electric-pair-skip-self'."
+  (or
+   (= ?> char)
+   (funcall (default-value 'electric-pair-skip-self) char)))
+
 (defun rust-ordinary-lt-gt-p ()
   "Test whether the `<' or `>' at point is an ordinary operator of some kind.
 
@@ -1625,6 +1633,7 @@ Return the created process."
   (setq-local end-of-defun-function 'rust-end-of-defun)
   (setq-local parse-sexp-lookup-properties t)
   (setq-local electric-pair-inhibit-predicate 'rust-electric-pair-inhibit-predicate-wrap)
+  (setq-local electric-pair-skip-self 'rust-electric-pair-skip-self-wrap)
 
   (add-hook 'before-save-hook 'rust-before-save-hook nil t)
   (add-hook 'after-save-hook 'rust-after-save-hook nil t)
