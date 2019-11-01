@@ -5,16 +5,23 @@
 <!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-refresh-toc -->
 **Table of Contents**
 
-- [Installation via MELPA](#installation-via-melpa)
-- [Manual Installation](#manual-installation)
+- [Installation](#installation)
+    - [Melpa](#melpa)
+    - [use-package and straight](#use-package-and-straight)
+    - [Manual Installation](#manual-installation)
 - [Indentation](#indentation)
 - [rustfmt](#rustfmt)
 - [Tests](#tests)
+- [LSP](#lsp)
+    - [eglot](#eglot)
+    - [lsp-mode](#lsp-mode)
 - [Other useful packages](#other-useful-packages)
 
 <!-- markdown-toc end -->
 
-# Installation via MELPA
+# Installation
+
+## Melpa
 
 `rust-mode` makes editing [Rust](http://rust-lang.org) code with Emacs
 enjoyable. It requires Emacs 24 or later.
@@ -36,7 +43,26 @@ And put this in your config to load rust-mode automatically:
 
 `(require 'rust-mode)`
 
-# Manual Installation
+## use-package and straight
+
+```elisp
+(defvar bootstrap-version)
+(let ((bootstrap-file
+       (expand-file-name "~/tmp/git/straight.el/bootstrap.el" user-emacs-directory))
+      (bootstrap-version 5))
+  (unless (file-exists-p bootstrap-file)
+    (with-current-buffer
+        (url-retrieve-synchronously
+         "https://raw.githubusercontent.com/raxod502/straight.el/develop/install.el"
+         'silent 'inhibit-cookies)
+      (goto-char (point-max))
+      (eval-print-last-sexp)))
+  (load bootstrap-file nil 'nomessage))
+
+(use-package rust-mode)
+```
+
+## Manual Installation
 
 Add this to your init.el:
 
@@ -70,6 +96,24 @@ The file `rust-mode-tests.el` contains tests that can be run via
 [ERT](http://www.gnu.org/software/emacs/manual/html_node/ert/index.html).
 You can use `run_rust_emacs_tests.sh` to run them in batch mode, if
 you set the environment variable EMACS to a program that runs emacs.
+
+# LSP
+
+## eglot
+
+```elisp
+(require 'eglot)
+(add-hook 'rust-mode-hook 'eglot-ensure)
+```
+
+## lsp-mode
+
+```elisp
+(require 'lsp-mode)
+(add-hook 'rust-mode-hook #'lsp)
+```
+
+You can find more information in the [lsp-mode wiki](https://github.com/emacs-lsp/lsp-mode/wiki/Rust).
 
 # Other useful packages
 
