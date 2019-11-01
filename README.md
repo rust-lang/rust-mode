@@ -7,7 +7,7 @@
 
 - [Installation](#installation)
     - [Melpa](#melpa)
-    - [use-package and straight](#use-package-and-straight)
+    - [straight](#straight)
     - [Manual Installation](#manual-installation)
 - [Indentation](#indentation)
 - [rustfmt](#rustfmt)
@@ -43,24 +43,9 @@ And put this in your config to load rust-mode automatically:
 
 `(require 'rust-mode)`
 
-## use-package and straight
+## straight
 
-```elisp
-(defvar bootstrap-version)
-(let ((bootstrap-file
-       (expand-file-name "~/tmp/git/straight.el/bootstrap.el" user-emacs-directory))
-      (bootstrap-version 5))
-  (unless (file-exists-p bootstrap-file)
-    (with-current-buffer
-        (url-retrieve-synchronously
-         "https://raw.githubusercontent.com/raxod502/straight.el/develop/install.el"
-         'silent 'inhibit-cookies)
-      (goto-char (point-max))
-      (eval-print-last-sexp)))
-  (load bootstrap-file nil 'nomessage))
-
-(use-package rust-mode)
-```
+[straight.el](https://github.com/raxod502/straight.el#install-packages) clones each of your packages directly from its source. There are good additional [installation instructions](https://github.crookster.org/switching-to-straight.el-from-emacs-26-builtin-package.el/) for moving your package management from package.el to straight.
 
 ## Manual Installation
 
@@ -101,17 +86,12 @@ you set the environment variable EMACS to a program that runs emacs.
 
 ## eglot
 
-```elisp
-(require 'eglot)
-(add-hook 'rust-mode-hook 'eglot-ensure)
-```
+[Installation instructions](https://github.com/joaotavora/eglot#connecting-automatically) 
 
 ## lsp-mode
 
-```elisp
-(require 'lsp-mode)
-(add-hook 'rust-mode-hook #'lsp)
-```
+[Installation instructions](https://github.com/emacs-lsp/lsp-mode#installation)
+
 
 You can find more information in the [lsp-mode wiki](https://github.com/emacs-lsp/lsp-mode/wiki/Rust).
 
