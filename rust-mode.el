@@ -1805,8 +1805,11 @@ visit the new file."
 (defun rust-insert-dbg ()
   "Insert the dbg! macro."
   (cond ((region-active-p)
-         (insert-parentheses)
-         (backward-char 1))
+         (when (< (mark) (point))
+           (exchange-point-and-mark))
+         (let ((old-point (point)))
+           (insert-parentheses)
+           (goto-char old-point)))
         (t
          (insert "(")
          (forward-sexp)
