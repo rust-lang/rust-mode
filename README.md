@@ -5,16 +5,23 @@
 <!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-refresh-toc -->
 **Table of Contents**
 
-- [Installation via MELPA](#installation-via-melpa)
-- [Manual Installation](#manual-installation)
+- [Installation](#installation)
+    - [Melpa](#melpa)
+    - [straight](#straight)
+    - [Manual Installation](#manual-installation)
 - [Indentation](#indentation)
 - [rustfmt](#rustfmt)
 - [Tests](#tests)
+- [LSP](#lsp)
+    - [eglot](#eglot)
+    - [lsp-mode](#lsp-mode)
 - [Other useful packages](#other-useful-packages)
 
 <!-- markdown-toc end -->
 
-# Installation via MELPA
+# Installation
+
+## Melpa
 
 `rust-mode` makes editing [Rust](http://rust-lang.org) code with Emacs
 enjoyable. It requires Emacs 24 or later.
@@ -36,7 +43,11 @@ And put this in your config to load rust-mode automatically:
 
 `(require 'rust-mode)`
 
-# Manual Installation
+## straight
+
+[straight.el](https://github.com/raxod502/straight.el#install-packages) clones each of your packages directly from its source. There are good additional [installation instructions](https://github.crookster.org/switching-to-straight.el-from-emacs-26-builtin-package.el/) for moving your package management from package.el to straight.
+
+## Manual Installation
 
 Add this to your init.el:
 
@@ -70,6 +81,19 @@ The file `rust-mode-tests.el` contains tests that can be run via
 [ERT](http://www.gnu.org/software/emacs/manual/html_node/ert/index.html).
 You can use `run_rust_emacs_tests.sh` to run them in batch mode, if
 you set the environment variable EMACS to a program that runs emacs.
+
+# LSP
+
+## eglot
+
+[Installation instructions](https://github.com/joaotavora/eglot#connecting-automatically) 
+
+## lsp-mode
+
+[Installation instructions](https://github.com/emacs-lsp/lsp-mode#installation)
+
+
+You can find more information in the [lsp-mode wiki](https://github.com/emacs-lsp/lsp-mode/wiki/Rust).
 
 # Other useful packages
 
