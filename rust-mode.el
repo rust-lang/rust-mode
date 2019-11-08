@@ -1583,7 +1583,7 @@ Return the created process."
 (defvar rust-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-c C-f") 'rust-format-buffer)
-    (define-key map (kbd "C-c d") 'rust-dbg-wrap-or-unwrap)
+    (define-key map (kbd "C-c C-d") 'rust-dbg-wrap-or-unwrap)
     map)
   "Keymap for Rust major mode.")
 

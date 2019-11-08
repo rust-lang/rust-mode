@@ -3283,3 +3283,24 @@ impl Two<'a> {
              (equal "tmp<T>" (buffer-substring-no-properties (point-min)
                                                              (point-max)))))
         (electric-pair-mode (or old-electric-pair-mode 1))))))
+
+(ert-deftest rust-mode-map ()
+  (with-temp-buffer
+    (let (from to match (match-count 0))
+      (rust-mode)
+      (describe-buffer-bindings (current-buffer))
+      (goto-char (point-min))
+      (re-search-forward "Major Mode Bindings")
+      (setq from (point))
+      (re-search-forward "")
+      (setq to (point))
+      (goto-char from)
+      (while (re-search-forward "^C-c.*$" to t)
+        (setq match-count (1+ match-count))
+        (setq match (match-string 0))
+        (eval
+         `(should
+           (or
+            (string-match "Prefix Command" ,match)
+            (string-match "^C-c C" ,match)))))
+      (should (< 0 match-count)))))
