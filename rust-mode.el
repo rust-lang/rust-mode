@@ -1811,6 +1811,8 @@ visit the new file."
            (insert-parentheses)
            (goto-char old-point)))
         (t
+         (when (rust-in-str)
+           (backward-up-list nil t t))
          (insert "(")
          (forward-sexp)
          (insert ")")
