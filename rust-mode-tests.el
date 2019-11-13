@@ -245,10 +245,6 @@ fn bar() { }"
 /// even more.
 fn bar() { }" 14 85))
 
-(defun test-dbg-wrap (initial expected position &optional end)
-  (with-temp-buffer
-    (insert initial)))
-
 (defun test-auto-fill (initial position inserted expected)
   (rust-test-manip-code
    initial
@@ -3185,6 +3181,13 @@ impl Two<'a> {
 
 (ert-deftest rust-test-dbg-uwnrap-on-dbg-start ()
   (rust-test-dbg-unwrap 13))
+
+(ert-deftest rust-test-dbg-unwrap-inside-string-literal ()
+  (rust-test-manip-code
+   "let x = \"foo, bar\"";"
+   15
+   #'rust-dbg-wrap-or-unwrap
+   "let x = dbg!(\"foo, bar\")"))
 
 (when (executable-find rust-cargo-bin)
   (ert-deftest rust-test-project-located ()
