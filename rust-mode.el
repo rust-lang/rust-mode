@@ -1292,7 +1292,17 @@ whichever comes first."
 (defvar rust-imenu-generic-expression
   (append (mapcar #'(lambda (x)
                       (list (capitalize x) (rust-re-item-def-imenu x) 1))
-                  '("async fn" "enum" "struct" "union" "type" "mod" "fn" "trait" "impl"))
+                  ;; Listed in reverse order of how they are displayed (when found).
+                  '(
+                    "fn"
+                    "async\sfn"
+                    "pub\sasync\sfn"
+                    "pub\sfn"
+                    "pub\s*(\s*crate\s*)\s*fn"
+                    "pub\s*(\s*self\s*)\s*fn"
+                    "pub\s*(\s*super\s*)\s*fn"
+                    "pub\s*(\s*in\s[:ascii:]*\s*)\s*fn"
+                    "enum" "struct" "union" "type" "mod" "trait" "impl"))
           `(("Macro" ,(rust-re-item-def-imenu "macro_rules!") 1)))
   "Value for `imenu-generic-expression' in Rust mode.
 
