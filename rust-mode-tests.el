@@ -3078,29 +3078,58 @@ type Foo<T> where T: Copy = Box<T>;
 (ert-deftest rust-test-imenu-extern-unsafe-fn ()
   (test-imenu
    "
-fn one() {
+fn f1() {
 }
 
-unsafe fn two() {
+unsafe fn f2() {
 }
 
-extern \"C\" fn three() {
+extern \"C\" fn f3() {
 }
 
-pub extern fn four() {
-
+pub extern fn f4() {
 }
 
-extern \"rust-intrinsic\" fn five() {
+extern \"rust-intrinsic\" fn f5() {
+}
 
+async fn f6() {
+}
+
+const fn f7() {
+}
+
+async const fn not_a_match() {
+}
+
+fn f8<'a>() {
+}
+
+pub ( in self::super  ) fn f9() {
+}
+
+pub ( in super ) fn f10() {
+}
+
+pub(in crate) fn f11() {
+}
+
+pub (in self) fn f12() {
 }
 "
    '(("Fn"
-      "one"
-      "two"
-      "three"
-      "four"
-      "five"))))
+      "f1"
+      "f2"
+      "f3"
+      "f4"
+      "f5"
+      "f6"
+      "f7"
+      "f8"
+      "f9"
+      "f10"
+      "f11"
+      "f12"))))
 
 (ert-deftest rust-test-imenu-impl-with-lifetime ()
   (test-imenu
