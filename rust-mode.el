@@ -35,12 +35,16 @@
       "Set variable VAR to value VAL in current buffer."
       (list 'set (list 'make-local-variable (list 'quote var)) val))))
 
+(defun rust-re-word (inner) (concat "\\<" inner "\\>"))
+(defun rust-re-grab (inner) (concat "\\(" inner "\\)"))
+(defun rust-re-shy (inner) (concat "\\(?:" inner "\\)"))
+
 (defconst rust-re-ident "[[:word:][:multibyte:]_][[:word:][:multibyte:]_[:digit:]]*")
 (defconst rust-re-lc-ident "[[:lower:][:multibyte:]_][[:word:][:multibyte:]_[:digit:]]*")
 (defconst rust-re-uc-ident "[[:upper:]][[:word:][:multibyte:]_[:digit:]]*")
-(defconst rust-re-vis "pub")
 (defconst rust-re-unsafe "unsafe")
 (defconst rust-re-extern "extern")
+(defconst rust-re-async-or-const "async\\|const")
 (defconst rust-re-generic
   (concat "<[[:space:]]*'" rust-re-ident "[[:space:]]*>"))
 (defconst rust-re-union
@@ -50,9 +54,34 @@
     (group symbol-start "union" symbol-end)
     (+ space) (regexp ,rust-re-ident))))
 
+(defvar rust-re-vis
+   ;; pub | pub ( crate ) | pub ( self ) | pub ( super ) | pub ( in SimplePath )
+  (concat
+   "pub"
+   (rust-re-shy
+    (concat
+     "[[:space:]]*([[:space:]]*"
+     (rust-re-shy
+      (concat "crate" "\\|"
+              "\\(?:s\\(?:elf\\|uper\\)\\)" "\\|"
+              ;;   in SimplePath
+              (rust-re-shy
+               (concat
+                "in[[:space:]]+"
+                rust-re-ident
+                (rust-re-shy (concat "::" rust-re-ident)) "*"))))
+     "[[:space:]]*)"))
+   "?"))
+
 ;;; Start of a Rust item
 (defvar rust-top-item-beg-re
-  (concat "\\s-*\\(?:priv\\|pub\\)?\\s-*"
+  (concat "\\s-*"
+	  ;; TODO some of this does only make sense for `fn' (unsafe, extern...)
+	  ;; and not other items
+	  (rust-re-shy (concat (rust-re-shy rust-re-vis) "[[:space:]]+")) "?"
+		    
+	  (rust-re-shy (concat (rust-re-shy rust-re-async-or-const) "[[:space:]]+")) "?"
+	  (rust-re-shy (concat (rust-re-shy rust-re-unsafe) "[[:space:]]+")) "?"
           (regexp-opt
            '("enum" "struct" "union" "type" "mod" "use" "fn" "static" "impl"
              "extern" "trait"))
@@ -578,17 +607,18 @@ buffer."
       symbol-end))
 
 (defconst rust-re-pre-expression-operators "[-=!%&*/:<>[{(|.^;}]")
-(defun rust-re-word (inner) (concat "\\<" inner "\\>"))
-(defun rust-re-grab (inner) (concat "\\(" inner "\\)"))
-(defun rust-re-shy (inner) (concat "\\(?:" inner "\\)"))
 (defun rust-re-item-def (itype)
   (concat (rust-re-word itype)
-	  (rust-re-shy rust-re-generic) "?"
-	  "[[:space:]]+" (rust-re-grab rust-re-ident)))
+          (rust-re-shy rust-re-generic) "?"
+          "[[:space:]]+" (rust-re-grab rust-re-ident)))
+
+;; TODO some of this does only make sense for `fn' (unsafe, extern...)
+;; and not other items
 (defun rust-re-item-def-imenu (itype)
   (concat "^[[:space:]]*"
-          (rust-re-shy (concat (rust-re-word rust-re-vis) "[[:space:]]+")) "?"
+          (rust-re-shy (concat rust-re-vis "[[:space:]]+")) "?"
           (rust-re-shy (concat (rust-re-word "default") "[[:space:]]+")) "?"
+          (rust-re-shy (concat (rust-re-shy rust-re-async-or-const) "[[:space:]]+")) "?"
           (rust-re-shy (concat (rust-re-word rust-re-unsafe) "[[:space:]]+")) "?"
           (rust-re-shy (concat (rust-re-word rust-re-extern) "[[:space:]]+"
                                (rust-re-shy "\"[^\"]+\"[[:space:]]+") "?")) "?"
@@ -1292,7 +1322,7 @@ whichever comes first."
 (defvar rust-imenu-generic-expression
   (append (mapcar #'(lambda (x)
                       (list (capitalize x) (rust-re-item-def-imenu x) 1))
-                  '("async fn" "enum" "struct" "union" "type" "mod" "fn" "trait" "impl"))
+                  '("enum" "struct" "union" "type" "mod" "fn" "trait" "impl"))
           `(("Macro" ,(rust-re-item-def-imenu "macro_rules!") 1)))
   "Value for `imenu-generic-expression' in Rust mode.
 
