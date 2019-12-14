@@ -1557,16 +1557,17 @@ Return the created process."
         (push (list buffer
                     (rust--format-get-loc buffer nil))
               buffer-loc)))
-    (dolist (window (window-list))
-      (let ((buffer (window-buffer window)))
-        (when (or (eq buffer base)
-                  (eq (buffer-base-buffer buffer) base))
-          (let ((start (window-start window))
-                (point (window-point window)))
-            (push (list window
-                        (rust--format-get-loc buffer start)
-                        (rust--format-get-loc buffer point))
-                  window-loc)))))
+    (dolist (frame (frame-list))
+      (dolist (window (window-list frame))
+	(let ((buffer (window-buffer window)))
+	  (when (or (eq buffer base)
+		    (eq (buffer-base-buffer buffer) base))
+	    (let ((start (window-start window))
+		  (point (window-point window)))
+	      (push (list window
+			  (rust--format-get-loc buffer start)
+			  (rust--format-get-loc buffer point))
+		    window-loc))))))
     (unwind-protect
         (rust--format-call (current-buffer))
       (dolist (loc buffer-loc)
