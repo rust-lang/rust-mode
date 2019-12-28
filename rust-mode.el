@@ -1,6 +1,6 @@
 ;;; rust-mode.el --- A major emacs mode for editing Rust source code -*-lexical-binding: t-*-
 
-;; Version: 0.4.0
+;; Version: 0.5.0
 ;; Author: Mozilla
 ;; Url: https://github.com/rust-lang/rust-mode
 ;; Keywords: languages
@@ -19,8 +19,10 @@
                    (require 'url-vars))
 
 (require 'json)
+(require 'thingatpt)
 
 (defvar electric-pair-inhibit-predicate)
+(defvar electric-pair-skip-self)
 (defvar electric-indent-chars)
 
 (defvar rust-buffer-project)
@@ -33,12 +35,16 @@
       "Set variable VAR to value VAL in current buffer."
       (list 'set (list 'make-local-variable (list 'quote var)) val))))
 
+(defun rust-re-word (inner) (concat "\\<" inner "\\>"))
+(defun rust-re-grab (inner) (concat "\\(" inner "\\)"))
+(defun rust-re-shy (inner) (concat "\\(?:" inner "\\)"))
+
 (defconst rust-re-ident "[[:word:][:multibyte:]_][[:word:][:multibyte:]_[:digit:]]*")
 (defconst rust-re-lc-ident "[[:lower:][:multibyte:]_][[:word:][:multibyte:]_[:digit:]]*")
 (defconst rust-re-uc-ident "[[:upper:]][[:word:][:multibyte:]_[:digit:]]*")
-(defconst rust-re-vis "pub")
 (defconst rust-re-unsafe "unsafe")
 (defconst rust-re-extern "extern")
+(defconst rust-re-async-or-const "async\\|const")
 (defconst rust-re-generic
   (concat "<[[:space:]]*'" rust-re-ident "[[:space:]]*>"))
 (defconst rust-re-union
@@ -48,9 +54,34 @@
     (group symbol-start "union" symbol-end)
     (+ space) (regexp ,rust-re-ident))))
 
+(defvar rust-re-vis
+   ;; pub | pub ( crate ) | pub ( self ) | pub ( super ) | pub ( in SimplePath )
+  (concat
+   "pub"
+   (rust-re-shy
+    (concat
+     "[[:space:]]*([[:space:]]*"
+     (rust-re-shy
+      (concat "crate" "\\|"
+              "\\(?:s\\(?:elf\\|uper\\)\\)" "\\|"
+              ;;   in SimplePath
+              (rust-re-shy
+               (concat
+                "in[[:space:]]+"
+                rust-re-ident
+                (rust-re-shy (concat "::" rust-re-ident)) "*"))))
+     "[[:space:]]*)"))
+   "?"))
+
 ;;; Start of a Rust item
 (defvar rust-top-item-beg-re
-  (concat "\\s-*\\(?:priv\\|pub\\)?\\s-*"
+  (concat "\\s-*"
+	  ;; TODO some of this does only make sense for `fn' (unsafe, extern...)
+	  ;; and not other items
+	  (rust-re-shy (concat (rust-re-shy rust-re-vis) "[[:space:]]+")) "?"
+		    
+	  (rust-re-shy (concat (rust-re-shy rust-re-async-or-const) "[[:space:]]+")) "?"
+	  (rust-re-shy (concat (rust-re-shy rust-re-unsafe) "[[:space:]]+")) "?"
           (regexp-opt
            '("enum" "struct" "union" "type" "mod" "use" "fn" "static" "impl"
              "extern" "trait"))
@@ -163,6 +194,11 @@ to the function arguments.  When nil, `->' will be indented one level."
 (defcustom rust-rustfmt-bin "rustfmt"
   "Path to rustfmt executable."
   :type 'string
+  :group 'rust-mode)
+
+(defcustom rust-rustfmt-switches '("--edition" "2018")
+  "Arguments to pass when invoking the `rustfmt' executable."
+  :type '(repeat string)
   :group 'rust-mode)
 
 (defcustom rust-cargo-bin "cargo"
@@ -365,11 +401,8 @@ buffer."
               ((nth 3 (syntax-ppss))
                (let*
                    ((string-begin-pos (nth 8 (syntax-ppss)))
-                    (end-of-prev-line-pos (when (> (line-number-at-pos) 1)
-                                            (save-excursion
-                                              (forward-line -1)
-                                              (end-of-line)
-                                              (point)))))
+                    (end-of-prev-line-pos (unless (rust--same-line-p (point) (point-min))
+                                            (line-end-position 0))))
                  (when
                      (and
                       ;; If the string begins with an "r" it's a raw string and
@@ -389,7 +422,7 @@ buffer."
 
                    ;; Indent to the same level as the previous line, or the
                    ;; start of the string if the previous line starts the string
-                   (if (= (line-number-at-pos end-of-prev-line-pos) (line-number-at-pos string-begin-pos))
+                   (if (rust--same-line-p end-of-prev-line-pos string-begin-pos)
                        ;; The previous line is the start of the string.
                        ;; If the backslash is the only character after the
                        ;; string beginning, indent to the next indent
@@ -530,6 +563,11 @@ buffer."
           (indent-line-to indent)
         (save-excursion (indent-line-to indent))))))
 
+(defun rust--same-line-p (pos1 pos2)
+  "Return non-nil if POS1 and POS2 are on the same line."
+  (save-excursion (= (progn (goto-char pos1) (line-end-position))
+                     (progn (goto-char pos2) (line-end-position)))))
+
 
 ;; Font-locking definitions and helpers
 (defconst rust-mode-keywords
@@ -569,17 +607,18 @@ buffer."
       symbol-end))
 
 (defconst rust-re-pre-expression-operators "[-=!%&*/:<>[{(|.^;}]")
-(defun rust-re-word (inner) (concat "\\<" inner "\\>"))
-(defun rust-re-grab (inner) (concat "\\(" inner "\\)"))
-(defun rust-re-shy (inner) (concat "\\(?:" inner "\\)"))
 (defun rust-re-item-def (itype)
   (concat (rust-re-word itype)
-	  (rust-re-shy rust-re-generic) "?"
-	  "[[:space:]]+" (rust-re-grab rust-re-ident)))
+          (rust-re-shy rust-re-generic) "?"
+          "[[:space:]]+" (rust-re-grab rust-re-ident)))
+
+;; TODO some of this does only make sense for `fn' (unsafe, extern...)
+;; and not other items
 (defun rust-re-item-def-imenu (itype)
   (concat "^[[:space:]]*"
-          (rust-re-shy (concat (rust-re-word rust-re-vis) "[[:space:]]+")) "?"
+          (rust-re-shy (concat rust-re-vis "[[:space:]]+")) "?"
           (rust-re-shy (concat (rust-re-word "default") "[[:space:]]+")) "?"
+          (rust-re-shy (concat (rust-re-shy rust-re-async-or-const) "[[:space:]]+")) "?"
           (rust-re-shy (concat (rust-re-word rust-re-unsafe) "[[:space:]]+")) "?"
           (rust-re-shy (concat (rust-re-word rust-re-extern) "[[:space:]]+"
                                (rust-re-shy "\"[^\"]+\"[[:space:]]+") "?")) "?"
@@ -674,7 +713,7 @@ Returns nil if the point is not within a Rust string."
       1 font-lock-preprocessor-face keep)
 
      ;; Builtin formatting macros
-     (,(concat (rust-re-grab (concat (regexp-opt rust-builtin-formatting-macros) "!")) (concat rust-formatting-macro-opening-re "\\(?:" rust-start-of-string-re) "\\)?")
+     (,(concat (rust-re-grab (concat (rust-re-word (regexp-opt rust-builtin-formatting-macros)) "!")) (concat rust-formatting-macro-opening-re "\\(?:" rust-start-of-string-re) "\\)?")
       (1 'rust-builtin-formatting-macro-face)
       (rust-string-interpolation-matcher
        (rust-end-of-string)
@@ -682,7 +721,7 @@ Returns nil if the point is not within a Rust string."
        (0 'rust-string-interpolation-face t nil)))
 
      ;; write! macro
-     (,(concat (rust-re-grab "write\\(ln\\)?!") (concat rust-formatting-macro-opening-re "[[:space:]]*[^\"]+,[[:space:]]*" rust-start-of-string-re))
+     (,(concat (rust-re-grab (concat (rust-re-word "write\\(ln\\)?") "!")) (concat rust-formatting-macro-opening-re "[[:space:]]*[^\"]+,[[:space:]]*" rust-start-of-string-re))
       (1 'rust-builtin-formatting-macro-face)
       (rust-string-interpolation-matcher
        (rust-end-of-string)
@@ -694,13 +733,13 @@ Returns nil if the point is not within a Rust string."
       1 font-lock-preprocessor-face)
 
      ;; Field names like `foo:`, highlight excluding the :
-     (,(concat (rust-re-grab rust-re-ident) ":[^:]") 1 font-lock-variable-name-face)
+     (,(concat (rust-re-grab rust-re-ident) "[[:space:]]*:[^:]") 1 font-lock-variable-name-face)
 
      ;; CamelCase Means Type Or Constructor
      (,rust-re-type-or-constructor 1 font-lock-type-face)
 
      ;; Type-inferred binding
-     (,(concat "\\_<\\(?:let\\s-+ref\\|let\\|ref\\)\\s-+\\(?:mut\\s-+\\)?" (rust-re-grab rust-re-ident) "\\_>") 1 font-lock-variable-name-face)
+     (,(concat "\\_<\\(?:let\\s-+ref\\|let\\|ref\\|for\\)\\s-+\\(?:mut\\s-+\\)?" (rust-re-grab rust-re-ident) "\\_>") 1 font-lock-variable-name-face)
 
      ;; Type names like `Foo::`, highlight excluding the ::
      (,(rust-path-font-lock-matcher rust-re-uc-ident) 1 font-lock-type-face)
@@ -1042,6 +1081,13 @@ This wraps the default defined by `electric-pair-inhibit-predicate'."
        (rust-is-lt-char-operator)))
    (funcall (default-value 'electric-pair-inhibit-predicate) char)))
 
+(defun rust-electric-pair-skip-self-wrap (char)
+  "Skip CHAR instead of inserting a second closing character.
+This wraps the default defined by `electric-pair-skip-self'."
+  (or
+   (= ?> char)
+   (funcall (default-value 'electric-pair-skip-self) char)))
+
 (defun rust-ordinary-lt-gt-p ()
   "Test whether the `<' or `>' at point is an ordinary operator of some kind.
 
@@ -1352,8 +1398,14 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
     (erase-buffer)
     (insert-buffer-substring buf)
     (let* ((tmpf (make-temp-file "rustfmt"))
-           (ret (call-process-region (point-min) (point-max) rust-rustfmt-bin
-                                     t `(t ,tmpf) nil)))
+           (ret (apply 'call-process-region
+                       (point-min)
+                       (point-max)
+                       rust-rustfmt-bin
+                       t
+                       `(t ,tmpf)
+                       nil
+                       rust-rustfmt-switches)))
       (unwind-protect
           (cond
            ((zerop ret)
@@ -1456,6 +1508,39 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
             (forward-char columns)))
         (min (point) max-pos)))))
 
+(defun rust-format-diff-buffer ()
+  "Show diff to current buffer from rustfmt.
+
+Return the created process."
+  (interactive)
+  (unless (executable-find rust-rustfmt-bin)
+    (error "Could not locate executable \%s\"" rust-rustfmt-bin))
+  (let* ((buffer
+          (with-current-buffer
+              (get-buffer-create "*rustfmt-diff*")
+            (let ((inhibit-read-only t))
+              (erase-buffer))
+            (current-buffer)))
+         (proc
+          (apply 'start-process
+                 "rustfmt-diff"
+                 buffer
+                 rust-rustfmt-bin
+                 "--check"
+                 (cons (buffer-file-name)
+                       rust-rustfmt-switches))))
+    (set-process-sentinel proc 'rust-format-diff-buffer-sentinel)
+    proc))
+
+(defun rust-format-diff-buffer-sentinel (process _e)
+  (when (eq 'exit (process-status process))
+    (if (> (process-exit-status process) 0)
+        (with-current-buffer "*rustfmt-diff*"
+          (let ((inhibit-read-only t))
+            (diff-mode))
+          (pop-to-buffer (current-buffer)))
+      (message "rustfmt check passed."))))
+
 (defun rust-format-buffer ()
   "Format the current buffer using rustfmt."
   (interactive)
@@ -1519,21 +1604,22 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
 (defun rust-compile ()
   "Compile using `cargo build`"
   (interactive)
-  (compile "cargo build"))
+  (compile (format "%s build" rust-cargo-bin)))
 
 (defun rust-run ()
   "Run using `cargo run`"
   (interactive)
-  (compile "cargo run"))
+  (compile (format "%s run" rust-cargo-bin)))
 
 (defun rust-test ()
   "Test using `cargo test`"
   (interactive)
-  (compile "cargo test"))
+  (compile (format "%s test" rust-cargo-bin)))
 
 (defvar rust-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-c C-f") 'rust-format-buffer)
+    (define-key map (kbd "C-c C-d") 'rust-dbg-wrap-or-unwrap)
     map)
   "Keymap for Rust major mode.")
 
@@ -1560,7 +1646,6 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
   ;; Misc
   (setq-local comment-start "// ")
   (setq-local comment-end   "")
-  (setq-local indent-tabs-mode nil)
   (setq-local open-paren-in-column-0-is-defun-start nil)
 
   ;; Auto indent on }
@@ -1586,6 +1671,7 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
   (setq-local end-of-defun-function 'rust-end-of-defun)
   (setq-local parse-sexp-lookup-properties t)
   (setq-local electric-pair-inhibit-predicate 'rust-electric-pair-inhibit-predicate-wrap)
+  (setq-local electric-pair-skip-self 'rust-electric-pair-skip-self-wrap)
 
   (add-hook 'before-save-hook 'rust-before-save-hook nil t)
   (add-hook 'after-save-hook 'rust-after-save-hook nil t)
@@ -1618,8 +1704,8 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
 (defvar rustc-compilation-regexps
   (let ((file "\\([^\n]+\\)")
         (start-line "\\([0-9]+\\)")
-        (start-col  "\\([0-9]+\\)"))
-    (let ((re (concat "^\\(?:error\\|\\(warning\\)\\)[^-]+--> \\(" file ":" start-line ":" start-col "\\)")))
+        (start-col "\\([0-9]+\\)"))
+    (let ((re (concat "^\\(?:error\\|\\(warning\\)\\)[^\0]+?--> \\(" file ":" start-line ":" start-col "\\)")))
       (cons re '(3 4 5 (1) 2))))
   "Specifications for matching errors in rustc invocations.
 See `compilation-error-regexp-alist' for help on their format.")
@@ -1751,6 +1837,111 @@ visit the new file."
       (goto-char 0)
       (let ((output (json-read)))
         (cdr (assoc-string "root" output))))))
+
+(defun rust-insert-dbg ()
+  "Insert the dbg! macro."
+  (cond ((region-active-p)
+         (when (< (mark) (point))
+           (exchange-point-and-mark))
+         (let ((old-point (point)))
+           (insert-parentheses)
+           (goto-char old-point)))
+        (t
+         (when (rust-in-str)
+           (rust--up-list -1 t t))
+         (insert "(")
+         (forward-sexp)
+         (insert ")")
+         (backward-sexp)))
+  (insert "dbg!"))
+
+(defun rust--up-list (&optional arg escape-strings no-syntax-crossing)
+  "Compatibility for emacs 24."
+  (or arg (setq arg 1))
+  (let ((inc (if (> arg 0) 1 -1))
+        (pos nil))
+    (while (/= arg 0)
+      (condition-case err
+          (save-restriction
+            ;; If we've been asked not to cross string boundaries
+            ;; and we're inside a string, narrow to that string so
+            ;; that scan-lists doesn't find a match in a different
+            ;; string.
+            (when no-syntax-crossing
+              (let* ((syntax (syntax-ppss))
+                     (string-comment-start (nth 8 syntax)))
+                (when string-comment-start
+                  (save-excursion
+                    (goto-char string-comment-start)
+                    (narrow-to-region
+                     (point)
+                     (if (nth 3 syntax) ; in string
+                         (condition-case nil
+                             (progn (forward-sexp) (point))
+                           (scan-error (point-max)))
+                       (forward-comment 1)
+                       (point)))))))
+            (if (null forward-sexp-function)
+                (goto-char (or (scan-lists (point) inc 1)
+                               (buffer-end arg)))
+              (condition-case err
+                  (while (progn (setq pos (point))
+                                (forward-sexp inc)
+                                (/= (point) pos)))
+                (scan-error (goto-char (nth (if (> arg 0) 3 2) err))))
+              (if (= (point) pos)
+                  (signal 'scan-error
+                          (list "Unbalanced parentheses" (point) (point))))))
+        (scan-error
+         (let ((syntax nil))
+           (or
+            ;; If we bumped up against the end of a list, see whether
+            ;; we're inside a string: if so, just go to the beginning
+            ;; or end of that string.
+            (and escape-strings
+                 (or syntax (setf syntax (syntax-ppss)))
+                 (nth 3 syntax)
+                 (goto-char (nth 8 syntax))
+                 (progn (when (> inc 0)
+                          (forward-sexp))
+                        t))
+            ;; If we narrowed to a comment above and failed to escape
+            ;; it, the error might be our fault, not an indication
+            ;; that we're out of syntax.  Try again from beginning or
+            ;; end of the comment.
+            (and no-syntax-crossing
+                 (or syntax (setf syntax (syntax-ppss)))
+                 (nth 4 syntax)
+                 (goto-char (nth 8 syntax))
+                 (or (< inc 0)
+                     (forward-comment 1))
+                 (setf arg (+ arg inc)))
+            (signal (car err) (cdr err))))))
+      (setq arg (- arg inc)))))
+
+;;;###autoload
+(defun rust-dbg-wrap-or-unwrap ()
+  "Either remove or add the dbg! macro."
+  (interactive)
+  (save-excursion
+    (if (region-active-p)
+        (rust-insert-dbg)
+
+      (let ((beginning-of-symbol (ignore-errors (beginning-of-thing 'symbol))))
+        (when beginning-of-symbol
+          (goto-char beginning-of-symbol)))
+
+      (let ((dbg-point (save-excursion
+                         (or (and (looking-at-p "dbg!") (+ 4 (point)))
+                             (ignore-errors
+                               (while (not (rust-looking-back-str "dbg!"))
+                                 (backward-up-list))
+                               (point))))))
+        (cond (dbg-point
+               (goto-char dbg-point)
+               (delete-char -4)
+               (delete-pair))
+              (t (rust-insert-dbg)))))))
 
 (provide 'rust-mode)
 
