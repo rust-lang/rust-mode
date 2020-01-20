@@ -179,7 +179,8 @@ to the function arguments.  When nil, `->' will be indented one level."
   :type 'string
   :group 'rust-mode)
 
-(defcustom rust-match-angle-brackets t
+;; TODO: this option seems to cause signifcant slowdowns when set to t
+(defcustom rust-match-angle-brackets nil
   "Whether to attempt angle bracket matching (`<' and `>') where appropriate."
   :type 'boolean
   :safe #'booleanp
