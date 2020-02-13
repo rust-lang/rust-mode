@@ -180,6 +180,7 @@ to the function arguments.  When nil, `->' will be indented one level."
   "Format string to use when submitting code to the playpen."
   :type 'string
   :group 'rust-mode)
+
 (defcustom rust-shortener-url-format "https://is.gd/create.php?format=simple&url=%s"
   "Format string to use for creating the shortened link of a playpen submission."
   :type 'string
@@ -254,7 +255,6 @@ to the function arguments.  When nil, `->' will be indented one level."
         ;; Rewind until the point no longer moves
         (setq continue (/= starting (point)))))))
 
-
 (defun rust-in-macro ()
   (save-excursion
     (when (> (rust-paren-level) 0)
@@ -266,8 +266,7 @@ to the function arguments.  When nil, `->' will be indented one level."
                  (backward-sexp)
                  (rust-rewind-irrelevant)
                  (rust-looking-back-str "macro_rules!")))
-          (rust-in-macro))
-      )))
+          (rust-in-macro)))))
 
 (defun rust-looking-at-where ()
   "Return T when looking at the \"where\" keyword."
@@ -587,7 +586,6 @@ buffer."
   (save-excursion (= (progn (goto-char pos1) (line-end-position))
                      (progn (goto-char pos2) (line-end-position)))))
 
-
 ;; Font-locking definitions and helpers
 (defconst rust-mode-keywords
   '("as" "async" "await"
@@ -644,7 +642,6 @@ buffer."
           (rust-re-item-def itype)))
 
 (defconst rust-re-special-types (regexp-opt rust-special-types 'symbols))
-
 
 (defun rust-path-font-lock-matcher (re-ident)
   "Match occurrences of RE-IDENT followed by a double-colon.
@@ -874,15 +871,12 @@ after the point.
 This function is used as part of `rust-is-lt-char-operator' as
 part of angle bracket matching, and is not intended to be used
 outside of this context."
-
   (save-excursion
     (let ((postchar (char-after)))
       (rust-rewind-irrelevant)
-
       ;; A type alias or ascription could have a type param list.  Skip backwards past it.
       (when (member token '(ambiguous-operator open-brace))
         (rust-rewind-type-param-list))
-
       (cond
 
        ;; Certain keywords always introduce expressions
@@ -1007,13 +1001,10 @@ outside of this context."
                 (rust-rewind-qualified-ident)
                 (rust-is-in-expression-context 'ident))))
 
-
            ;; Otherwise, if the ident: appeared with anything other than , or {
            ;; before it, it can't be part of a struct initializer and therefore
            ;; must be denoting a type.
-           (t nil)
-           ))
-         ))
+           (t nil)))))
 
        ;; An operator-like character after a string is indeed an operator
        ((and (equal token 'ambiguous-operator)
@@ -1058,8 +1049,7 @@ outside of this context."
        ;; These operators always introduce expressions.  (Note that if this
        ;; regexp finds a < it must not be an angle bracket, or it'd
        ;; have been caught in the syntax-class check above instead of this.)
-       ((looking-back rust-re-pre-expression-operators (1- (point))) t)
-       ))))
+       ((looking-back rust-re-pre-expression-operators (1- (point))) t)))))
 
 (defun rust-is-lt-char-operator ()
   "Return t if the `<' after the point is the less-than operator.
@@ -1166,13 +1156,13 @@ should be considered a paired angle bracket."
 
 (defun rust-mode-syntactic-face-function (state)
   "Return face which distinguishes doc and normal comments in the given syntax STATE."
-  (if (nth 3 state) 'font-lock-string-face
+  (if (nth 3 state)
+      'font-lock-string-face
     (save-excursion
       (goto-char (nth 8 state))
       (if (looking-at "/\\([*][*!][^*!]\\|/[/!][^/!]\\)")
           'font-lock-doc-face
-        'font-lock-comment-face
-        ))))
+        'font-lock-comment-face))))
 
 (eval-and-compile
   (defconst rust--char-literal-rx
@@ -1185,8 +1175,7 @@ should be considered a paired angle bracket."
             (: "u{" (** 1 6 xdigit) "}")
             (: "x" (= 2 xdigit))
             (any "'nrt0\"\\")))
-          (not (any "'\\"))
-          )
+          (not (any "'\\")))
          (group "'")))
     "A regular expression matching a character literal."))
 
@@ -1364,6 +1353,7 @@ This handles multi-line comments with a * prefix on each line."
    (lambda () (comment-indent-new-line arg))))
 
 ;;; Imenu support
+
 (defvar rust-imenu-generic-expression
   (append (mapcar #'(lambda (x)
                       (list (capitalize x) (rust-re-item-def-imenu x) 1))
@@ -1810,8 +1800,8 @@ the compilation window until the top of the error is visible."
      (add-to-list 'compilation-error-regexp-alist 'cargo)
      (add-hook 'next-error-hook 'rustc-scroll-down-after-next-error)))
 
-;;; Functions to submit (parts of) buffers to the rust playpen, for
-;;; sharing.
+;;; Functions to submit (parts of) buffers to the rust playpen, for sharing.
+
 (defun rust-playpen-region (begin end)
   "Create a shareable URL for the region from BEGIN to END on the Rust playpen."
   (interactive "r")
