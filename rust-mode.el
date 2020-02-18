@@ -181,19 +181,6 @@ to the function arguments.  When nil, `->' will be indented one level."
           (rust-re-shy rust-re-generic) "?"
           "[[:space:]]+" (rust-re-grab rust-re-ident)))
 
-(defvar rust-top-item-beg-re
-  (concat "\\s-*"
-          ;; TODO some of this does only make sense for `fn' (unsafe, extern...)
-          ;; and not other items
-          (rust-re-shy (concat (rust-re-shy rust-re-vis) "[[:space:]]+")) "?"
-          (rust-re-shy (concat (rust-re-shy rust-re-async-or-const) "[[:space:]]+")) "?"
-          (rust-re-shy (concat (rust-re-shy rust-re-unsafe) "[[:space:]]+")) "?"
-          (regexp-opt
-           '("enum" "struct" "union" "type" "mod" "use" "fn" "static" "impl"
-             "extern" "trait"))
-          "\\_>")
-  "Start of a Rust item.")
-
 ;; TODO some of this does only make sense for `fn' (unsafe, extern...)
 ;; and not other items
 (defun rust-re-item-def-imenu (itype)
@@ -311,6 +298,174 @@ Use idomenu (imenu with `ido-mode') for best mileage.")
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.rs\\'" . rust-mode))
+
+(defvar rust-top-item-beg-re
+  (concat "\\s-*"
+          ;; TODO some of this does only make sense for `fn' (unsafe, extern...)
+          ;; and not other items
+          (rust-re-shy (concat (rust-re-shy rust-re-vis) "[[:space:]]+")) "?"
+          (rust-re-shy (concat (rust-re-shy rust-re-async-or-const) "[[:space:]]+")) "?"
+          (rust-re-shy (concat (rust-re-shy rust-re-unsafe) "[[:space:]]+")) "?"
+          (regexp-opt
+           '("enum" "struct" "union" "type" "mod" "use" "fn" "static" "impl"
+             "extern" "trait"))
+          "\\_>")
+  "Start of a Rust item.")
+
+(defconst rust-re-type-or-constructor
+  (rx symbol-start
+      (group upper (0+ (any word nonascii digit "_")))
+      symbol-end))
+
+(defconst rust-keywords
+  '("as" "async" "await"
+    "box" "break"
+    "const" "continue" "crate"
+    "do" "dyn"
+    "else" "enum" "extern"
+    "false" "fn" "for"
+    "if" "impl" "in"
+    "let" "loop"
+    "match" "mod" "move" "mut"
+    "priv" "pub"
+    "ref" "return"
+    "self" "static" "struct" "super"
+    "true" "trait" "type" "try"
+    "use"
+    "virtual"
+    "where" "while"
+    "yield")
+  "Font-locking definitions and helpers.")
+
+(defconst rust-special-types
+  '("u8" "i8"
+    "u16" "i16"
+    "u32" "i32"
+    "u64" "i64"
+    "u128" "i128"
+
+    "f32" "f64"
+    "isize" "usize"
+    "bool"
+    "str" "char"))
+
+(defvar rust-builtin-formatting-macros
+  '("eprint"
+    "eprintln"
+    "format"
+    "print"
+    "println")
+  "List of builtin Rust macros for string formatting.
+This is used by `rust-font-lock-keywords'.
+\(`write!' is handled separately).")
+
+(defvar rust-formatting-macro-opening-re
+  "[[:space:]\n]*[({[][[:space:]\n]*"
+  "Regular expression to match the opening delimiter of a Rust formatting macro.")
+
+(defvar rust-start-of-string-re
+  "\\(?:r#*\\)?\""
+  "Regular expression to match the start of a Rust raw string.")
+
+(defun rust-path-font-lock-matcher (re-ident)
+  "Match occurrences of RE-IDENT followed by a double-colon.
+Examples include to match names like \"foo::\" or \"Foo::\".
+Does not match type annotations of the form \"foo::<\"."
+  `(lambda (limit)
+     (catch 'rust-path-font-lock-matcher
+       (while t
+         (let* ((symbol-then-colons (rx-to-string '(seq (group (regexp ,re-ident)) "::")))
+                (match (re-search-forward symbol-then-colons limit t)))
+           (cond
+            ;; If we didn't find a match, there are no more occurrences
+            ;; of foo::, so return.
+            ((null match) (throw 'rust-path-font-lock-matcher nil))
+            ;; If this isn't a type annotation foo::<, we've found a
+            ;; match, so a return it!
+            ((not (looking-at (rx (0+ space) "<")))
+             (throw 'rust-path-font-lock-matcher match))))))))
+
+(defvar rust-font-lock-keywords
+  (append
+   `(
+     ;; Keywords proper
+     (,(regexp-opt rust-keywords 'symbols) . font-lock-keyword-face)
+
+     ;; Contextual keywords
+     ("\\_<\\(default\\)[[:space:]]+fn\\_>" 1 font-lock-keyword-face)
+     (,rust-re-union 1 font-lock-keyword-face)
+
+     ;; Special types
+     (,(regexp-opt rust-special-types 'symbols) . font-lock-type-face)
+
+     ;; The unsafe keyword
+     ("\\_<unsafe\\_>" . 'rust-unsafe-face)
+
+     ;; Attributes like `#[bar(baz)]` or `#![bar(baz)]` or `#[bar = "baz"]`
+     (,(rust-re-grab (concat "#\\!?\\[" rust-re-ident "[^]]*\\]"))
+      1 font-lock-preprocessor-face keep)
+
+     ;; Builtin formatting macros
+     (,(concat (rust-re-grab
+                (concat (rust-re-word (regexp-opt rust-builtin-formatting-macros))
+                        "!"))
+               (concat rust-formatting-macro-opening-re
+                       "\\(?:" rust-start-of-string-re) "\\)?")
+      (1 'rust-builtin-formatting-macro-face)
+      (rust-string-interpolation-matcher
+       (rust-end-of-string)
+       nil
+       (0 'rust-string-interpolation-face t nil)))
+
+     ;; write! macro
+     (,(concat (rust-re-grab (concat (rust-re-word "write\\(ln\\)?") "!"))
+               (concat rust-formatting-macro-opening-re
+                       "[[:space:]]*[^\"]+,[[:space:]]*" rust-start-of-string-re))
+      (1 'rust-builtin-formatting-macro-face)
+      (rust-string-interpolation-matcher
+       (rust-end-of-string)
+       nil
+       (0 'rust-string-interpolation-face t nil)))
+
+     ;; Syntax extension invocations like `foo!`, highlight including the !
+     (,(concat (rust-re-grab (concat rust-re-ident "!")) "[({[:space:][]")
+      1 font-lock-preprocessor-face)
+
+     ;; Field names like `foo:`, highlight excluding the :
+     (,(concat (rust-re-grab rust-re-ident) "[[:space:]]*:[^:]")
+      1 font-lock-variable-name-face)
+
+     ;; CamelCase Means Type Or Constructor
+     (,rust-re-type-or-constructor 1 font-lock-type-face)
+
+     ;; Type-inferred binding
+     (,(concat "\\_<\\(?:let\\s-+ref\\|let\\|ref\\|for\\)\\s-+\\(?:mut\\s-+\\)?"
+               (rust-re-grab rust-re-ident) "\\_>") 1 font-lock-variable-name-face)
+
+     ;; Type names like `Foo::`, highlight excluding the ::
+     (,(rust-path-font-lock-matcher rust-re-uc-ident) 1 font-lock-type-face)
+
+     ;; Module names like `foo::`, highlight excluding the ::
+     (,(rust-path-font-lock-matcher rust-re-lc-ident) 1 font-lock-constant-face)
+
+     ;; Lifetimes like `'foo`
+     (,(concat "'" (rust-re-grab rust-re-ident) "[^']") 1 font-lock-variable-name-face)
+
+     ;; Question mark operator
+     ("\\?" . 'rust-question-mark-face)
+     )
+
+   ;; Ensure we highlight `Foo` in `struct Foo` as a type.
+   (mapcar #'(lambda (x)
+               (list (rust-re-item-def (car x))
+                     1 (cdr x)))
+           '(("enum" . font-lock-type-face)
+             ("struct" . font-lock-type-face)
+             ("union" . font-lock-type-face)
+             ("type" . font-lock-type-face)
+             ("mod" . font-lock-constant-face)
+             ("use" . font-lock-constant-face)
+             ("fn" . font-lock-function-name-face)))))
 
 (defun rust-looking-back-str (str)
   "Return non-nil if there's a match on the text before point and STR.
@@ -468,6 +623,10 @@ buffer."
     (if (rust-in-str-or-cmnt)
         (rust-rewind-to-where limit)
       t)))
+
+(defconst rust-re-pre-expression-operators "[-=!%&*/:<>[{(|.^;}]")
+
+(defconst rust-re-special-types (regexp-opt rust-special-types 'symbols))
 
 (defun rust-align-to-expr-after-brace ()
   (save-excursion
@@ -773,65 +932,6 @@ buffer."
                      (progn (goto-char pos2) (line-end-position)))))
 
 ;; Font-locking definitions and helpers
-(defconst rust-keywords
-  '("as" "async" "await"
-    "box" "break"
-    "const" "continue" "crate"
-    "do" "dyn"
-    "else" "enum" "extern"
-    "false" "fn" "for"
-    "if" "impl" "in"
-    "let" "loop"
-    "match" "mod" "move" "mut"
-    "priv" "pub"
-    "ref" "return"
-    "self" "static" "struct" "super"
-    "true" "trait" "type" "try"
-    "use"
-    "virtual"
-    "where" "while"
-    "yield")
-  "Font-locking definitions and helpers.")
-
-(defconst rust-special-types
-  '("u8" "i8"
-    "u16" "i16"
-    "u32" "i32"
-    "u64" "i64"
-    "u128" "i128"
-
-    "f32" "f64"
-    "isize" "usize"
-    "bool"
-    "str" "char"))
-
-(defconst rust-re-type-or-constructor
-  (rx symbol-start
-      (group upper (0+ (any word nonascii digit "_")))
-      symbol-end))
-
-(defconst rust-re-pre-expression-operators "[-=!%&*/:<>[{(|.^;}]")
-
-(defconst rust-re-special-types (regexp-opt rust-special-types 'symbols))
-
-(defun rust-path-font-lock-matcher (re-ident)
-  "Match occurrences of RE-IDENT followed by a double-colon.
-Examples include to match names like \"foo::\" or \"Foo::\".
-Does not match type annotations of the form \"foo::<\"."
-  `(lambda (limit)
-     (catch 'rust-path-font-lock-matcher
-       (while t
-         (let* ((symbol-then-colons (rx-to-string '(seq (group (regexp ,re-ident)) "::")))
-                (match (re-search-forward symbol-then-colons limit t)))
-           (cond
-            ;; If we didn't find a match, there are no more occurrences
-            ;; of foo::, so return.
-            ((null match) (throw 'rust-path-font-lock-matcher nil))
-            ;; If this isn't a type annotation foo::<, we've found a
-            ;; match, so a return it!
-            ((not (looking-at (rx (0+ space) "<")))
-             (throw 'rust-path-font-lock-matcher match))))))))
-
 (defun rust-next-string-interpolation (limit)
   "Search forward from point for next Rust interpolation marker before LIMIT.
 Set point to the end of the occurrence found, and return match beginning
@@ -862,106 +962,6 @@ Returns nil if not within a Rust string."
         (set-match-data match)
         (goto-char (cadr match))
         match))))
-
-(defvar rust-builtin-formatting-macros
-  '("eprint"
-    "eprintln"
-    "format"
-    "print"
-    "println")
-  "List of builtin Rust macros for string formatting.
-This is used by `rust-font-lock-keywords'.
-\(`write!' is handled separately).")
-
-(defvar rust-formatting-macro-opening-re
-  "[[:space:]\n]*[({[][[:space:]\n]*"
-  "Regular expression to match the opening delimiter of a Rust formatting macro.")
-
-(defvar rust-start-of-string-re
-  "\\(?:r#*\\)?\""
-  "Regular expression to match the start of a Rust raw string.")
-
-(defvar rust-font-lock-keywords
-  (append
-   `(
-     ;; Keywords proper
-     (,(regexp-opt rust-keywords 'symbols) . font-lock-keyword-face)
-
-     ;; Contextual keywords
-     ("\\_<\\(default\\)[[:space:]]+fn\\_>" 1 font-lock-keyword-face)
-     (,rust-re-union 1 font-lock-keyword-face)
-
-     ;; Special types
-     (,(regexp-opt rust-special-types 'symbols) . font-lock-type-face)
-
-     ;; The unsafe keyword
-     ("\\_<unsafe\\_>" . 'rust-unsafe-face)
-
-     ;; Attributes like `#[bar(baz)]` or `#![bar(baz)]` or `#[bar = "baz"]`
-     (,(rust-re-grab (concat "#\\!?\\[" rust-re-ident "[^]]*\\]"))
-      1 font-lock-preprocessor-face keep)
-
-     ;; Builtin formatting macros
-     (,(concat (rust-re-grab
-                (concat (rust-re-word (regexp-opt rust-builtin-formatting-macros))
-                        "!"))
-               (concat rust-formatting-macro-opening-re
-                       "\\(?:" rust-start-of-string-re) "\\)?")
-      (1 'rust-builtin-formatting-macro-face)
-      (rust-string-interpolation-matcher
-       (rust-end-of-string)
-       nil
-       (0 'rust-string-interpolation-face t nil)))
-
-     ;; write! macro
-     (,(concat (rust-re-grab (concat (rust-re-word "write\\(ln\\)?") "!"))
-               (concat rust-formatting-macro-opening-re
-                       "[[:space:]]*[^\"]+,[[:space:]]*" rust-start-of-string-re))
-      (1 'rust-builtin-formatting-macro-face)
-      (rust-string-interpolation-matcher
-       (rust-end-of-string)
-       nil
-       (0 'rust-string-interpolation-face t nil)))
-
-     ;; Syntax extension invocations like `foo!`, highlight including the !
-     (,(concat (rust-re-grab (concat rust-re-ident "!")) "[({[:space:][]")
-      1 font-lock-preprocessor-face)
-
-     ;; Field names like `foo:`, highlight excluding the :
-     (,(concat (rust-re-grab rust-re-ident) "[[:space:]]*:[^:]")
-      1 font-lock-variable-name-face)
-
-     ;; CamelCase Means Type Or Constructor
-     (,rust-re-type-or-constructor 1 font-lock-type-face)
-
-     ;; Type-inferred binding
-     (,(concat "\\_<\\(?:let\\s-+ref\\|let\\|ref\\|for\\)\\s-+\\(?:mut\\s-+\\)?"
-               (rust-re-grab rust-re-ident) "\\_>") 1 font-lock-variable-name-face)
-
-     ;; Type names like `Foo::`, highlight excluding the ::
-     (,(rust-path-font-lock-matcher rust-re-uc-ident) 1 font-lock-type-face)
-
-     ;; Module names like `foo::`, highlight excluding the ::
-     (,(rust-path-font-lock-matcher rust-re-lc-ident) 1 font-lock-constant-face)
-
-     ;; Lifetimes like `'foo`
-     (,(concat "'" (rust-re-grab rust-re-ident) "[^']") 1 font-lock-variable-name-face)
-
-     ;; Question mark operator
-     ("\\?" . 'rust-question-mark-face)
-     )
-
-   ;; Ensure we highlight `Foo` in `struct Foo` as a type.
-   (mapcar #'(lambda (x)
-               (list (rust-re-item-def (car x))
-                     1 (cdr x)))
-           '(("enum" . font-lock-type-face)
-             ("struct" . font-lock-type-face)
-             ("union" . font-lock-type-face)
-             ("type" . font-lock-type-face)
-             ("mod" . font-lock-constant-face)
-             ("use" . font-lock-constant-face)
-             ("fn" . font-lock-function-name-face)))))
 
 (defun rust-syntax-class-before-point ()
   (when (> (point) 1)
@@ -1908,12 +1908,6 @@ Return the created process."
   (interactive)
   (compile (format "%s test" rust-cargo-bin)))
 
-(defun rust-mode-reload ()
-  (interactive)
-  (unload-feature 'rust-mode)
-  (require 'rust-mode)
-  (rust-mode))
-
 (defun rust-before-save-hook ()
   (when rust-format-on-save
     (condition-case e
@@ -2121,6 +2115,12 @@ visit the new file."
                (delete-char -4)
                (delete-pair))
               (t (rust-insert-dbg)))))))
+
+(defun rust-mode-reload ()
+  (interactive)
+  (unload-feature 'rust-mode)
+  (require 'rust-mode)
+  (rust-mode))
 
 (provide 'rust-mode)
 ;; Local Variables:
