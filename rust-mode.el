@@ -77,7 +77,8 @@
           (regexp-opt
            '("enum" "struct" "union" "type" "mod" "use" "fn" "static" "impl"
              "extern" "trait"))
-          "\\_>"))
+          "\\_>")
+  "Start of a Rust item.")
 
 (defun rust-looking-back-str (str)
   "Return non-nil if there's a match on the text before point and STR.
@@ -141,7 +142,8 @@ seen as a macro."
     (modify-syntax-entry ?\n "> b"    table)
     (modify-syntax-entry ?\^m "> b"   table)
 
-    table))
+    table)
+  "Syntax definitions and helpers.")
 
 (defgroup rust-mode nil
   "Support for Rust code."
@@ -185,7 +187,7 @@ to the function arguments.  When nil, `->' will be indented one level."
   :group 'rust-mode)
 
 (defcustom rust-match-angle-brackets t
-  "Whether to attempt angle bracket matching (`<' and `>') where appropriate."
+  "Whether to enable angle bracket (`<' and `>') matching where appropriate."
   :type 'boolean
   :safe #'booleanp
   :group 'rust-mode)
@@ -686,7 +688,8 @@ buffer."
     "use"
     "virtual"
     "where" "while"
-    "yield"))
+    "yield")
+  "Font-locking definitions and helpers.")
 
 (defconst rust-special-types
   '("u8" "i8"
@@ -744,7 +747,7 @@ Does not match type annotations of the form \"foo::<\"."
              (throw 'rust-path-font-lock-matcher match))))))))
 
 (defun rust-next-string-interpolation (limit)
-  "Search forward from point for the next Rust interpolation marker before LIMIT.
+  "Search forward from point for next Rust interpolation marker before LIMIT.
 Set point to the end of the occurrence found, and return match beginning
 and end."
   (catch 'match
@@ -765,8 +768,8 @@ and end."
                 (throw 'match (list start (point)))))))))))
 
 (defun rust-string-interpolation-matcher (limit)
-  "Match the next Rust interpolation marker before LIMIT; set match data if found.
-Returns nil if the point is not within a Rust string."
+  "Match next Rust interpolation marker before LIMIT and set match data if found.
+Returns nil if not within a Rust string."
   (when (rust-in-str)
     (let ((match (rust-next-string-interpolation limit)))
       (when match
@@ -782,7 +785,7 @@ Returns nil if the point is not within a Rust string."
     "println")
   "List of builtin Rust macros for string formatting.
 This is used by `rust-font-lock-keywords'.
-(`write!' is handled separately).")
+\(`write!' is handled separately).")
 
 (defvar rust-formatting-macro-opening-re
   "[[:space:]\n]*[({[][[:space:]\n]*"
@@ -916,7 +919,6 @@ I.e. if we are before an ident that is part of a declaration that
 can have a where clause, rewind back to just before the name of
 the subject of that where clause and return the new point.
 Otherwise return nil."
-
   (let* ((ident-pos (point))
          (newpos (save-excursion
                    (rust-rewind-irrelevant)
@@ -1134,9 +1136,8 @@ outside of this context."
        ((looking-back rust-re-pre-expression-operators (1- (point))) t)))))
 
 (defun rust-is-lt-char-operator ()
-  "Return t if the `<' after the point is the less-than operator.
-Otherwise, for instance if it's an opening angle bracket, return nil."
-
+  "Return non-nil if the `<' sign just after point is an operator.
+Otherwise, if it is an opening angle bracket, then return nil."
   (let ((case-fold-search nil))
     (save-excursion
       (rust-rewind-irrelevant)
@@ -1239,7 +1240,7 @@ should be considered a paired angle bracket."
       (/= (following-char) ?<)))))
 
 (defun rust-mode-syntactic-face-function (state)
-  "Return face which distinguishes doc and normal comments in the given syntax STATE."
+  "Return face that distinguishes doc and normal comments in given syntax STATE."
   (if (nth 3 state)
       'font-lock-string-face
     (save-excursion
