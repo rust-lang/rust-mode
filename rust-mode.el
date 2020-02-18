@@ -669,7 +669,7 @@ buffer."
                      (progn (goto-char pos2) (line-end-position)))))
 
 ;; Font-locking definitions and helpers
-(defconst rust-mode-keywords
+(defconst rust-keywords
   '("as" "async" "await"
     "box" "break"
     "const" "continue" "crate"
@@ -796,7 +796,7 @@ This is used by `rust-font-lock-keywords'.
   (append
    `(
      ;; Keywords proper
-     (,(regexp-opt rust-mode-keywords 'symbols) . font-lock-keyword-face)
+     (,(regexp-opt rust-keywords 'symbols) . font-lock-keyword-face)
 
      ;; Contextual keywords
      ("\\_<\\(default\\)[[:space:]]+fn\\_>" 1 font-lock-keyword-face)
@@ -1162,7 +1162,7 @@ Otherwise, for instance if it's an opening angle bracket, return nil."
 
        ;; If we are looking back at a keyword, it's an angle bracket
        ;; unless that keyword is "self", "true" or "false"
-       ((rust-looking-back-symbols rust-mode-keywords)
+       ((rust-looking-back-symbols rust-keywords)
         (rust-looking-back-symbols '("self" "true" "false")))
 
        ((rust-looking-back-str "?")
