@@ -28,6 +28,115 @@
 (defvar rust-buffer-project nil)
 (make-variable-buffer-local 'rust-buffer-project)
 
+;;; Customization
+
+(defgroup rust-mode nil
+  "Support for Rust code."
+  :link '(url-link "https://www.rust-lang.org/")
+  :group 'languages)
+
+(defcustom rust-indent-offset 4
+  "Indent Rust code by this number of spaces."
+  :type 'integer
+  :group 'rust-mode
+  :safe #'integerp)
+
+(defcustom rust-indent-method-chain nil
+  "Indent Rust method chains, aligned by the `.' operators."
+  :type 'boolean
+  :group 'rust-mode
+  :safe #'booleanp)
+
+(defcustom rust-indent-where-clause nil
+  "Indent lines starting with the `where' keyword following a function or trait.
+When nil, `where' will be aligned with `fn' or `trait'."
+  :type 'boolean
+  :group 'rust-mode
+  :safe #'booleanp)
+
+(defcustom rust-playpen-url-format "https://play.rust-lang.org/?code=%s"
+  "Format string to use when submitting code to the playpen."
+  :type 'string
+  :group 'rust-mode)
+
+(defcustom rust-shortener-url-format "https://is.gd/create.php?format=simple&url=%s"
+  "Format string to use for creating the shortened link of a playpen submission."
+  :type 'string
+  :group 'rust-mode)
+
+(defcustom rust-match-angle-brackets t
+  "Whether to enable angle bracket (`<' and `>') matching where appropriate."
+  :type 'boolean
+  :safe #'booleanp
+  :group 'rust-mode)
+
+(defcustom rust-format-on-save nil
+  "Format future rust buffers before saving using rustfmt."
+  :type 'boolean
+  :safe #'booleanp
+  :group 'rust-mode)
+
+(defcustom rust-format-show-buffer t
+  "Show *rustfmt* buffer if formatting detected problems."
+  :type 'boolean
+  :safe #'booleanp
+  :group 'rust-mode)
+
+(defcustom rust-format-goto-problem t
+  "Jump to location of first detected problem when formatting buffer."
+  :type 'boolean
+  :safe #'booleanp
+  :group 'rust-mode)
+
+(defcustom rust-rustfmt-bin "rustfmt"
+  "Path to rustfmt executable."
+  :type 'string
+  :group 'rust-mode)
+
+(defcustom rust-rustfmt-switches '("--edition" "2018")
+  "Arguments to pass when invoking the `rustfmt' executable."
+  :type '(repeat string)
+  :group 'rust-mode)
+
+(defcustom rust-cargo-bin "cargo"
+  "Path to cargo executable."
+  :type 'string
+  :group 'rust-mode)
+
+(defcustom rust-always-locate-project-on-open nil
+  "Whether to run `cargo locate-project' every time `rust-mode' is activated."
+  :type 'boolean
+  :group 'rust-mode)
+
+(defcustom rust-indent-return-type-to-arguments t
+  "Indent a line starting with the `->' (RArrow) following a function, aligning
+to the function arguments.  When nil, `->' will be indented one level."
+  :type 'boolean
+  :group 'rust-mode
+  :safe #'booleanp)
+
+;;; Faces
+
+(defface rust-unsafe-face
+  '((t :inherit font-lock-warning-face))
+  "Face for the `unsafe' keyword."
+  :group 'rust-mode)
+
+(defface rust-question-mark-face
+  '((t :weight bold :inherit font-lock-builtin-face))
+  "Face for the question mark operator."
+  :group 'rust-mode)
+
+(defface rust-builtin-formatting-macro-face
+  '((t :inherit font-lock-builtin-face))
+  "Face for builtin formatting macros (print! &c.)."
+  :group 'rust-mode)
+
+(defface rust-string-interpolation-face
+  '((t :slant italic :inherit font-lock-string-face))
+  "Face for interpolating braces in builtin formatting macro strings."
+  :group 'rust-mode)
+
 (defun rust-re-word (inner) (concat "\\<" inner "\\>"))
 (defun rust-re-grab (inner) (concat "\\(" inner "\\)"))
 (defun rust-re-shy (inner) (concat "\\(?:" inner "\\)"))
@@ -144,111 +253,6 @@ seen as a macro."
 
     table)
   "Syntax definitions and helpers.")
-
-(defgroup rust-mode nil
-  "Support for Rust code."
-  :link '(url-link "https://www.rust-lang.org/")
-  :group 'languages)
-
-(defcustom rust-indent-offset 4
-  "Indent Rust code by this number of spaces."
-  :type 'integer
-  :group 'rust-mode
-  :safe #'integerp)
-
-(defcustom rust-indent-method-chain nil
-  "Indent Rust method chains, aligned by the `.' operators."
-  :type 'boolean
-  :group 'rust-mode
-  :safe #'booleanp)
-
-(defcustom rust-indent-where-clause nil
-  "Indent lines starting with the `where' keyword following a function or trait.
-When nil, `where' will be aligned with `fn' or `trait'."
-  :type 'boolean
-  :group 'rust-mode
-  :safe #'booleanp)
-
-(defcustom rust-indent-return-type-to-arguments t
-  "Indent a line starting with the `->' (RArrow) following a function, aligning
-to the function arguments.  When nil, `->' will be indented one level."
-  :type 'boolean
-  :group 'rust-mode
-  :safe #'booleanp)
-
-(defcustom rust-playpen-url-format "https://play.rust-lang.org/?code=%s"
-  "Format string to use when submitting code to the playpen."
-  :type 'string
-  :group 'rust-mode)
-
-(defcustom rust-shortener-url-format "https://is.gd/create.php?format=simple&url=%s"
-  "Format string to use for creating the shortened link of a playpen submission."
-  :type 'string
-  :group 'rust-mode)
-
-(defcustom rust-match-angle-brackets t
-  "Whether to enable angle bracket (`<' and `>') matching where appropriate."
-  :type 'boolean
-  :safe #'booleanp
-  :group 'rust-mode)
-
-(defcustom rust-format-on-save nil
-  "Format future rust buffers before saving using rustfmt."
-  :type 'boolean
-  :safe #'booleanp
-  :group 'rust-mode)
-
-(defcustom rust-format-show-buffer t
-  "Show *rustfmt* buffer if formatting detected problems."
-  :type 'boolean
-  :safe #'booleanp
-  :group 'rust-mode)
-
-(defcustom rust-format-goto-problem t
-  "Jump to location of first detected problem when formatting buffer."
-  :type 'boolean
-  :safe #'booleanp
-  :group 'rust-mode)
-
-(defcustom rust-rustfmt-bin "rustfmt"
-  "Path to rustfmt executable."
-  :type 'string
-  :group 'rust-mode)
-
-(defcustom rust-rustfmt-switches '("--edition" "2018")
-  "Arguments to pass when invoking the `rustfmt' executable."
-  :type '(repeat string)
-  :group 'rust-mode)
-
-(defcustom rust-cargo-bin "cargo"
-  "Path to cargo executable."
-  :type 'string
-  :group 'rust-mode)
-
-(defcustom rust-always-locate-project-on-open nil
-  "Whether to run `cargo locate-project' every time `rust-mode' is activated."
-  :type 'boolean
-  :group 'rust-mode)
-
-(defface rust-unsafe-face
-  '((t :inherit font-lock-warning-face))
-  "Face for the `unsafe' keyword."
-  :group 'rust-mode)
-
-(defface rust-question-mark-face
-  '((t :weight bold :inherit font-lock-builtin-face))
-  "Face for the question mark operator."
-  :group 'rust-mode)
-
-(defface rust-builtin-formatting-macro-face
-  '((t :inherit font-lock-builtin-face))
-  "Face for builtin formatting macros (print! &c.)."
-  :group 'rust-mode)
-
-(defface rust-string-interpolation-face
-  '((t :slant italic :inherit font-lock-string-face))
-  "Face for interpolating braces in builtin formatting macro strings."
-  :group 'rust-mode)
 
 (defun rust-paren-level () (nth 0 (syntax-ppss)))
 (defun rust-in-str () (nth 3 (syntax-ppss)))
