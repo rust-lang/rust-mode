@@ -781,7 +781,7 @@ Returns nil if the point is not within a Rust string."
     "print"
     "println")
   "List of builtin Rust macros for string formatting.
-This is used by `rust-mode-font-lock-keywords'.
+This is used by `rust-font-lock-keywords'.
 (`write!' is handled separately).")
 
 (defvar rust-formatting-macro-opening-re
@@ -792,7 +792,7 @@ This is used by `rust-mode-font-lock-keywords'.
   "\\(?:r#*\\)?\""
   "Regular expression to match the start of a Rust raw string.")
 
-(defvar rust-mode-font-lock-keywords
+(defvar rust-font-lock-keywords
   (append
    `(
      ;; Keywords proper
@@ -1858,7 +1858,7 @@ Return the created process."
   (setq-local indent-line-function 'rust-mode-indent-line)
 
   ;; Fonts
-  (setq-local font-lock-defaults '(rust-mode-font-lock-keywords
+  (setq-local font-lock-defaults '(rust-font-lock-keywords
                                    nil nil nil nil
                                    (font-lock-syntactic-face-function
                                     . rust-mode-syntactic-face-function)))
