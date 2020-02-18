@@ -144,18 +144,6 @@ to the function arguments.  When nil, `->' will be indented one level."
 (defconst rust-re-ident "[[:word:][:multibyte:]_][[:word:][:multibyte:]_[:digit:]]*")
 (defconst rust-re-lc-ident "[[:lower:][:multibyte:]_][[:word:][:multibyte:]_[:digit:]]*")
 (defconst rust-re-uc-ident "[[:upper:]][[:word:][:multibyte:]_[:digit:]]*")
-(defconst rust-re-unsafe "unsafe")
-(defconst rust-re-extern "extern")
-(defconst rust-re-async-or-const "async\\|const")
-(defconst rust-re-generic
-  (concat "<[[:space:]]*'" rust-re-ident "[[:space:]]*>"))
-(defconst rust-re-union
-  (rx-to-string
-   `(seq
-     (or space line-start)
-     (group symbol-start "union" symbol-end)
-     (+ space) (regexp ,rust-re-ident))))
-
 (defvar rust-re-vis
   ;; pub | pub ( crate ) | pub ( self ) | pub ( super ) | pub ( in SimplePath )
   (concat
@@ -174,8 +162,23 @@ to the function arguments.  When nil, `->' will be indented one level."
                 (rust-re-shy (concat "::" rust-re-ident)) "*"))))
      "[[:space:]]*)"))
    "?"))
+(defconst rust-re-unsafe "unsafe")
+(defconst rust-re-extern "extern")
+(defconst rust-re-async-or-const "async\\|const")
+(defconst rust-re-generic
+  (concat "<[[:space:]]*'" rust-re-ident "[[:space:]]*>"))
+(defconst rust-re-union
+  (rx-to-string
+   `(seq
+     (or space line-start)
+     (group symbol-start "union" symbol-end)
+     (+ space) (regexp ,rust-re-ident))))
 
-;;; Start of a Rust item
+(defun rust-re-item-def (itype)
+  (concat (rust-re-word itype)
+          (rust-re-shy rust-re-generic) "?"
+          "[[:space:]]+" (rust-re-grab rust-re-ident)))
+
 (defvar rust-top-item-beg-re
   (concat "\\s-*"
           ;; TODO some of this does only make sense for `fn' (unsafe, extern...)
@@ -188,6 +191,18 @@ to the function arguments.  When nil, `->' will be indented one level."
              "extern" "trait"))
           "\\_>")
   "Start of a Rust item.")
+
+;; TODO some of this does only make sense for `fn' (unsafe, extern...)
+;; and not other items
+(defun rust-re-item-def-imenu (itype)
+  (concat "^[[:space:]]*"
+          (rust-re-shy (concat rust-re-vis "[[:space:]]+")) "?"
+          (rust-re-shy (concat (rust-re-word "default") "[[:space:]]+")) "?"
+          (rust-re-shy (concat (rust-re-shy rust-re-async-or-const) "[[:space:]]+")) "?"
+          (rust-re-shy (concat (rust-re-word rust-re-unsafe) "[[:space:]]+")) "?"
+          (rust-re-shy (concat (rust-re-word rust-re-extern) "[[:space:]]+"
+                               (rust-re-shy "\"[^\"]+\"[[:space:]]+") "?")) "?"
+          (rust-re-item-def itype)))
 
 (defun rust-looking-back-str (str)
   "Return non-nil if there's a match on the text before point and STR.
@@ -713,22 +728,6 @@ buffer."
       symbol-end))
 
 (defconst rust-re-pre-expression-operators "[-=!%&*/:<>[{(|.^;}]")
-(defun rust-re-item-def (itype)
-  (concat (rust-re-word itype)
-          (rust-re-shy rust-re-generic) "?"
-          "[[:space:]]+" (rust-re-grab rust-re-ident)))
-
-;; TODO some of this does only make sense for `fn' (unsafe, extern...)
-;; and not other items
-(defun rust-re-item-def-imenu (itype)
-  (concat "^[[:space:]]*"
-          (rust-re-shy (concat rust-re-vis "[[:space:]]+")) "?"
-          (rust-re-shy (concat (rust-re-word "default") "[[:space:]]+")) "?"
-          (rust-re-shy (concat (rust-re-shy rust-re-async-or-const) "[[:space:]]+")) "?"
-          (rust-re-shy (concat (rust-re-word rust-re-unsafe) "[[:space:]]+")) "?"
-          (rust-re-shy (concat (rust-re-word rust-re-extern) "[[:space:]]+"
-                               (rust-re-shy "\"[^\"]+\"[[:space:]]+") "?")) "?"
-          (rust-re-item-def itype)))
 
 (defconst rust-re-special-types (regexp-opt rust-special-types 'symbols))
 
