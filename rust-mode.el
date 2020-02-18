@@ -25,7 +25,7 @@
 (defvar electric-pair-skip-self)
 (defvar electric-indent-chars)
 
-(defvar rust-buffer-project)
+(defvar rust-buffer-project nil)
 (make-variable-buffer-local 'rust-buffer-project)
 
 (defun rust-re-word (inner) (concat "\\<" inner "\\>"))
