@@ -409,8 +409,8 @@ Does not match type annotations of the form \"foo::<\"."
      (,(concat (rust-re-grab
                 (concat (rust-re-word (regexp-opt rust-builtin-formatting-macros))
                         "!"))
-               (concat rust-formatting-macro-opening-re
-                       "\\(?:" rust-start-of-string-re) "\\)?")
+               rust-formatting-macro-opening-re
+               "\\(?:" rust-start-of-string-re "\\)?")
       (1 'rust-builtin-formatting-macro-face)
       (rust-string-interpolation-matcher
        (rust-end-of-string)
@@ -419,8 +419,9 @@ Does not match type annotations of the form \"foo::<\"."
 
      ;; write! macro
      (,(concat (rust-re-grab (concat (rust-re-word "write\\(ln\\)?") "!"))
-               (concat rust-formatting-macro-opening-re
-                       "[[:space:]]*[^\"]+,[[:space:]]*" rust-start-of-string-re))
+               rust-formatting-macro-opening-re
+               "[[:space:]]*[^\"]+,[[:space:]]*"
+               rust-start-of-string-re)
       (1 'rust-builtin-formatting-macro-face)
       (rust-string-interpolation-matcher
        (rust-end-of-string)
@@ -440,7 +441,9 @@ Does not match type annotations of the form \"foo::<\"."
 
      ;; Type-inferred binding
      (,(concat "\\_<\\(?:let\\s-+ref\\|let\\|ref\\|for\\)\\s-+\\(?:mut\\s-+\\)?"
-               (rust-re-grab rust-re-ident) "\\_>") 1 font-lock-variable-name-face)
+               (rust-re-grab rust-re-ident)
+               "\\_>")
+      1 font-lock-variable-name-face)
 
      ;; Type names like `Foo::`, highlight excluding the ::
      (,(rust-path-font-lock-matcher rust-re-uc-ident) 1 font-lock-type-face)
