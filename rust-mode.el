@@ -137,6 +137,8 @@ to the function arguments.  When nil, `->' will be indented one level."
   "Face for interpolating braces in builtin formatting macro strings."
   :group 'rust-mode)
 
+;;; Rust-mode
+
 (defun rust-re-word (inner) (concat "\\<" inner "\\>"))
 (defun rust-re-grab (inner) (concat "\\(" inner "\\)"))
 (defun rust-re-shy (inner) (concat "\\(?:" inner "\\)"))
@@ -202,7 +204,113 @@ to the function arguments.  When nil, `->' will be indented one level."
           (rust-re-shy (concat (rust-re-word rust-re-unsafe) "[[:space:]]+")) "?"
           (rust-re-shy (concat (rust-re-word rust-re-extern) "[[:space:]]+"
                                (rust-re-shy "\"[^\"]+\"[[:space:]]+") "?")) "?"
-          (rust-re-item-def itype)))
+                               (rust-re-item-def itype)))
+
+(defvar rust-imenu-generic-expression
+  (append (mapcar #'(lambda (x)
+                      (list (capitalize x) (rust-re-item-def-imenu x) 1))
+                  '("enum" "struct" "union" "type" "mod" "fn" "trait" "impl"))
+          `(("Macro" ,(rust-re-item-def-imenu "macro_rules!") 1)))
+  "Value for `imenu-generic-expression' in Rust mode.
+
+Create a hierarchical index of the item definitions in a Rust file.
+
+Imenu will show all the enums, structs, etc. in their own subheading.
+Use idomenu (imenu with `ido-mode') for best mileage.")
+
+(defvar rust-mode-syntax-table
+  (let ((table (make-syntax-table)))
+
+    ;; Operators
+    (dolist (i '(?+ ?- ?* ?/ ?% ?& ?| ?^ ?! ?< ?> ?~ ?@))
+      (modify-syntax-entry i "." table))
+
+    ;; Strings
+    (modify-syntax-entry ?\" "\"" table)
+    (modify-syntax-entry ?\\ "\\" table)
+
+    ;; Angle brackets.  We suppress this with syntactic propertization
+    ;; when needed
+    (modify-syntax-entry ?< "(>" table)
+    (modify-syntax-entry ?> ")<" table)
+
+    ;; Comments
+    (modify-syntax-entry ?/  ". 124b" table)
+    (modify-syntax-entry ?*  ". 23n"  table)
+    (modify-syntax-entry ?\n "> b"    table)
+    (modify-syntax-entry ?\^m "> b"   table)
+
+    table)
+  "Syntax definitions and helpers.")
+
+(defvar rust-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "C-c C-f") 'rust-format-buffer)
+    (define-key map (kbd "C-c C-d") 'rust-dbg-wrap-or-unwrap)
+    (define-key map (kbd "C-c C-n") 'rust-goto-format-problem)
+    map)
+  "Keymap for Rust major mode.")
+
+;;;###autoload
+(define-derived-mode rust-mode prog-mode "Rust"
+  "Major mode for Rust code.
+
+\\{rust-mode-map}"
+  :group 'rust-mode
+  :syntax-table rust-mode-syntax-table
+
+  ;; Syntax.
+  (setq-local syntax-propertize-function #'rust-syntax-propertize)
+
+  ;; Indentation
+  (setq-local indent-line-function 'rust-mode-indent-line)
+
+  ;; Fonts
+  (setq-local font-lock-defaults '(rust-font-lock-keywords
+                                   nil nil nil nil
+                                   (font-lock-syntactic-face-function
+                                    . rust-mode-syntactic-face-function)))
+
+  ;; Misc
+  (setq-local comment-start "// ")
+  (setq-local comment-end   "")
+  (setq-local open-paren-in-column-0-is-defun-start nil)
+
+  ;; Auto indent on }
+  (setq-local
+   electric-indent-chars (cons ?} (and (boundp 'electric-indent-chars)
+                                       electric-indent-chars)))
+
+  ;; Allow paragraph fills for comments
+  (setq-local comment-start-skip "\\(?://[/!]*\\|/\\*[*!]?\\)[[:space:]]*")
+  (setq-local paragraph-start
+              (concat "[[:space:]]*\\(?:" comment-start-skip "\\|\\*/?[[:space:]]*\\|\\)$"))
+  (setq-local paragraph-separate paragraph-start)
+  (setq-local normal-auto-fill-function 'rust-do-auto-fill)
+  (setq-local fill-paragraph-function 'rust-fill-paragraph)
+  (setq-local fill-forward-paragraph-function 'rust-fill-forward-paragraph)
+  (setq-local adaptive-fill-function 'rust-find-fill-prefix)
+  (setq-local adaptive-fill-first-line-regexp "")
+  (setq-local comment-multi-line t)
+  (setq-local comment-line-break-function 'rust-comment-indent-new-line)
+  (setq-local imenu-generic-expression rust-imenu-generic-expression)
+  (setq-local imenu-syntax-alist '((?! . "w"))) ; For macro_rules!
+  (setq-local beginning-of-defun-function 'rust-beginning-of-defun)
+  (setq-local end-of-defun-function 'rust-end-of-defun)
+  (setq-local parse-sexp-lookup-properties t)
+  (setq-local electric-pair-inhibit-predicate 'rust-electric-pair-inhibit-predicate-wrap)
+  (setq-local electric-pair-skip-self 'rust-electric-pair-skip-self-wrap)
+
+  (add-hook 'before-save-hook 'rust-before-save-hook nil t)
+  (add-hook 'after-save-hook 'rust-after-save-hook nil t)
+
+  (setq-local rust-buffer-project nil)
+
+  (when rust-always-locate-project-on-open
+    (rust-update-buffer-project)))
+
+;;;###autoload
+(add-to-list 'auto-mode-alist '("\\.rs\\'" . rust-mode))
 
 (defun rust-looking-back-str (str)
   "Return non-nil if there's a match on the text before point and STR.
@@ -244,31 +352,6 @@ seen as a macro."
              (rust-looking-back-ident)))))
 
 ;; Syntax definitions and helpers
-(defvar rust-mode-syntax-table
-  (let ((table (make-syntax-table)))
-
-    ;; Operators
-    (dolist (i '(?+ ?- ?* ?/ ?% ?& ?| ?^ ?! ?< ?> ?~ ?@))
-      (modify-syntax-entry i "." table))
-
-    ;; Strings
-    (modify-syntax-entry ?\" "\"" table)
-    (modify-syntax-entry ?\\ "\\" table)
-
-    ;; Angle brackets.  We suppress this with syntactic propertization
-    ;; when needed
-    (modify-syntax-entry ?< "(>" table)
-    (modify-syntax-entry ?> ")<" table)
-
-    ;; Comments
-    (modify-syntax-entry ?/  ". 124b" table)
-    (modify-syntax-entry ?*  ". 23n"  table)
-    (modify-syntax-entry ?\n "> b"    table)
-    (modify-syntax-entry ?\^m "> b"   table)
-
-    table)
-  "Syntax definitions and helpers.")
-
 (defun rust-paren-level () (nth 0 (syntax-ppss)))
 (defun rust-in-str () (nth 3 (syntax-ppss)))
 (defun rust-in-str-or-cmnt () (nth 8 (syntax-ppss)))
@@ -1442,20 +1525,6 @@ This handles multi-line comments with a * prefix on each line."
   (rust-with-comment-fill-prefix
    (lambda () (comment-indent-new-line arg))))
 
-;;; Imenu support
-
-(defvar rust-imenu-generic-expression
-  (append (mapcar #'(lambda (x)
-                      (list (capitalize x) (rust-re-item-def-imenu x) 1))
-                  '("enum" "struct" "union" "type" "mod" "fn" "trait" "impl"))
-          `(("Macro" ,(rust-re-item-def-imenu "macro_rules!") 1)))
-  "Value for `imenu-generic-expression' in Rust mode.
-
-Create a hierarchical index of the item definitions in a Rust file.
-
-Imenu will show all the enums, structs, etc. in their own subheading.
-Use idomenu (imenu with `ido-mode') for best mileage.")
-
 ;;; Defun Motions
 
 (defun rust-beginning-of-defun (&optional arg)
@@ -1838,75 +1907,6 @@ Return the created process."
   "Test using `cargo test`"
   (interactive)
   (compile (format "%s test" rust-cargo-bin)))
-
-(defvar rust-mode-map
-  (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "C-c C-f") 'rust-format-buffer)
-    (define-key map (kbd "C-c C-d") 'rust-dbg-wrap-or-unwrap)
-    (define-key map (kbd "C-c C-n") 'rust-goto-format-problem)
-    map)
-  "Keymap for Rust major mode.")
-
-;;;###autoload
-(define-derived-mode rust-mode prog-mode "Rust"
-  "Major mode for Rust code.
-
-\\{rust-mode-map}"
-  :group 'rust-mode
-  :syntax-table rust-mode-syntax-table
-
-  ;; Syntax.
-  (setq-local syntax-propertize-function #'rust-syntax-propertize)
-
-  ;; Indentation
-  (setq-local indent-line-function 'rust-mode-indent-line)
-
-  ;; Fonts
-  (setq-local font-lock-defaults '(rust-font-lock-keywords
-                                   nil nil nil nil
-                                   (font-lock-syntactic-face-function
-                                    . rust-mode-syntactic-face-function)))
-
-  ;; Misc
-  (setq-local comment-start "// ")
-  (setq-local comment-end   "")
-  (setq-local open-paren-in-column-0-is-defun-start nil)
-
-  ;; Auto indent on }
-  (setq-local
-   electric-indent-chars (cons ?} (and (boundp 'electric-indent-chars)
-                                       electric-indent-chars)))
-
-  ;; Allow paragraph fills for comments
-  (setq-local comment-start-skip "\\(?://[/!]*\\|/\\*[*!]?\\)[[:space:]]*")
-  (setq-local paragraph-start
-              (concat "[[:space:]]*\\(?:" comment-start-skip "\\|\\*/?[[:space:]]*\\|\\)$"))
-  (setq-local paragraph-separate paragraph-start)
-  (setq-local normal-auto-fill-function 'rust-do-auto-fill)
-  (setq-local fill-paragraph-function 'rust-fill-paragraph)
-  (setq-local fill-forward-paragraph-function 'rust-fill-forward-paragraph)
-  (setq-local adaptive-fill-function 'rust-find-fill-prefix)
-  (setq-local adaptive-fill-first-line-regexp "")
-  (setq-local comment-multi-line t)
-  (setq-local comment-line-break-function 'rust-comment-indent-new-line)
-  (setq-local imenu-generic-expression rust-imenu-generic-expression)
-  (setq-local imenu-syntax-alist '((?! . "w"))) ; For macro_rules!
-  (setq-local beginning-of-defun-function 'rust-beginning-of-defun)
-  (setq-local end-of-defun-function 'rust-end-of-defun)
-  (setq-local parse-sexp-lookup-properties t)
-  (setq-local electric-pair-inhibit-predicate 'rust-electric-pair-inhibit-predicate-wrap)
-  (setq-local electric-pair-skip-self 'rust-electric-pair-skip-self-wrap)
-
-  (add-hook 'before-save-hook 'rust-before-save-hook nil t)
-  (add-hook 'after-save-hook 'rust-after-save-hook nil t)
-
-  (setq-local rust-buffer-project nil)
-
-  (when rust-always-locate-project-on-open
-    (rust-update-buffer-project)))
-
-;;;###autoload
-(add-to-list 'auto-mode-alist '("\\.rs\\'" . rust-mode))
 
 (defun rust-mode-reload ()
   (interactive)
