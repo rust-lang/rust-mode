@@ -137,7 +137,7 @@ to the function arguments.  When nil, `->' will be indented one level."
   "Face for interpolating braces in builtin formatting macro strings."
   :group 'rust-mode)
 
-;;; Rust-mode
+;;; Syntax
 
 (defun rust-re-word (inner) (concat "\\<" inner "\\>"))
 (defun rust-re-grab (inner) (concat "\\(" inner "\\)"))
@@ -229,6 +229,8 @@ Use idomenu (imenu with `ido-mode') for best mileage.")
 
     table)
   "Syntax definitions and helpers.")
+
+;;; Mode
 
 (defvar rust-mode-map
   (let ((map (make-sparse-keymap)))
@@ -934,7 +936,8 @@ buffer."
   (save-excursion (= (progn (goto-char pos1) (line-end-position))
                      (progn (goto-char pos2) (line-end-position)))))
 
-;; Font-locking definitions and helpers
+;;; Font-locking definitions and helpers
+
 (defun rust-next-string-interpolation (limit)
   "Search forward from point for next Rust interpolation marker before LIMIT.
 Set point to the end of the occurrence found, and return match beginning
@@ -1372,6 +1375,8 @@ whichever comes first."
         (put-text-property (1- (match-end 2)) (match-end 2)
                            'syntax-table (string-to-syntax "|"))
         (goto-char (match-end 0))))))
+
+;;; Syntax Propertize
 
 (defun rust-syntax-propertize (start end)
   "A `syntax-propertize-function' to apply properties from START to END."
@@ -1911,6 +1916,8 @@ Return the created process."
   (interactive)
   (compile (format "%s test" rust-cargo-bin)))
 
+;;; Hooks
+
 (defun rust-before-save-hook ()
   (when rust-format-on-save
     (condition-case e
@@ -1928,6 +1935,8 @@ Return the created process."
         ;; would show "Wrote ..." instead of the error description.
         (or (rust--format-error-handler)
             (message "rustfmt detected problems, see *rustfmt* for more."))))))
+
+;;; Compilation
 
 (defvar rustc-compilation-location
   (let ((file "\\([^\n]+\\)")
@@ -1998,7 +2007,7 @@ the compilation window until the top of the error is visible."
      (add-to-list 'compilation-error-regexp-alist 'cargo)
      (add-hook 'next-error-hook 'rustc-scroll-down-after-next-error)))
 
-;;; Functions to submit (parts of) buffers to the rust playpen, for sharing.
+;;; Secondary Commands
 
 (defun rust-playpen-region (begin end)
   "Create a shareable URL for the region from BEGIN to END on the Rust playpen."
@@ -2065,6 +2074,8 @@ visit the new file."
          (compile-command (mapconcat #'shell-quote-argument args " ")))
     (compile compile-command)))
 
+;;; Utilities
+
 (defun rust-update-buffer-project ()
   (setq-local rust-buffer-project (rust-buffer-project)))
 
@@ -2077,6 +2088,8 @@ visit the new file."
       (goto-char 0)
       (let ((output (json-read)))
         (cdr (assoc-string "root" output))))))
+
+;;; Secondary Commands
 
 (defun rust-insert-dbg ()
   "Insert the dbg! macro."
@@ -2118,6 +2131,8 @@ visit the new file."
                (delete-char -4)
                (delete-pair))
               (t (rust-insert-dbg)))))))
+
+;;; _
 
 (defun rust-mode-reload ()
   (interactive)
