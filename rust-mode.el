@@ -1440,9 +1440,11 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
     (point)))
 
 ;; Formatting using rustfmt
+(defconst rust-rustfmt-buffername "*rustfmt*")
+
 (defun rust--format-call (buf)
   "Format BUF using rustfmt."
-  (with-current-buffer (get-buffer-create "*rustfmt*")
+  (with-current-buffer (get-buffer-create rust-rustfmt-buffername)
     (erase-buffer)
     (insert-buffer-substring buf)
     (let* ((tmpf (make-temp-file "rustfmt"))
@@ -1479,7 +1481,7 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
 ;; Since we run rustfmt through stdin we get <stdin> markers in the
 ;; output. This replaces them with the buffer name instead.
 (defun rust--format-fix-rustfmt-buffer (buffer-name)
-  (with-current-buffer (get-buffer "*rustfmt*")
+  (with-current-buffer (get-buffer rust-rustfmt-buffername)
     (goto-char (point-min))
     (while (re-search-forward "--> <stdin>:")
       (replace-match (format "--> %s:" buffer-name)))))
@@ -1490,7 +1492,7 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
 (defun rust--format-error-handler ()
   (let ((ok nil))
     (when rust-format-show-buffer
-      (display-buffer (get-buffer "*rustfmt*"))
+      (display-buffer (get-buffer rust-rustfmt-buffername))
       (setq ok t))
     (when rust-format-goto-problem
       (rust-goto-format-problem)
@@ -1506,7 +1508,7 @@ rustfmt complain in the echo area."
   ;; This uses position in *rustfmt* buffer to know which is the next
   ;; error to jump to, and source: line in the buffer to figure which
   ;; buffer it is from.
-  (let ((rustfmt (get-buffer "*rustfmt*")))
+  (let ((rustfmt (get-buffer rust-rustfmt-buffername)))
     (if (not rustfmt)
         (message "No *rustfmt*, no problems.")
       (let ((target-buffer (with-current-buffer rustfmt
@@ -1817,7 +1819,7 @@ Return the created process."
   (when rust-format-on-save
     (if (not (executable-find rust-rustfmt-bin))
         (error "Could not locate executable \"%s\"" rust-rustfmt-bin)
-      (when (get-buffer "*rustfmt*")
+      (when (get-buffer rust-rustfmt-buffername)
         ;; KLDUGE: re-run the error handlers -- otherwise message area
         ;; would show "Wrote ..." instead of the error description.
         (or (rust--format-error-handler)
