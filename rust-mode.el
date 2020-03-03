@@ -1811,9 +1811,11 @@ Return the created process."
 
 (defun rust-before-save-hook ()
   (when rust-format-on-save
-    (condition-case nil
+    (condition-case e
         (rust-format-buffer)
-      (error nil))))
+      (error (format "rust-before-save-hook: %S %S"
+                     (car e)
+                     (cdr e))))))
 
 (defun rust-after-save-hook ()
   (when rust-format-on-save
