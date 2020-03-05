@@ -19,12 +19,25 @@
 
 <!-- markdown-toc end -->
 
+# Features
+`rust-mode` makes editing [Rust](http://rust-lang.org) code with Emacs
+enjoyable. It requires Emacs 24 or later.
+
+This mode provides:
+- Syntax highlighting (for Font Lock Mode)
+- Indentation
+- Integration with Cargo, clippy and rustfmt
+
+This mode does /not/ provide integration with [Rust Language Server](https://github.com/rust-lang/rls).
+This provides autocompletion, and jumping to function / trait definitions.
+
+You can use `lsp-mode` or `eglot` for this - instructions for setting these up are below.
+
+
 # Installation
 
 ## Melpa
-
-`rust-mode` makes editing [Rust](http://rust-lang.org) code with Emacs
-enjoyable. It requires Emacs 24 or later.
+TODO holocircuit: Work this out.
 The package is available on MELPA. Add this to your init.el.
 
 ``` elisp
@@ -44,12 +57,12 @@ And put this in your config to load rust-mode automatically:
 `(require 'rust-mode)`
 
 ## straight
+TODO holocircuit: Work this out.
 
 [straight.el](https://github.com/raxod502/straight.el#install-packages) clones each of your packages directly from its source. There are good additional [installation instructions](https://github.crookster.org/switching-to-straight.el-from-emacs-26-builtin-package.el/) for moving your package management from package.el to straight.
 
 ## Manual Installation
-
-Add this to your init.el:
+Clone this repository locally, and add this to your init.el:
 
 ``` elisp
 (add-to-list 'load-path "/path/to/rust-mode/")
