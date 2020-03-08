@@ -3,6 +3,7 @@
 # Emacs mode for editing Rust source code
 
 <!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-refresh-toc -->
+TODO holocircuit: rerun this
 **Table of Contents**
 
 - [Installation](#installation)
@@ -21,23 +22,23 @@
 
 # Features
 `rust-mode` makes editing [Rust](http://rust-lang.org) code with Emacs
-enjoyable. It requires Emacs 24 or later.
+enjoyable. It requires Emacs 24 or later, and is include in both
+[Emacs Prelude](https://github.com/bbatsov/prelude) and
+[Spacemacs](https://github.com/syl20bnr/spacemacs) by default.
 
 This mode provides:
 - Syntax highlighting (for Font Lock Mode)
 - Indentation
 - Integration with Cargo, clippy and rustfmt
 
-This mode does /not/ provide integration with [Rust Language Server](https://github.com/rust-lang/rls).
-This provides autocompletion, and jumping to function / trait definitions.
-
-You can use `lsp-mode` or `eglot` for this - instructions for setting these up are below.
+This mode does _not_ provide autocompletion, or jumping to function /
+trait definitions. See [Integration with Rust Language Server](#rust-language-server)
+below for tips on how to enable this.
 
 
 # Installation
 
 ## Melpa
-TODO holocircuit: Work this out.
 The package is available on MELPA. Add this to your init.el.
 
 ``` elisp
@@ -56,12 +57,7 @@ And put this in your config to load rust-mode automatically:
 
 `(require 'rust-mode)`
 
-## straight
-TODO holocircuit: Work this out.
-
-[straight.el](https://github.com/raxod502/straight.el#install-packages) clones each of your packages directly from its source. There are good additional [installation instructions](https://github.crookster.org/switching-to-straight.el-from-emacs-26-builtin-package.el/) for moving your package management from package.el to straight.
-
-## Manual Installation
+## Manual installation
 Clone this repository locally, and add this to your init.el:
 
 ``` elisp
@@ -70,46 +66,84 @@ Clone this repository locally, and add this to your init.el:
 ```
 
 # Indentation
+This package should deal with indentation. Commands like <TAB> should
+indent correctly.
 
-The Rust style guide recommends spaces for indentation; to follow the
-recommendation add this to your init.el:
+The Rust style guide recommends spaces rather than tabs for
+indentation; to follow the recommendation add this to your init.el,
+which forces indentation to always use spaces.
 
 ```elisp
 (add-hook 'rust-mode-hook
           (lambda () (setq indent-tabs-mode nil)))
 ```
 
-# rustfmt
+# Code formatting
 
 The `rust-format-buffer` function will format your code with
-[rustfmt](https://github.com/rust-lang/rustfmt) if installed. By default,
-this is bound to `C-c C-f`.
+[rustfmt](https://github.com/rust-lang/rustfmt) if installed. By
+default, this is bound to `C-c C-f`.
 
-Placing `(setq rust-format-on-save t)` in your init.el will enable automatic
-running of `rust-format-buffer` when you save a buffer.
+The variable `rust-format-on-save` enables automatic formatting on
+save. For example, add the following in your init.el to enable format
+on save:
 
-# Tests
+``` elisp
+(setq rust-format-on-save t)
+```
+
+# Cargo
+
+The `rust-run`, `rust-test` and `rust-build` functions shell out to
+Cargo to run, test or build your code. Under the hood, these use the
+standard Emacs `compile` function.
+
+These are not bound by default. To bind these to keyboard shortcuts,
+you can use the following in your init.el:
+
+``` elisp
+(define-key rust-mode-map (kbd "C-c C-c") 'rust-run)
+```
+
+# Clippy
+`rust-run-clippy` runs
+[Clippy](https://github.com/rust-lang/rust-clippy), a linter. 
+
+
+# Other recommended packages
+
+## Auto-completion / code navigation
+This package does not provide integration with
+[RLS](https://github.com/rust-lang/rls), which provides
+auto-completion and code navigation. To use this you need an Emacs
+package that supports LSP.
+
+Two examples are:
+- [LSP](https://github.com/emacs-lsp/lsp-mode)
+- [eglot](https://github.com/joaotavora/eglot)
+
+A lighter package that uses
+[racer](https://github.com/racer-rust/racer) is
+[emacs-racer](https://github.com/racer-rust/emacs-racer).
+
+## flycheck
+[flycheck](https://github.com/flycheck/flycheck) allows highlighting
+compile errors and Clippy lints inline.
+
+## cargo.el
+[cargo.el](https://github.com/kwrooijen/cargo.el) provides a minor
+mode for integration with Cargo, Rust's package manager.
+
+## Rustic
+[rustic](https://github.com/brotzeit/rustic) is a fork of rust-mode
+extending it.
+
+
+# For package maintainers
+
+## Tests
 
 The file `rust-mode-tests.el` contains tests that can be run via
 [ERT](http://www.gnu.org/software/emacs/manual/html_node/ert/index.html).
 You can use `run_rust_emacs_tests.sh` to run them in batch mode, if
 you set the environment variable EMACS to a program that runs emacs.
-
-# LSP
-
-## eglot
-
-[Installation instructions](https://github.com/joaotavora/eglot#connecting-automatically) 
-
-## lsp-mode
-
-[Installation instructions](https://github.com/emacs-lsp/lsp-mode#installation)
-
-
-You can find more information in the [lsp-mode wiki](https://github.com/emacs-lsp/lsp-mode/wiki/Rust).
-
-# Other useful packages
-
-* [cargo.el](https://github.com/kwrooijen/cargo.el) Emacs Minor Mode for Cargo, Rust's Package Manager
-* [emacs-racer](https://github.com/racer-rust/emacs-racer) Racer support for Emacs
-* [rustic](https://github.com/brotzeit/rustic) Rust development environment for Emacs
