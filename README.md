@@ -1,11 +1,8 @@
 [![MELPA](https://melpa.org/packages/rust-mode-badge.svg)](https://melpa.org/#/rust-mode)
 
-# Emacs mode for editing Rust source code
-
 <!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-refresh-toc -->
 **Table of Contents**
 
-- [Emacs mode for editing Rust source code](#emacs-mode-for-editing-rust-source-code)
 - [Introduction](#introduction)
 - [Installation](#installation)
     - [Melpa](#melpa)
