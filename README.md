@@ -6,15 +6,16 @@
 **Table of Contents**
 
 - [Emacs mode for editing Rust source code](#emacs-mode-for-editing-rust-source-code)
-- [Features](#features)
+- [Introduction](#introduction)
 - [Installation](#installation)
     - [Melpa](#melpa)
     - [Manual installation](#manual-installation)
-- [Indentation](#indentation)
-- [Code formatting](#code-formatting)
-- [Running / testing / compiling code](#running--testing--compiling-code)
-- [Clippy](#clippy)
-- [Easy insertion of !dbg](#easy-insertion-of-dbg)
+- [Feature guide](#feature-guide)
+    - [Indentation](#indentation)
+    - [Code formatting](#code-formatting)
+    - [Running / testing / compiling code](#running--testing--compiling-code)
+    - [Clippy](#clippy)
+    - [Easy insertion of !dbg](#easy-insertion-of-dbg)
 - [Other recommended packages](#other-recommended-packages)
     - [Auto-completion / code navigation](#auto-completion--code-navigation)
     - [flycheck](#flycheck)
@@ -25,7 +26,7 @@
 
 <!-- markdown-toc end -->
 
-# Features
+# Introduction
 `rust-mode` makes editing [Rust](http://rust-lang.org) code with Emacs
 enjoyable. It requires Emacs 24 or later, and is include in both
 [Emacs Prelude](https://github.com/bbatsov/prelude) and
@@ -70,9 +71,9 @@ Clone this repository locally, and add this to your init.el:
 (autoload 'rust-mode "rust-mode" nil t)
 ```
 
-# Indentation
-This package should deal with indentation. Commands like <TAB> should
-indent correctly.
+# Feature guide
+## Indentation
+Commands like <TAB> should indent correctly.
 
 The Rust style guide recommends spaces rather than tabs for
 indentation; to follow the recommendation add this to your init.el,
@@ -83,7 +84,7 @@ which forces indentation to always use spaces.
           (lambda () (setq indent-tabs-mode nil)))
 ```
 
-# Code formatting
+## Code formatting
 
 The `rust-format-buffer` function will format your code with
 [rustfmt](https://github.com/rust-lang/rustfmt) if installed. By
@@ -97,7 +98,7 @@ on save:
 (setq rust-format-on-save t)
 ```
 
-# Running / testing / compiling code
+## Running / testing / compiling code
 
 The `rust-run`, `rust-test` and `rust-build` functions shell out to
 Cargo to run, test or build your code. Under the hood, these use the
@@ -110,11 +111,11 @@ you can use the following in your init.el:
 (define-key rust-mode-map (kbd "C-c C-c") 'rust-run)
 ```
 
-# Clippy
+## Clippy
 `rust-run-clippy` runs
 [Clippy](https://github.com/rust-lang/rust-clippy), a linter. 
 
-# Easy insertion of !dbg
+## Easy insertion of !dbg
 `rust-dbg-wrap-or-unwrap` either wraps or unwraps the current region
 in `dbg!`. This can be useful for easily adding debug lines to your
 program.
