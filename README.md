@@ -3,20 +3,25 @@
 # Emacs mode for editing Rust source code
 
 <!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-refresh-toc -->
-TODO holocircuit: rerun this
 **Table of Contents**
 
+- [Emacs mode for editing Rust source code](#emacs-mode-for-editing-rust-source-code)
+- [Features](#features)
 - [Installation](#installation)
     - [Melpa](#melpa)
-    - [straight](#straight)
-    - [Manual Installation](#manual-installation)
+    - [Manual installation](#manual-installation)
 - [Indentation](#indentation)
-- [rustfmt](#rustfmt)
-- [Tests](#tests)
-- [LSP](#lsp)
-    - [eglot](#eglot)
-    - [lsp-mode](#lsp-mode)
-- [Other useful packages](#other-useful-packages)
+- [Code formatting](#code-formatting)
+- [Running / testing / compiling code](#running--testing--compiling-code)
+- [Clippy](#clippy)
+- [Easy insertion of !dbg](#easy-insertion-of-dbg)
+- [Other recommended packages](#other-recommended-packages)
+    - [Auto-completion / code navigation](#auto-completion--code-navigation)
+    - [flycheck](#flycheck)
+    - [cargo.el](#cargoel)
+    - [Rustic](#rustic)
+- [For package maintainers](#for-package-maintainers)
+    - [Tests](#tests)
 
 <!-- markdown-toc end -->
 
@@ -92,7 +97,7 @@ on save:
 (setq rust-format-on-save t)
 ```
 
-# Cargo
+# Running / testing / compiling code
 
 The `rust-run`, `rust-test` and `rust-build` functions shell out to
 Cargo to run, test or build your code. Under the hood, these use the
@@ -108,6 +113,13 @@ you can use the following in your init.el:
 # Clippy
 `rust-run-clippy` runs
 [Clippy](https://github.com/rust-lang/rust-clippy), a linter. 
+
+# Easy insertion of !dbg
+`rust-dbg-wrap-or-unwrap` either wraps or unwraps the current region
+in `dbg!`. This can be useful for easily adding debug lines to your
+program.
+
+This is bound to `C-c C-d` by default.
 
 
 # Other recommended packages
@@ -135,8 +147,8 @@ compile errors and Clippy lints inline.
 mode for integration with Cargo, Rust's package manager.
 
 ## Rustic
-[rustic](https://github.com/brotzeit/rustic) is a fork of rust-mode
-extending it.
+[rustic](https://github.com/brotzeit/rustic) is a fork of rust-mode,
+extending it with other features such as integration with LSP and with flycheck.
 
 
 # For package maintainers
