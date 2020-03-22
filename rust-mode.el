@@ -1483,7 +1483,7 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
 (defun rust--format-fix-rustfmt-buffer (buffer-name)
   (with-current-buffer (get-buffer rust-rustfmt-buffername)
     (goto-char (point-min))
-    (while (re-search-forward "--> <stdin>:")
+    (while (re-search-forward "--> <stdin>:" nil t)
       (replace-match (format "--> %s:" buffer-name)))))
 
 ;; If rust-mode has been configured to navigate to source of the error
@@ -1514,7 +1514,7 @@ rustfmt complain in the echo area."
       (let ((target-buffer (with-current-buffer rustfmt
                              (save-excursion
                                (goto-char (point-min))
-                               (when (re-search-forward "--> \\([^:]+\\):")
+                               (when (re-search-forward "--> \\([^:]+\\):" nil t)
                                  (match-string 1)))))
             (target-point (with-current-buffer rustfmt
                             ;; No save-excursion, this is how we cycle through!
