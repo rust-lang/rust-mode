@@ -1378,6 +1378,29 @@ Create a hierarchical index of the item definitions in a Rust file.
 Imenu will show all the enums, structs, etc. in their own subheading.
 Use idomenu (imenu with `ido-mode') for best mileage.")
 
+;;; Occur support
+
+(defun rust-occur-definitions ()
+  "Display an occur buffer of all definitions in the current buffer."
+  (interactive)
+  (let ((list-matching-lines-face nil))
+    (occur (concat "^\s*\\("
+                   "\\(pub.*?\s\\|\\)mod\\|"
+                   "\\(pub.*?\s\\|\\)type\\|"
+                   "\\(pub.*?\s\\|\\)struct\\|"
+                   "\\(pub.*?\s\\|\\)enum\\|"
+                   "\\(pub.*?\s\\|unsafe\s\\|const\s\\|async\s\\|\\)fn\\|"
+                   "\\(pub.*?\s\\|unsafe\s\\|\\)trait\\|"
+                   "\\(pub.*?\s\\|\\)const\\|"
+                   "\\(pub.*?\s\\|\\)static\sref\\|"
+                   "lazy_static\!\\|"
+                   "impl"
+                   "\\)\s")))
+  (let ((window (get-buffer-window "*Occur*")))
+    (if window
+        (select-window window)
+      (switch-to-buffer "*Occur*"))))
+
 ;;; Defun Motions
 
 (defun rust-beginning-of-defun (&optional arg)
