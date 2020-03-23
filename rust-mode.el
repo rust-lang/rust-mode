@@ -19,6 +19,7 @@
                    (require 'url-vars))
 
 (require 'json)
+(require 'ansi-color)
 (require 'thingatpt)
 
 (defvar electric-pair-inhibit-predicate)
@@ -1444,19 +1445,22 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
 
 (defun rust--format-call (buf)
   "Format BUF using rustfmt."
-  (with-current-buffer (get-buffer-create rust-rustfmt-buffername)
-    (erase-buffer)
-    (insert-buffer-substring buf)
-    (let* ((tmpf (make-temp-file "rustfmt"))
-           (ret (apply 'call-process-region
-                       (point-min)
-                       (point-max)
-                       rust-rustfmt-bin
-                       t
-                       `(t ,tmpf)
-                       nil
-                       rust-rustfmt-switches)))
-      (unwind-protect
+  (let ((tmp-buf))
+    (with-temp-buffer
+      (setq tmp-buf (current-buffer))
+      (with-current-buffer (get-buffer-create rust-rustfmt-buffername)
+        (erase-buffer)
+        (insert-buffer-substring buf)
+        (let ((ret (apply 'call-process-region
+                          (point-min)
+                          (point-max)
+                          rust-rustfmt-bin
+                          t
+                          tmp-buf
+                          nil
+                          rust-rustfmt-switches)))
+          (with-current-buffer tmp-buf
+            (ansi-color-filter-region (point-min) (point-max)))
           (cond
            ((zerop ret)
             (if (not (string= (buffer-string)
@@ -1468,15 +1472,14 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
                               (with-current-buffer buf (buffer-string))))
                 (copy-to-buffer buf (point-min) (point-max)))
             (erase-buffer)
-            (insert-file-contents tmpf)
+            (insert-buffer-substring tmp-buf)
             (rust--format-fix-rustfmt-buffer (buffer-name buf))
             (error "Rustfmt could not format some lines, see *rustfmt* buffer for details"))
            (t
             (erase-buffer)
-            (insert-file-contents tmpf)
+            (insert-buffer-substring tmp-buf)
             (rust--format-fix-rustfmt-buffer (buffer-name buf))
-            (error "Rustfmt failed, see *rustfmt* buffer for details"))))
-      (delete-file tmpf))))
+            (error "Rustfmt failed, see *rustfmt* buffer for details"))))))))
 
 ;; Since we run rustfmt through stdin we get <stdin> markers in the
 ;; output. This replaces them with the buffer name instead.
