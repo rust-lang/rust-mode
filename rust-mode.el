@@ -1445,48 +1445,51 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
 (defun rust--format-call (buf)
   "Format BUF using rustfmt."
   (with-current-buffer (get-buffer-create rust-rustfmt-buffername)
-    (erase-buffer)
-    (insert-buffer-substring buf)
-    (let* ((tmpf (make-temp-file "rustfmt"))
-           (ret (apply 'call-process-region
-                       (point-min)
-                       (point-max)
-                       rust-rustfmt-bin
-                       t
-                       `(t ,tmpf)
-                       nil
-                       rust-rustfmt-switches)))
-      (unwind-protect
-          (cond
-           ((zerop ret)
-            (if (not (string= (buffer-string)
-                              (with-current-buffer buf (buffer-string))))
-                (copy-to-buffer buf (point-min) (point-max)))
-            (kill-buffer))
-           ((= ret 3)
-            (if (not (string= (buffer-string)
-                              (with-current-buffer buf (buffer-string))))
-                (copy-to-buffer buf (point-min) (point-max)))
-            (erase-buffer)
-            (insert-file-contents tmpf)
-            (rust--format-fix-rustfmt-buffer (buffer-name buf))
-            (error "Rustfmt could not format some lines, see *rustfmt* buffer for details"))
-           (t
-            (erase-buffer)
-            (insert-file-contents tmpf)
-            (rust--format-fix-rustfmt-buffer (buffer-name buf))
-            (error "Rustfmt failed, see *rustfmt* buffer for details"))))
-      (delete-file tmpf))))
+    (view-mode +1)
+    (let ((inhibit-read-only t))
+      (erase-buffer)
+      (insert-buffer-substring buf)
+      (let* ((tmpf (make-temp-file "rustfmt"))
+             (ret (apply 'call-process-region
+                         (point-min)
+                         (point-max)
+                         rust-rustfmt-bin
+                         t
+                         `(t ,tmpf)
+                         nil
+                         rust-rustfmt-switches)))
+        (unwind-protect
+            (cond
+             ((zerop ret)
+              (if (not (string= (buffer-string)
+                                (with-current-buffer buf (buffer-string))))
+                  (copy-to-buffer buf (point-min) (point-max)))
+              (kill-buffer))
+             ((= ret 3)
+              (if (not (string= (buffer-string)
+                                (with-current-buffer buf (buffer-string))))
+                  (copy-to-buffer buf (point-min) (point-max)))
+              (erase-buffer)
+              (insert-file-contents tmpf)
+              (rust--format-fix-rustfmt-buffer (buffer-name buf))
+              (error "Rustfmt could not format some lines, see *rustfmt* buffer for details"))
+             (t
+              (erase-buffer)
+              (insert-file-contents tmpf)
+              (rust--format-fix-rustfmt-buffer (buffer-name buf))
+              (error "Rustfmt failed, see *rustfmt* buffer for details"))))
+        (delete-file tmpf)))))
 
 ;; Since we run rustfmt through stdin we get <stdin> markers in the
 ;; output. This replaces them with the buffer name instead.
 (defun rust--format-fix-rustfmt-buffer (buffer-name)
   (with-current-buffer (get-buffer rust-rustfmt-buffername)
-    (goto-char (point-min))
-    (while (re-search-forward "--> <stdin>:" nil t)
-      (replace-match (format "--> %s:" buffer-name)))
-    (while (re-search-forward "--> stdin:" nil t)
-      (replace-match (format "--> %s:" buffer-name)))))
+    (let ((inhibit-read-only t))
+      (goto-char (point-min))
+      (while (re-search-forward "--> <stdin>:" nil t)
+        (replace-match (format "--> %s:" buffer-name)))
+      (while (re-search-forward "--> stdin:" nil t)
+        (replace-match (format "--> %s:" buffer-name))))))
 
 ;; If rust-mode has been configured to navigate to source of the error
 ;; or display it, do so -- and return true. Otherwise return nil to
