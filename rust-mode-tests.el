@@ -3338,4 +3338,3 @@ impl Two<'a> {
             (string-match "Prefix Command" ,match)
             (string-match "^C-c C" ,match)))))
       (should (< 0 match-count)))))
-\
