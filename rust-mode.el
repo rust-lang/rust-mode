@@ -1484,6 +1484,8 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
   (with-current-buffer (get-buffer rust-rustfmt-buffername)
     (goto-char (point-min))
     (while (re-search-forward "--> <stdin>:" nil t)
+      (replace-match (format "--> %s:" buffer-name)))
+    (while (re-search-forward "--> stdin:" nil t)
       (replace-match (format "--> %s:" buffer-name)))))
 
 ;; If rust-mode has been configured to navigate to source of the error
