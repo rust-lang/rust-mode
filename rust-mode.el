@@ -1534,7 +1534,7 @@ rustfmt complain in the echo area."
                                     (if (re-search-forward "\nerror:.+\n" nil t)
                                         (buffer-substring p0 (point))
                                       (buffer-substring p0 (point-max)))))))))
-        (when (and target-buffer target-point)
+        (when (and target-buffer (get-buffer target-buffer) target-point)
           (switch-to-buffer target-buffer)
           (goto-char (point-min))
           (forward-line (1- (car target-point)))
