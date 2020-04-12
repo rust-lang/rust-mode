@@ -3040,7 +3040,7 @@ type Foo<T> where T: Copy = Box<T>;
      '(7 9))))
 
 
-(ert-deftest redo-syntax-after-change-far-from-point ()  
+(ert-deftest redo-syntax-after-change-far-from-point ()
   (let*
       ((tmp-file-name (make-temp-file "rust-mdoe-test-issue104"))
        (base-contents (apply 'concat (append '("fn foo() {\n\n}\n") (make-list 500 "// More stuff...\n") '("fn bar() {\n\n}\n")))))
@@ -3231,8 +3231,9 @@ impl Two<'a> {
     (insert "error found a -> b\n  --> file1.rs:12:34\n\n")
     (insert "error[E1234]: found a -> b\n  --> file2.rs:12:34\n\n")
     (insert "warning found a -> b\n  --> file3.rs:12:34\n\n")
+    (insert "note: `ZZZ` could also refer to the constant imported here -> b\n  --> file4.rs:12:34\n\n")
     ;; should not match
-    (insert "werror found a -> b\n  --> file4.rs:12:34\n\n")
+    (insert "werror found a -> b\n  --> no_match.rs:12:34\n\n")
 
     (goto-char (point-min))
     (let ((matches nil))
@@ -3241,14 +3242,14 @@ impl Two<'a> {
          (mapcar (lambda (r)
                    (let ((match-pos
                           (nth (cdr r) rustc-compilation-regexps)))
-                     (if (eq :is-warning (car r))
+                     (if (eq :type (car r))
                          (compilation-face match-pos)
                        (match-string match-pos))))
                  ;; see compilation-error-regexp-alist
                  '((:file . 1)
                    (:line . 2)
                    (:column . 3)
-                   (:is-warning . 4)
+                   (:type . 4)
                    (:mouse-highlight . 5)))
          matches))
       (setq matches (reverse matches))
@@ -3256,7 +3257,8 @@ impl Two<'a> {
       (should (equal
                '(("file1.rs" "12" "34" compilation-error "file1.rs:12:34")
                  ("file2.rs" "12" "34" compilation-error "file2.rs:12:34")
-                 ("file3.rs" "12" "34" compilation-warning "file3.rs:12:34"))
+                 ("file3.rs" "12" "34" compilation-warning "file3.rs:12:34")
+                 ("file4.rs" "12" "34" compilation-info "file4.rs:12:34"))
                matches)))))
 
 ;; If electric-pair-mode is available, load it and run the tests that use it.  If not,
@@ -3336,3 +3338,4 @@ impl Two<'a> {
             (string-match "Prefix Command" ,match)
             (string-match "^C-c C" ,match)))))
       (should (< 0 match-count)))))
+\
