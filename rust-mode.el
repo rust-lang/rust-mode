@@ -198,7 +198,7 @@ to the function arguments.  When nil, `->' will be indented one level."
   :safe #'booleanp
   :group 'rust-mode)
 
-(defcustom rust-format-show-buffer nil
+(defcustom rust-format-show-buffer t
   "Show *rustfmt* buffer if formatting detected problems."
   :type 'boolean
   :safe #'booleanp
