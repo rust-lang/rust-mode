@@ -1831,9 +1831,9 @@ Return the created process."
   (let ((file "\\([^\n]+\\)")
         (start-line "\\([0-9]+\\)")
         (start-col "\\([0-9]+\\)"))
-    (let ((re (concat "^\\(?:error\\|\\(warning\\)\\)[^\0]+?--> \\("
+    (let ((re (concat "^\\(?:error\\|\\(warning\\)\\|\\(note\\)\\)[^\0]+?--> \\("
                       file ":" start-line ":" start-col "\\)")))
-      (cons re '(3 4 5 (1) 2))))
+      (cons re '(4 5 6 (1 . 2) 3))))
   "Specifications for matching errors in rustc invocations.
 See `compilation-error-regexp-alist' for help on their format.")
 
