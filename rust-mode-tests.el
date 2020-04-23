@@ -2139,8 +2139,8 @@ fn main() {
         (should (equal (scan-sexps (+ 1 close-pos) -1) open-pos))))
     (dolist (nonpar-pos nonparen-positions)
       (let ((nonpar-syntax-class (syntax-class (syntax-after nonpar-pos))))
-        (should (not (equal 4 nonpar-syntax-class)))
-        (should (not (equal 5 nonpar-syntax-class)))))))
+        (should-not (equal 4 nonpar-syntax-class))
+        (should-not (equal 5 nonpar-syntax-class))))))
 
 (ert-deftest rust-test-unmatched-single-quote-in-comment-paren-matching ()
   ;; This was a bug from the char quote handling that affected the paren
@@ -2922,6 +2922,112 @@ macro_c!{
      123 ;; macro_c <
      125 ;; macro_d >
      )))
+
+(ert-deftest rust-test-paren-matching-no-angle-brackets-in-macro-rules ()
+  (rust-test-matching-parens
+   "
+fn foo<A>(a:A) {
+    macro_rules! foo ( foo::<ignore the bracets> );
+    macro_rules! bar [ foo as Option<B> ];
+}
+
+macro_c!{
+    struct Boo<D> {}
+}"
+   '((8 10))
+   ;; Inside macros, it should not find any angle brackets, even if it normally
+   ;; would
+   '(47 ;; foo <
+     62 ;; foo >
+     107 ;; bar <
+     109 ;; bar >
+     141 ;; macro_c <
+     143 ;; macro_c >
+     )))
+
+(ert-deftest rust-test-in-macro-do-not-fail-on-unbalance ()
+  (should
+   ;; We don't care about the results here, so long as they do not error
+   (with-temp-buffer
+     (insert
+      "fn foo<A>(a:A) {
+    macro_c!{
+        struct Boo<D> {}
+")
+     (rust-mode)
+     (goto-char (point-max))
+     (syntax-ppss))))
+
+
+(ert-deftest rust-test-in-macro-no-caching ()
+  (should-not
+   (with-temp-buffer
+     (insert
+      "fn foo<A>(a:A) {
+    macro_c!{
+        struct Boo<D> {}
+")
+     (rust-mode)
+     (search-backward "macro")
+     ;; do not use the cache
+     (let ((rust-macro-scopes nil))
+       (rust-in-macro)))))
+
+(ert-deftest rust-test-in-macro-fake-cache ()
+  (should
+   (with-temp-buffer
+     (insert
+      "fn foo<A>(a:A) {
+    macro_c!{
+        struct Boo<D> {}
+")
+     (rust-mode)
+     (search-backward "macro")
+     ;; make the cache lie to make the whole buffer in scope
+     ;; we need to be at paren level 1 for this to work
+     (let ((rust-macro-scopes `((,(point-min) ,(point-max)))))
+       (rust-in-macro)))))
+
+(ert-deftest rust-test-in-macro-broken-cache ()
+  (should-error
+   (with-temp-buffer
+     (insert
+      "fn foo<A>(a:A) {
+    macro_c!{
+        struct Boo<D> {}
+")
+     (rust-mode)
+     (search-backward "Boo")
+     ;; do we use the cache at all
+     (let ((rust-macro-scopes '(I should break)))
+       (rust-in-macro)))))
+
+(ert-deftest rust-test-in-macro-nested ()
+  (should
+   (equal
+    (with-temp-buffer
+      (insert
+       "macro_rules! outer {
+    () => { vec![] };
+}")
+      (rust-mode)
+      (rust-macro-scope (point-min) (point-max)))
+    '((38 40) (20 45)))))
+
+(ert-deftest rust-test-in-macro-not-with-space ()
+  (should
+   (equal
+    (with-temp-buffer
+      (insert
+       "fn foo<T>() {
+    if !(mem::size_of::<T>() > 8) {
+        bar()
+    }
+}")
+      (rust-mode)
+      (rust-macro-scope (point-min) (point-max)))
+    'empty)))
+
 
 (ert-deftest rust-test-paren-matching-type-with-module-name ()
   (rust-test-matching-parens
