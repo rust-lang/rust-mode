@@ -106,7 +106,12 @@ symbols."
     (looking-back rust-re-ident beg-of-symbol)))
 
 (defun rust-looking-back-macro ()
-  "Non-nil if looking back at an ident followed by a !"
+  "Non-nil if looking back at an ident followed by a !
+
+This is stricter than rust syntax which allows a space between
+the ident and the ! symbol. If this space is allowed, then we
+would also need a keyword check to avoid `if !(condition)` being
+seen as a macro."
   (if (> (- (point) (point-min)) 1)
       (save-excursion
         (backward-char)
@@ -260,18 +265,90 @@ to the function arguments.  When nil, `->' will be indented one level."
         ;; Rewind until the point no longer moves
         (setq continue (/= starting (point)))))))
 
-(defun rust-in-macro ()
+(defvar-local rust-macro-scopes nil
+  "Cache for the scopes calculated by `rust-macro-scope'.
+
+This variable can be `let' bound directly or indirectly around
+`rust-macro-scope' as an optimization but should not be otherwise
+set.")
+
+(defun rust-macro-scope (start end)
+  "Return the scope of macros in the buffer.
+
+The return value is a list of (START END) positions in the
+buffer.
+
+If set START and END are optimizations which limit the return
+value to scopes which are approximately with this range."
   (save-excursion
-    (when (> (rust-paren-level) 0)
-      (backward-up-list)
-      (rust-rewind-irrelevant)
-      (or (rust-looking-back-macro)
-          (and (rust-looking-back-ident)
-               (save-excursion
-                 (backward-sexp)
-                 (rust-rewind-irrelevant)
-                 (rust-looking-back-str "macro_rules!")))
-          (rust-in-macro)))))
+    ;; need to special case macro_rules which has unique syntax
+    (let ((scope nil)
+          (start (or start (point-min)))
+          (end (or end (point-max))))
+      (goto-char start)
+      ;; if there is a start move back to the previous top level,
+      ;; as any macros before that must have closed by this time.
+      (let ((top (syntax-ppss-toplevel-pos (syntax-ppss))))
+        (when top
+          (goto-char top)))
+      (while
+          (and
+           ;; The movement below may have moved us passed end, in
+           ;; which case search-forward will error
+           (< (point) end)
+           (search-forward "!" end t))
+        (let ((pt (point)))
+          (cond
+           ;; in a string or comment is boring, move straight on
+           ((rust-in-str-or-cmnt))
+           ;; in a normal macro,
+           ((and (skip-chars-forward " \t\n\r")
+                 (memq (char-after)
+                       '(?\[ ?\( ?\{))
+                 ;; Check that we have a macro declaration after.
+                 (rust-looking-back-macro))
+            (let ((start (point)))
+              (ignore-errors (forward-list))
+              (setq scope (cons (list start (point)) scope))))
+           ;; macro_rules, why, why, why did you not use macro syntax??
+           ((save-excursion
+              ;; yuck -- last test moves point, even if it fails
+              (goto-char (- pt 1))
+              (skip-chars-backward " \t\n\r")
+              (rust-looking-back-str "macro_rules"))
+            (save-excursion
+              (when (re-search-forward "[[({]" nil t)
+                (backward-char)
+                (let ((start (point)))
+                  (ignore-errors (forward-list))
+                  (setq scope (cons (list start (point)) scope)))))))))
+      ;; Return 'empty rather than nil, to indicate a buffer with no
+      ;; macros at all.
+      (or scope 'empty))))
+
+(defun rust-in-macro (&optional start end)
+  "Return non-nil when point is within the scope of a macro.
+
+If START and END are set, minimize the buffer analysis to
+approximately this location as an optimization.
+
+Alternatively, if `rust-macro-scopes' is a list use the scope
+information in this variable. This last is an optimization and
+the caller is responsible for ensuring that the data in
+`rust-macro-scopes' is up to date."
+  (when (> (rust-paren-level) 0)
+    (let ((scopes
+           (or
+            rust-macro-scopes
+            (rust-macro-scope start end))))
+      ;; `rust-macro-scope' can return the symbol `empty' if the
+      ;; buffer has no macros at all.
+      (when (listp scopes)
+        (seq-some
+         (lambda (sc)
+           (and (>= (point) (car sc))
+                (< (point) (cadr sc))))
+         scopes)))))
 
 (defun rust-looking-at-where ()
   "Return T when looking at the \"where\" keyword."
@@ -1208,32 +1285,34 @@ whichever comes first."
 
 (defun rust-syntax-propertize (start end)
   "A `syntax-propertize-function' to apply properties from START to END."
-  (goto-char start)
-  (let ((str-start (rust-in-str-or-cmnt)))
-    (when str-start
-      (rust--syntax-propertize-raw-string str-start end)))
-  (funcall
-   (syntax-propertize-rules
-    ;; Character literals.
-    (rust--char-literal-rx (1 "\"") (2 "\""))
-    ;; Raw strings.
-    ("\\(r\\)#*\""
-     (0 (ignore
-         (goto-char (match-end 0))
-         (unless (save-excursion (nth 8 (syntax-ppss (match-beginning 0))))
-           (put-text-property (match-beginning 1) (match-end 1)
-                              'syntax-table (string-to-syntax "|"))
-           (rust--syntax-propertize-raw-string (match-beginning 0) end)))))
-    ("[<>]"
-     (0 (ignore
-         (when (save-match-data
-                 (save-excursion
-                   (goto-char (match-beginning 0))
-                   (rust-ordinary-lt-gt-p)))
-           (put-text-property (match-beginning 0) (match-end 0)
-                              'syntax-table (string-to-syntax "."))
-           (goto-char (match-end 0)))))))
-   (point) end))
+  ;; Cache all macro scopes as an optimization. See issue #208
+  (let ((rust-macro-scopes (rust-macro-scope start end)))
+    (goto-char start)
+    (let ((str-start (rust-in-str-or-cmnt)))
+      (when str-start
+        (rust--syntax-propertize-raw-string str-start end)))
+    (funcall
+     (syntax-propertize-rules
+      ;; Character literals.
+      (rust--char-literal-rx (1 "\"") (2 "\""))
+      ;; Raw strings.
+      ("\\(r\\)#*\""
+       (0 (ignore
+           (goto-char (match-end 0))
+           (unless (save-excursion (nth 8 (syntax-ppss (match-beginning 0))))
+             (put-text-property (match-beginning 1) (match-end 1)
+                                'syntax-table (string-to-syntax "|"))
+             (rust--syntax-propertize-raw-string (match-beginning 0) end)))))
+      ("[<>]"
+       (0 (ignore
+           (when (save-match-data
+                   (save-excursion
+                     (goto-char (match-beginning 0))
+                     (rust-ordinary-lt-gt-p)))
+             (put-text-property (match-beginning 0) (match-end 0)
+                                'syntax-table (string-to-syntax "."))
+             (goto-char (match-end 0)))))))
+     (point) end)))
 
 (defun rust-fill-prefix-for-comment-start (line-start)
   "Determine what to use for `fill-prefix' based on the text at LINE-START."
