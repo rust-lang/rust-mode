@@ -1221,7 +1221,7 @@ fn test4();")
     ;; Insert 150 separate comments on the same line
     (dotimes (i 150)
       (insert "/* foo */ "))
-    ;; Rewinding from the last commment to the end of the let needs at least
+    ;; Rewinding from the last comment to the end of the let needs at least
     ;; 150 iterations, but if we limit the stack depth to 100 (this appears to
     ;; be some minimum), a recursive function would overflow, throwing an
     ;; error.
