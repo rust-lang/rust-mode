@@ -1463,7 +1463,13 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
              ((zerop ret)
               (if (not (string= (buffer-string)
                                 (with-current-buffer buf (buffer-string))))
-                  (copy-to-buffer buf (point-min) (point-max)))
+                  ;; replace-buffer-contents was in emacs 26.1, but it
+                  ;; was broken for non-ASCII strings, so we need 26.2.
+                  (if (and (fboundp 'replace-buffer-contents)
+                           (version<= "26.2" emacs-version))
+                      (with-current-buffer buf
+                        (replace-buffer-contents rust-rustfmt-buffername))
+                    (copy-to-buffer buf (point-min) (point-max))))
               (kill-buffer))
              ((= ret 3)
               (if (not (string= (buffer-string)
@@ -1661,12 +1667,16 @@ Return the created process."
           (pop-to-buffer (current-buffer)))
       (message "rustfmt check passed."))))
 
-(defun rust-format-buffer ()
-  "Format the current buffer using rustfmt."
-  (interactive)
-  (unless (executable-find rust-rustfmt-bin)
-    (error "Could not locate executable \"%s\"" rust-rustfmt-bin))
+(defun rust--format-buffer-using-replace-buffer-contents ()
+  (condition-case err
+      (progn
+        (rust--format-call (current-buffer))
+        (message "Formatted buffer with rustfmt."))
+    (error
+     (or (rust--format-error-handler)
+         (signal (car err) (cdr err))))))
 
+(defun rust--format-buffer-saving-position-manually ()
   (let* ((current (current-buffer))
          (base (or (buffer-base-buffer current) current))
          buffer-loc
@@ -1713,6 +1723,18 @@ Return the created process."
       (error
        (or (rust--format-error-handler)
            (signal (car err) (cdr err)))))))
+
+(defun rust-format-buffer ()
+  "Format the current buffer using rustfmt."
+  (interactive)
+  (unless (executable-find rust-rustfmt-bin)
+    (error "Could not locate executable \"%s\"" rust-rustfmt-bin))
+  ;; If emacs version >= 26.2, we can use replace-buffer-contents to
+  ;; preserve location and markers in buffer, otherwise we can try to
+  ;; save locations as best we can, though we still lose markers.
+  (if (version<= "26.2" emacs-version)
+      (rust--format-buffer-using-replace-buffer-contents)
+    (rust--format-buffer-saving-position-manually)))
 
 (defun rust-enable-format-on-save ()
   "Enable formatting using rustfmt when saving buffer."
