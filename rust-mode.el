@@ -205,7 +205,7 @@ to the function arguments.  When nil, `->' will be indented one level."
   :group 'rust-mode)
 
 (defcustom rust-format-goto-problem t
-  "Jump to location of first detected probem when formatting buffer."
+  "Jump to location of first detected problem when formatting buffer."
   :type 'boolean
   :safe #'booleanp
   :group 'rust-mode)
