@@ -1139,6 +1139,10 @@ should be considered a paired angle bracket."
    ;; If matching is turned off suppress all of them
    ((not rust-match-angle-brackets) t)
 
+   ;; This is a cheap check so we do it early.
+   ;; Don't treat the > in -> or => as an angle bracket
+   ((and (= (following-char) ?>) (memq (preceding-char) '(?- ?=))) t)
+
    ;; We don't take < or > in strings or comments to be angle brackets
    ((rust-in-str-or-cmnt) t)
 
@@ -1148,23 +1152,21 @@ should be considered a paired angle bracket."
    ;; as angle brackets it won't mess up any paren balancing.
    ((rust-in-macro) t)
 
-   ((looking-at "<")
+   ((= (following-char) ?<)
     (rust-is-lt-char-operator))
 
-   ((looking-at ">")
-    (cond
-     ;; Don't treat the > in -> or => as an angle bracket
-     ((member (char-before (point)) '(?- ?=)) t)
+   ;; Since rust-ordinary-lt-gt-p is called only when either < or > are at the point,
+   ;; we know that the following char must be > in the clauses below.
 
-     ;; If we are at top level and not in any list, it can't be a closing
-     ;; angle bracket
-     ((>= 0 (rust-paren-level)) t)
+   ;; If we are at top level and not in any list, it can't be a closing
+   ;; angle bracket
+   ((>= 0 (rust-paren-level)) t)
 
-     ;; Otherwise, treat the > as a closing angle bracket if it would
-     ;; match an opening one
-     ((save-excursion
-        (backward-up-list)
-        (not (looking-at "<"))))))))
+   ;; Otherwise, treat the > as a closing angle bracket if it would
+   ;; match an opening one
+   ((save-excursion
+      (backward-up-list)
+      (/= (following-char) ?<)))))
 
 (defun rust-mode-syntactic-face-function (state)
   "Return face which distinguishes doc and normal comments in the given syntax STATE."
