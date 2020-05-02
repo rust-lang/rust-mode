@@ -10,7 +10,6 @@ jobs:
       matrix:
         rust_version: [stable]
         emacs_version:
-          - 24.5
           - 25.1
           - 25.2
           - 25.3
