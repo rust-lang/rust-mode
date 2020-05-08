@@ -97,7 +97,7 @@ on save:
 
 ## Running / testing / compiling code
 
-The `rust-run`, `rust-test` and `rust-build` functions shell out to
+The `rust-run`, `rust-test` and `rust-compile` functions shell out to
 Cargo to run, test or build your code. Under the hood, these use the
 standard Emacs `compile` function.
 
