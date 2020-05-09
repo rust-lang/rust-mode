@@ -70,7 +70,7 @@ Clone this repository locally, and add this to your init.el:
 
 # Feature guide
 ## Indentation
-Commands like <TAB> should indent correctly.
+Commands like <kbd>TAB</kbd> should indent correctly.
 
 The Rust style guide recommends spaces rather than tabs for
 indentation; to follow the recommendation add this to your init.el,
@@ -85,7 +85,7 @@ which forces indentation to always use spaces.
 
 The `rust-format-buffer` function will format your code with
 [rustfmt](https://github.com/rust-lang/rustfmt) if installed. By
-default, this is bound to `C-c C-f`.
+default, this is bound to <kbd>C-c C-f</kbd>.
 
 The variable `rust-format-on-save` enables automatic formatting on
 save. For example, add the following in your init.el to enable format
@@ -117,7 +117,7 @@ you can use the following in your init.el:
 in `dbg!`. This can be useful for easily adding debug lines to your
 program.
 
-This is bound to `C-c C-d` by default.
+This is bound to <kbd>C-c C-d</kbd> by default.
 
 
 # Other recommended packages
