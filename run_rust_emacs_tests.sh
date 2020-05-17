@@ -40,4 +40,13 @@ else
     echo "Byte-compilation passed."
 fi
 
+warnings="$( $EMACS -Q -batch -l rust-mode.el -f batch-byte-compile rust-mode-tests.el 2>&1 | grep -v '^Wrote ' )"
+if [ -n "$warnings" ]; then
+    echo "Byte-compilation failed:"
+    echo "$warnings"
+    exit 4
+else
+    echo "Byte-compilation of test file passed."
+fi
+
 $EMACS -batch -l rust-mode.el -l rust-mode-tests.el -f ert-run-tests-batch-and-exit
