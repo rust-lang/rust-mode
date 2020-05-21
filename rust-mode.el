@@ -1575,6 +1575,10 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
 ;; or display it, do so -- and return true. Otherwise return nil to
 ;; indicate nothing was done.
 (defun rust--format-error-handler ()
+  (with-current-buffer (get-buffer rust-rustfmt-buffername)
+    (when (string= (string-trim (buffer-string))
+                   "Unrecognized option: 'edition'")
+      (warn "rustfmt is likely out of date and its version is not supported")))
   (let ((ok nil))
     (when rust-format-show-buffer
       (display-buffer (get-buffer rust-rustfmt-buffername))
