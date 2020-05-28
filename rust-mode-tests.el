@@ -3,6 +3,7 @@
 (require 'rust-mode)
 (require 'ert)
 (require 'cl-lib)
+(require 'compile)
 (require 'imenu)
 
 (defconst rust-test-fill-column 32)
