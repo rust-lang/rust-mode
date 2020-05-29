@@ -1928,23 +1928,22 @@ Return the created process."
         (or (rust--format-error-handler)
             (message "rustfmt detected problems, see *rustfmt* for more."))))))
 
-(defvar rustc-compilation-regexps
+(defvar rustc-compilation-location
   (let ((file "\\([^\n]+\\)")
         (start-line "\\([0-9]+\\)")
         (start-col "\\([0-9]+\\)"))
-    (let ((re (concat "^\\(?:error\\|\\(warning\\)\\|\\(note\\)\\)[^\0]+?--> \\("
-                      file ":" start-line ":" start-col "\\)")))
-      (cons re '(4 5 6 (1 . 2) 3))))
+    (concat "\\(" file ":" start-line ":" start-col "\\)")))
+
+(defvar rustc-compilation-regexps
+  (let ((re (concat "^\\(?:error\\|\\(warning\\)\\|\\(note\\)\\)[^\0]+?--> "
+                    rustc-compilation-location)))
+    (cons re '(4 5 6 (1 . 2) 3)))
   "Specifications for matching errors in rustc invocations.
 See `compilation-error-regexp-alist' for help on their format.")
 
 (defvar rustc-colon-compilation-regexps
-  (let ((file "\\([^\n]+\\)")
-        (start-line "\\([0-9]+\\)")
-        (start-col  "\\([0-9]+\\)"))
-    (let ((re (concat "^ *::: " file ":" start-line ":" start-col ; ::: foo/bar.rs
-                      )))
-      (cons re '(1 2 3 0)))) ;; 0 for info type
+  (let ((re (concat "^ *::: " rustc-compilation-location)))
+    (cons re '(2 3 4 0 1)))
   "Specifications for matching `:::` hints in rustc invocations.
 See `compilation-error-regexp-alist' for help on their format.")
 
