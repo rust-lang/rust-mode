@@ -25,7 +25,7 @@
 (defvar electric-pair-skip-self)
 (defvar electric-indent-chars)
 
-(defvar rust-buffer-project)
+(defvar rust-buffer-project nil)
 (make-variable-buffer-local 'rust-buffer-project)
 
 (defun rust-re-word (inner) (concat "\\<" inner "\\>"))
@@ -669,7 +669,7 @@ buffer."
                      (progn (goto-char pos2) (line-end-position)))))
 
 ;; Font-locking definitions and helpers
-(defconst rust-mode-keywords
+(defconst rust-keywords
   '("as" "async" "await"
     "box" "break"
     "const" "continue" "crate"
@@ -781,7 +781,7 @@ Returns nil if the point is not within a Rust string."
     "print"
     "println")
   "List of builtin Rust macros for string formatting.
-This is used by `rust-mode-font-lock-keywords'.
+This is used by `rust-font-lock-keywords'.
 (`write!' is handled separately).")
 
 (defvar rust-formatting-macro-opening-re
@@ -792,11 +792,11 @@ This is used by `rust-mode-font-lock-keywords'.
   "\\(?:r#*\\)?\""
   "Regular expression to match the start of a Rust raw string.")
 
-(defvar rust-mode-font-lock-keywords
+(defvar rust-font-lock-keywords
   (append
    `(
      ;; Keywords proper
-     (,(regexp-opt rust-mode-keywords 'symbols) . font-lock-keyword-face)
+     (,(regexp-opt rust-keywords 'symbols) . font-lock-keyword-face)
 
      ;; Contextual keywords
      ("\\_<\\(default\\)[[:space:]]+fn\\_>" 1 font-lock-keyword-face)
@@ -1162,7 +1162,7 @@ Otherwise, for instance if it's an opening angle bracket, return nil."
 
        ;; If we are looking back at a keyword, it's an angle bracket
        ;; unless that keyword is "self", "true" or "false"
-       ((rust-looking-back-symbols rust-mode-keywords)
+       ((rust-looking-back-symbols rust-keywords)
         (rust-looking-back-symbols '("self" "true" "false")))
 
        ((rust-looking-back-str "?")
@@ -1858,7 +1858,7 @@ Return the created process."
   (setq-local indent-line-function 'rust-mode-indent-line)
 
   ;; Fonts
-  (setq-local font-lock-defaults '(rust-mode-font-lock-keywords
+  (setq-local font-lock-defaults '(rust-font-lock-keywords
                                    nil nil nil nil
                                    (font-lock-syntactic-face-function
                                     . rust-mode-syntactic-face-function)))
