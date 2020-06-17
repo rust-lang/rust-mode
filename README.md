@@ -35,7 +35,7 @@ This mode provides:
 - Integration with Cargo, clippy and rustfmt
 
 This mode does _not_ provide autocompletion, or jumping to function /
-trait definitions. See [Integration with Rust Language Server](#rust-language-server)
+trait definitions. See [Auto-completion / code navigation](#auto-completion--code-navigation)
 below for tips on how to enable this.
 
 
@@ -110,7 +110,7 @@ you can use the following in your init.el:
 
 ## Clippy
 `rust-run-clippy` runs
-[Clippy](https://github.com/rust-lang/rust-clippy), a linter. 
+[Clippy](https://github.com/rust-lang/rust-clippy), a linter.
 
 ## Easy insertion of !dbg
 `rust-dbg-wrap-or-unwrap` either wraps or unwraps the current region
