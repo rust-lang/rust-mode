@@ -1947,6 +1947,12 @@ See `compilation-error-regexp-alist' for help on their format.")
   "Specifications for matching `:::` hints in rustc invocations.
 See `compilation-error-regexp-alist' for help on their format.")
 
+(defvar rustc-refs-compilation-regexps
+  (let ((re "^\\([0-9]+\\)[[:space:]]*|"))
+    (cons re '(nil 1 nil 0 1)))
+  "Specifications for matching code references in rustc invocations.
+See `compilation-error-regexp-alist' for help on their format.")
+
 ;; Match test run failures and panics during compilation as
 ;; compilation warnings
 (defvar cargo-compilation-regexps
@@ -1977,6 +1983,9 @@ the compilation window until the top of the error is visible."
 
 (eval-after-load 'compile
   '(progn
+     (add-to-list 'compilation-error-regexp-alist-alist
+                  (cons 'rustc-refs rustc-refs-compilation-regexps))
+     (add-to-list 'compilation-error-regexp-alist 'rustc-refs)
      (add-to-list 'compilation-error-regexp-alist-alist
                   (cons 'rustc rustc-compilation-regexps))
      (add-to-list 'compilation-error-regexp-alist 'rustc)
