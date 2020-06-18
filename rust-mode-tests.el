@@ -3346,14 +3346,20 @@ impl Two<'a> {
        (mapcar (lambda (r)
                  (let ((match-pos
                         (nth (cdr r) spec)))
-                   (if (eq :type (car r))
-                       (cond ((consp match-pos)
-                              (compilation-face match-pos))
-                             (t
-                              (cdr (assoc match-pos '((1 . compilation-warning)
-                                                      (0 . compilation-info)
-                                                      (2 . compilation-error))))))
-                     (match-string match-pos))))
+                   (cond ((and (eq :type (car r)) (consp match-pos))
+                          (compilation-face match-pos))
+                         ((eq :type (car r))
+                          (cdr (assoc match-pos '((1 . compilation-warning)
+                                                  (0 . compilation-info)
+                                                  (2 . compilation-error)))))
+                         ((and (null match-pos) (eq :column (car r)))
+                          'back-to-indentation)
+                         ((and (null match-pos) (eq :file (car r)))
+                          'like-previous-one)
+                         ((null match-pos)
+                          (error (format "%S" (car r))))
+                         (t
+                          (match-string match-pos)))))
                ;; see compilation-error-regexp-alist
                '((:file . 1)
                  (:line . 2)
@@ -3373,16 +3379,27 @@ impl Two<'a> {
     (insert "    ::: file5.rs:12:34\n\n")
     ;; should not match
     (insert "werror found a -> b\n  --> no_match.rs:12:34\n\n")
-
+    (insert "error[E0061]: this function takes 1 parameter but 2 parameters were supplied\n  --> file6.rs:132:34
+    |
+82  | fn duration_ms_since(time: &Option<SystemTime>) -> u128 {
+    | ------------------------------------------------------- defined here
+...
+132 |             self.total_time_ms = duration_ms_since(&self.program_start, 2);
+    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+")
     (should (equal
              '((("file1.rs" "12" "34" compilation-error "file1.rs:12:34")
                 ("file2.rs" "12" "34" compilation-error "file2.rs:12:34")
                 ("file3.rs" "12" "34" compilation-warning "file3.rs:12:34")
-                ("file4.rs" "12" "34" compilation-info "file4.rs:12:34"))
-               (("file5.rs" "12" "34" compilation-info "file5.rs:12:34")))
+                ("file4.rs" "12" "34" compilation-info "file4.rs:12:34")
+                ("file6.rs" "132" "34" compilation-error "file6.rs:132:34"))
+               (("file5.rs" "12" "34" compilation-info "file5.rs:12:34"))
+               ((like-previous-one "82" back-to-indentation compilation-info "82")
+                (like-previous-one "132" back-to-indentation compilation-info "132")))
              (mapcar #'rust-collect-matches
                      (list rustc-compilation-regexps
-                           rustc-colon-compilation-regexps))))))
+                           rustc-colon-compilation-regexps
+                           rustc-refs-compilation-regexps))))))
 
 ;; If electric-pair-mode is available, load it and run the tests that use it.  If not,
 ;; no error--the tests will be skipped.
