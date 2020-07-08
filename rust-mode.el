@@ -1901,20 +1901,29 @@ Return the created process."
   (interactive)
   (setq-local rust-format-on-save nil))
 
+(defun rust--compile (format-string &rest args)
+  (when (null rust-buffer-project)
+    (rust-update-buffer-project))
+  (let ((default-directory
+          (or (and rust-buffer-project
+                   (file-name-directory rust-buffer-project))
+              default-directory)))
+    (compile (apply #'format format-string args))))
+
 (defun rust-compile ()
   "Compile using `cargo build`"
   (interactive)
-  (compile (format "%s build" rust-cargo-bin)))
+  (rust--compile "%s build" rust-cargo-bin))
 
 (defun rust-run ()
   "Run using `cargo run`"
   (interactive)
-  (compile (format "%s run" rust-cargo-bin)))
+  (rust--compile "%s run" rust-cargo-bin))
 
 (defun rust-test ()
   "Test using `cargo test`"
   (interactive)
-  (compile (format "%s test" rust-cargo-bin)))
+  (rust--compile "%s test" rust-cargo-bin))
 
 ;;; Hooks
 
@@ -2072,7 +2081,7 @@ visit the new file."
          ;; set `compile-command' temporarily so `compile' doesn't
          ;; clobber the existing value
          (compile-command (mapconcat #'shell-quote-argument args " ")))
-    (compile compile-command)))
+    (rust--compile compile-command)))
 
 ;;; Utilities
 
