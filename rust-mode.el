@@ -1600,7 +1600,8 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
 (defun rust--format-call (buf)
   "Format BUF using rustfmt."
   (with-current-buffer (get-buffer-create rust-rustfmt-buffername)
-    (view-mode +1)
+    (compilation-mode 1)
+    (setq-local compile-command (format "%s %s" rust-rustfmt-bin (buffer-file-name buf)))
     (let ((inhibit-read-only t))
       (erase-buffer)
       (insert-buffer-substring buf)
