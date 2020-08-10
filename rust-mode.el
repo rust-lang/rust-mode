@@ -292,6 +292,8 @@ Use idomenu (imenu with `ido-mode') for best mileage.")
 
   (add-hook 'before-save-hook 'rust-before-save-hook nil t)
   (add-hook 'after-save-hook 'rust-after-save-hook nil t)
+  ;; NOTE: this one is not local
+  (add-hook 'compilation-finish-functions 'rust-restore-compilation-mode)
 
   (setq-local rust-buffer-project nil)
 
@@ -1901,29 +1903,33 @@ Return the created process."
   (interactive)
   (setq-local rust-format-on-save nil))
 
-(defun rust--compile (format-string &rest args)
+(defun rust--compile (action)
   (when (null rust-buffer-project)
     (rust-update-buffer-project))
   (let ((default-directory
           (or (and rust-buffer-project
                    (file-name-directory rust-buffer-project))
               default-directory)))
-    (compile (apply #'format format-string args))))
+    (rust-compilation-setup
+     (compile (format "%s %s --color always"
+                      rust-cargo-bin
+                      action)
+              t))))
 
 (defun rust-compile ()
   "Compile using `cargo build`"
   (interactive)
-  (rust--compile "%s build" rust-cargo-bin))
+  (rust--compile "build"))
 
 (defun rust-run ()
   "Run using `cargo run`"
   (interactive)
-  (rust--compile "%s run" rust-cargo-bin))
+  (rust--compile "run"))
 
 (defun rust-test ()
   "Test using `cargo test`"
   (interactive)
-  (rust--compile "%s test" rust-cargo-bin))
+  (rust--compile "test"))
 
 ;;; Hooks
 
@@ -2015,6 +2021,25 @@ the compilation window until the top of the error is visible."
                   (cons 'cargo cargo-compilation-regexps))
      (add-to-list 'compilation-error-regexp-alist 'cargo)
      (add-hook 'next-error-hook 'rustc-scroll-down-after-next-error)))
+
+;;; color support for compilation-mode
+(defun rust-restore-compilation-mode (buffer _status)
+  "Restore `compilation-mode' after process termination.
+
+This function is designed for use in `compilation-finish-functions'.
+Keep in sync with `rust-compilation-setup'."
+  (with-current-buffer buffer
+    (when (eq 'rust-mode (get-text-property (point-min) :mode))
+      (compilation-mode))))
+
+(defun rust-compilation-setup (buf)
+  (with-current-buffer buf
+    (put-text-property (point-min)
+                       (point-max)
+                       :mode
+                       'rust-mode
+                       buf))
+  buf)
 
 ;;; Secondary Commands
 
