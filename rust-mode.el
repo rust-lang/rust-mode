@@ -1910,6 +1910,11 @@ Return the created process."
               default-directory)))
     (compile (apply #'format format-string args))))
 
+(defun rust-check ()
+  "Compile using `cargo check`"
+  (interactive)
+  (rust--compile "%s check" rust-cargo-bin))
+
 (defun rust-compile ()
   "Compile using `cargo build`"
   (interactive)
