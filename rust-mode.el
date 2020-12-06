@@ -16,7 +16,8 @@
 
 (eval-when-compile (require 'rx)
                    (require 'compile)
-                   (require 'url-vars))
+                   (require 'url-vars)
+                   (require 'ansi-color))
 
 (require 'json)
 (require 'thingatpt)
@@ -289,11 +290,24 @@ Use idomenu (imenu with `ido-mode') for best mileage.")
   (setq-local parse-sexp-lookup-properties t)
   (setq-local electric-pair-inhibit-predicate 'rust-electric-pair-inhibit-predicate-wrap)
   (setq-local electric-pair-skip-self 'rust-electric-pair-skip-self-wrap)
+  (setq-local compilation-environment (cons "CARGO_TERM_COLOR=always" compilation-environment))
 
   (add-hook 'before-save-hook 'rust-before-save-hook nil t)
   (add-hook 'after-save-hook 'rust-after-save-hook nil t)
 
   (setq-local rust-buffer-project nil)
+
+  ;; This cannot be done in a buffer-local variable since the hook must be set
+  ;; in the compilation buffer.
+  (defadvice compilation-start (around add-ansi-color-hook activate)
+    (if (eq major-mode 'rust-mode)
+        (let ((compilation-start-hook (cons
+                                       (lambda (proc) (add-hook 'compilation-filter-hook
+                                                                'rust--compile-color-hook
+                                                                nil t))
+                                       compilation-start-hook)))
+          ad-do-it)
+      ad-do-it))
 
   (when rust-always-locate-project-on-open
     (rust-update-buffer-project)))
@@ -1929,6 +1943,10 @@ Return the created process."
   "Test using `cargo test`"
   (interactive)
   (rust--compile "%s test" rust-cargo-bin))
+
+(defun rust--compile-color-hook ()
+  "Used to interpret cargo's colored output"
+  (ansi-color-apply-on-region compilation-filter-start (point)))
 
 ;;; Hooks
 
