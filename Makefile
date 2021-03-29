@@ -11,6 +11,7 @@ EMACS_ARGS ?=
 
 ELS   = rust-mode.el
 ELS  += rust-compile.el
+ELS  += rust-playpen.el
 ELS  += rust-rustfmt.el
 ELCS  = $(ELS:.el=.elc)
 
