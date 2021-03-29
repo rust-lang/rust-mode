@@ -1,4 +1,4 @@
-;;; rust-mode.el --- A major emacs mode for editing Rust source code -*-lexical-binding: t-*-
+;;; rust-mode.el --- A major-mode for editing Rust source code -*-lexical-binding: t-*-
 
 ;; Version: 0.5.0
 ;; Author: Mozilla
@@ -10,7 +10,8 @@
 ;; Apache License (version 2.0).
 
 ;;; Commentary:
-;;
+
+;; This package implements a major-mode for editing Rust source code.
 
 ;;; Code:
 
