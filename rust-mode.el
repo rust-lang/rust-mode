@@ -524,7 +524,8 @@ seen as a macro."
         (and (= ?! (char-after))
              (rust-looking-back-ident)))))
 
-;; Syntax definitions and helpers
+;;; Syntax definitions and helpers
+
 (defun rust-paren-level () (nth 0 (syntax-ppss)))
 (defun rust-in-str () (nth 3 (syntax-ppss)))
 (defun rust-in-str-or-cmnt () (nth 8 (syntax-ppss)))
@@ -1607,7 +1608,8 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
     (skip-syntax-forward "\"|")
     (point)))
 
-;; Formatting using rustfmt
+;;; Formatting using rustfmt
+
 (defconst rust-rustfmt-buffername "*rustfmt*")
 
 (defun rust--format-call (buf)
