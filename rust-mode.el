@@ -485,6 +485,13 @@ Does not match type annotations of the form \"foo::<\"."
              ("use" . font-lock-constant-face)
              ("fn" . font-lock-function-name-face)))))
 
+(defun rust-end-of-string ()
+  "Skip to the end of the current string."
+  (save-excursion
+    (skip-syntax-forward "^\"|")
+    (skip-syntax-forward "\"|")
+    (point)))
+
 (defun rust-looking-back-str (str)
   "Return non-nil if there's a match on the text before point and STR.
 Like `looking-back' but for fixed strings rather than regexps (so
@@ -1600,13 +1607,6 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
            (goto-char (point-max)))))
     ;; There is no opening brace, so consider the whole buffer to be one "defun"
     (goto-char (point-max))))
-
-(defun rust-end-of-string ()
-  "Skip to the end of the current string."
-  (save-excursion
-    (skip-syntax-forward "^\"|")
-    (skip-syntax-forward "\"|")
-    (point)))
 
 ;;; Formatting using rustfmt
 
