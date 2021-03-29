@@ -14,6 +14,7 @@ ELS  += rust-cargo.el
 ELS  += rust-compile.el
 ELS  += rust-playpen.el
 ELS  += rust-rustfmt.el
+ELS  += rust-utils.el
 ELCS  = $(ELS:.el=.elc)
 
 DEPS  =
