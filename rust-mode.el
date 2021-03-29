@@ -257,17 +257,18 @@ Use idomenu (imenu with `ido-mode') for best mileage.")
   :group 'rust-mode
   :syntax-table rust-mode-syntax-table
 
-  ;; Syntax.
+  ;; Syntax
   (setq-local syntax-propertize-function #'rust-syntax-propertize)
 
   ;; Indentation
   (setq-local indent-line-function 'rust-mode-indent-line)
 
   ;; Fonts
-  (setq-local font-lock-defaults '(rust-font-lock-keywords
-                                   nil nil nil nil
-                                   (font-lock-syntactic-face-function
-                                    . rust-mode-syntactic-face-function)))
+  (setq-local font-lock-defaults
+              '(rust-font-lock-keywords
+                nil nil nil nil
+                (font-lock-syntactic-face-function
+                 . rust-mode-syntactic-face-function)))
 
   ;; Misc
   (setq-local comment-start "// ")
@@ -275,14 +276,16 @@ Use idomenu (imenu with `ido-mode') for best mileage.")
   (setq-local open-paren-in-column-0-is-defun-start nil)
 
   ;; Auto indent on }
-  (setq-local
-   electric-indent-chars (cons ?} (and (boundp 'electric-indent-chars)
-                                       electric-indent-chars)))
+  (setq-local electric-indent-chars
+              (cons ?} (and (boundp 'electric-indent-chars)
+                            electric-indent-chars)))
 
   ;; Allow paragraph fills for comments
   (setq-local comment-start-skip "\\(?://[/!]*\\|/\\*[*!]?\\)[[:space:]]*")
   (setq-local paragraph-start
-              (concat "[[:space:]]*\\(?:" comment-start-skip "\\|\\*/?[[:space:]]*\\|\\)$"))
+              (concat "[[:space:]]*\\(?:"
+                      comment-start-skip
+                      "\\|\\*/?[[:space:]]*\\|\\)$"))
   (setq-local paragraph-separate paragraph-start)
   (setq-local normal-auto-fill-function 'rust-do-auto-fill)
   (setq-local fill-paragraph-function 'rust-fill-paragraph)
@@ -296,7 +299,8 @@ Use idomenu (imenu with `ido-mode') for best mileage.")
   (setq-local beginning-of-defun-function 'rust-beginning-of-defun)
   (setq-local end-of-defun-function 'rust-end-of-defun)
   (setq-local parse-sexp-lookup-properties t)
-  (setq-local electric-pair-inhibit-predicate 'rust-electric-pair-inhibit-predicate-wrap)
+  (setq-local electric-pair-inhibit-predicate
+              'rust-electric-pair-inhibit-predicate-wrap)
   (setq-local electric-pair-skip-self 'rust-electric-pair-skip-self-wrap)
 
   (add-hook 'before-save-hook 'rust-before-save-hook nil t)
