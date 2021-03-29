@@ -10,6 +10,7 @@ EMACS ?= emacs
 EMACS_ARGS ?=
 
 ELS   = rust-mode.el
+ELS  += rust-compile.el
 ELCS  = $(ELS:.el=.elc)
 
 DEPS  =
