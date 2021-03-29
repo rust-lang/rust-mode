@@ -2174,7 +2174,4 @@ visit the new file."
   (rust-mode))
 
 (provide 'rust-mode)
-;; Local Variables:
-;; indent-tabs-mode: nil
-;; End:
 ;;; rust-mode.el ends here
