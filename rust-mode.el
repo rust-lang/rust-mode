@@ -17,6 +17,16 @@
 
 (eval-when-compile (require 'rx))
 
+(defvar rust-load-optional-libraries t
+  "Whether loading `rust-mode' also loads optional libraries.
+This variable might soon be remove again.")
+
+(when rust-load-optional-libraries
+  (require 'rust-cargo)
+  (require 'rust-compile)
+  (require 'rust-playpen)
+  (require 'rust-rustfmt))
+
 (defvar electric-pair-inhibit-predicate)
 (defvar electric-pair-skip-self)
 (defvar electric-indent-chars)
@@ -188,9 +198,10 @@ Use idomenu (imenu with `ido-mode') for best mileage.")
 
 (defvar rust-mode-map
   (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "C-c C-f") 'rust-format-buffer)
     (define-key map (kbd "C-c C-d") 'rust-dbg-wrap-or-unwrap)
-    (define-key map (kbd "C-c C-n") 'rust-goto-format-problem)
+    (when rust-load-optional-libraries
+      (define-key map (kbd "C-c C-f") 'rust-format-buffer)
+      (define-key map (kbd "C-c C-n") 'rust-goto-format-problem))
     map)
   "Keymap for Rust major mode.")
 
