@@ -10,6 +10,7 @@ EMACS ?= emacs
 EMACS_ARGS ?=
 
 ELS   = rust-mode.el
+ELS  += rust-cargo.el
 ELS  += rust-compile.el
 ELS  += rust-playpen.el
 ELS  += rust-rustfmt.el
