@@ -9,6 +9,15 @@
 (defconst rust-test-fill-column 32)
 (setq-default indent-tabs-mode nil)
 
+(defmacro test-silence (messages &rest body)
+  `(cl-letf* (((symbol-function 'm)
+               (symbol-function #'message))
+              ((symbol-function #'message)
+	       (lambda (format-string &rest args)
+	         (unless (member format-string ,messages)
+	           (apply 'm format-string args)))))
+     ,@body))
+
 (defun rust-compare-code-after-manip (_original _point-pos _manip-func expected got)
   (equal expected got))
 
@@ -309,7 +318,10 @@ very very very long string
      deindented
      1
      (lambda ()
-       (indent-region 1 (+ 1 (buffer-size))))
+       (test-silence
+        '("%s %s"   ; "Indenting..." progress-reporter-do-update
+          "%sdone") ; "Indenting...done"  progress-reporter-done
+        (indent-region 1 (+ 1 (buffer-size)))))
      indented)))
 
 
