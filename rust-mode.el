@@ -210,10 +210,22 @@ Use idomenu (imenu with `ido-mode') for best mileage.")
 
 (defvar rust-mode-map
   (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "C-c C-d") 'rust-dbg-wrap-or-unwrap)
-    (when rust-load-optional-libraries
-      (define-key map (kbd "C-c C-f") 'rust-format-buffer)
-      (define-key map (kbd "C-c C-n") 'rust-goto-format-problem))
+    (define-key map (kbd "C-c C-p") 'rust-popup)
+
+    (define-key map (kbd "C-c C-c C-u") 'rust-compile)
+    (define-key map (kbd "C-c C-c C-i") 'rust-recompile)
+    (define-key map (kbd "C-c C-c C-b") 'rust-cargo-build)
+    (define-key map (kbd "C-c C-c C-k") 'rust-cargo-check)
+    (define-key map (kbd "C-c C-c C-r") 'rust-cargo-run)
+    (define-key map (kbd "C-c C-c C-f") 'rust-cargo-fmt)
+    (define-key map (kbd "C-c C-c C-t") 'rust-cargo-test)
+    (define-key map (kbd "C-c C-c C-c") 'rust-cargo-current-test)
+    (define-key map (kbd "C-c C-c C-l") 'rust-cargo-clippy)
+    (define-key map (kbd "C-c C-c C-o") 'rust-format-buffer)
+
+    (define-key map (kbd "C-c C-c C-d") 'rust-racer-describe)
+    (define-key map (kbd "C-c C-c C-,") 'rust-docstring-dwim)
+    (define-key map (kbd "C-c C-c C-n") 'rust-cargo-outdated)
     map)
   "Keymap for Rust major mode.")
 
