@@ -113,6 +113,25 @@ to the function arguments.  When nil, `->' will be indented one level."
   "Face for interpolating braces in builtin formatting macro strings."
   :group 'rust-mode)
 
+;;; Workspace
+
+(defvar-local rust--buffer-workspace nil
+  "Use function `rust-buffer-workspace' instead.")
+
+(defun rust-buffer-workspace (&optional nodefault)
+  "Return the Rust workspace for the current buffer.
+This is the directory containing the file \"Cargo.lock\".  When
+called outside a Rust project, then return `default-directory',
+or if NODEFAULT is non-nil, then fall back to returning nil."
+  (or rust--buffer-workspace
+      (let ((dir (locate-dominating-file default-directory "Cargo.toml")))
+        (when dir
+          (setq dir (expand-file-name dir)))
+        (setq rust--buffer-workspace dir)
+        (or dir
+            (and (not nodefault)
+                 default-directory)))))
+
 ;;; Syntax
 
 (defun rust-re-word (inner) (concat "\\<" inner "\\>"))
