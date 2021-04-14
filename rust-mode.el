@@ -1,17 +1,32 @@
-;;; rust-mode.el --- A major-mode for editing Rust source code -*-lexical-binding: t-*-
+;;; rust.el --- Rust development environment -*-lexical-binding: t-*-
 
-;; Version: 0.5.0
+;; Version: 1.3
 ;; Author: Mozilla
-;; Url: https://github.com/rust-lang/rust-mode
+;;
 ;; Keywords: languages
-;; Package-Requires: ((emacs "25.1"))
+;; Package-Requires: ((emacs "26.1") (dash "2.13.0") (f "0.18.2") (let-alist "1.0.4") (markdown-mode "2.3") (project "0.3.0") (s "1.10.0") (seq "2.3") (spinner "1.7.3") (xterm-color "1.6"))
 
 ;; This file is distributed under the terms of both the MIT license and the
 ;; Apache License (version 2.0).
 
 ;;; Commentary:
 
-;; This package implements a major-mode for editing Rust source code.
+;; This package is a fork of rust-mode.
+;;
+;; Differences with rust-mode:
+;;
+;; - rust-analyzer configuration
+;; - flycheck integration
+;; - cargo popup
+;; - multiline error parsing
+;; - translation of ANSI control sequences through xterm-color
+;; - async org babel
+;; - custom compilation process
+;; - rustfmt errors in a rust compilation mode
+;; - automatic RLS configuration with eglot or lsp-mode
+;; - cask for testing
+;; - requires emacs 26
+;; - etc.
 
 ;;; Code:
 
@@ -33,7 +48,7 @@ This variable might soon be remove again.")
 
 ;;; Customization
 
-(defgroup rust-mode nil
+(defgroup rust nil
   "Support for Rust code."
   :link '(url-link "https://www.rust-lang.org/")
   :group 'languages)
@@ -217,14 +232,14 @@ Use idomenu (imenu with `ido-mode') for best mileage.")
   (setq-local syntax-propertize-function #'rust-syntax-propertize)
 
   ;; Indentation
-  (setq-local indent-line-function 'rust-mode-indent-line)
+  (setq-local indent-line-function 'rust-indent-line)
 
   ;; Fonts
   (setq-local font-lock-defaults
               '(rust-font-lock-keywords
                 nil nil nil nil
                 (font-lock-syntactic-face-function
-                 . rust-mode-syntactic-face-function)))
+                 . rust-syntactic-face-function)))
 
   ;; Misc
   (setq-local comment-start "// ")
@@ -265,6 +280,11 @@ Use idomenu (imenu with `ido-mode') for best mileage.")
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.rs\\'" . rust-mode))
+
+;; remove rust-mode from `auto-mode-alist'
+(let ((mode '("\\.rs\\'" . rust-mode)))
+  (when (member mode auto-mode-alist)
+    (setq auto-mode-alist (remove mode auto-mode-alist))))
 
 (defvar rust-top-item-beg-re
   (concat "\\s-*"
@@ -1306,7 +1326,7 @@ should be considered a paired angle bracket."
       (backward-up-list)
       (/= (following-char) ?<)))))
 
-(defun rust-mode-syntactic-face-function (state)
+(defun rust-syntactic-face-function (state)
   "Return face that distinguishes doc and normal comments in given syntax STATE."
   (if (nth 3 state)
       'font-lock-string-face
@@ -1351,11 +1371,8 @@ whichever comes first."
                            'syntax-table (string-to-syntax "|"))
         (goto-char (match-end 0))))))
 
-;;; Syntax Propertize
-
 (defun rust-syntax-propertize (start end)
   "A `syntax-propertize-function' to apply properties from START to END."
-  ;; Cache all macro scopes as an optimization. See issue #208
   (let ((rust-macro-scopes (rust-macro-scope start end)))
     (goto-char start)
     (let ((str-start (rust-in-str-or-cmnt)))
@@ -1565,10 +1582,11 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
 
 ;;; _
 
-(defun rust-mode-reload ()
+(defun rust-reload ()
+  "Reload rust package."
   (interactive)
-  (unload-feature 'rust-mode)
-  (require 'rust-mode)
+  (unload-feature 'rust)
+  (require 'rust)
   (rust-mode))
 
 (provide 'rust-mode)
