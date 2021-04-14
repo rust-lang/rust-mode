@@ -30,17 +30,14 @@
 
 ;;; Code:
 
+(require 'cl-lib)
+(require 'pcase)
+(require 'seq)
+(require 'subr-x)
+
+(require 'dash)
+
 (eval-when-compile (require 'rx))
-
-(defvar rust-load-optional-libraries t
-  "Whether loading `rust-mode' also loads optional libraries.
-This variable might soon be remove again.")
-
-(when rust-load-optional-libraries
-  (require 'rust-cargo)
-  (require 'rust-compile)
-  (require 'rust-playpen)
-  (require 'rust-rustfmt))
 
 (defvar electric-pair-inhibit-predicate)
 (defvar electric-pair-skip-self)
@@ -1589,7 +1586,25 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
   (require 'rust)
   (rust-mode))
 
-(provide 'rust-mode)
-(require 'rust-utils)
+(provide 'rust)
 
-;;; rust-mode.el ends here
+(require 'rust-interaction)
+
+(defvar rust-load-optional-libraries t
+  "Whether loading `rust' also loads optional libraries.
+This variable might soon be remove again.")
+
+(when rust-load-optional-libraries
+  (require 'rust-compile)
+  (require 'rust-popup)
+  (require 'rust-cargo)
+  (require 'rust-babel)
+  (require 'rust-racer)
+  (require 'rust-rustfmt)
+  (require 'rust-rustfix)
+  (require 'rust-playpen)
+  (require 'rust-lsp)
+  (with-eval-after-load 'flycheck
+    (require 'rust-flycheck)))
+
+;;; rust.el ends here
