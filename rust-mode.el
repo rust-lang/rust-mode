@@ -134,34 +134,12 @@ or if NODEFAULT is non-nil, then fall back to returning nil."
 
 ;;; Syntax
 
-(defun rust-re-word (inner) (concat "\\<" inner "\\>"))
-(defun rust-re-grab (inner) (concat "\\(" inner "\\)"))
-(defun rust-re-shy (inner) (concat "\\(?:" inner "\\)"))
-
 (defconst rust-re-ident "[[:word:][:multibyte:]_][[:word:][:multibyte:]_[:digit:]]*")
 (defconst rust-re-lc-ident "[[:lower:][:multibyte:]_][[:word:][:multibyte:]_[:digit:]]*")
 (defconst rust-re-uc-ident "[[:upper:]][[:word:][:multibyte:]_[:digit:]]*")
-(defvar rust-re-vis
-  ;; pub | pub ( crate ) | pub ( self ) | pub ( super ) | pub ( in SimplePath )
-  (concat
-   "pub"
-   (rust-re-shy
-    (concat
-     "[[:space:]]*([[:space:]]*"
-     (rust-re-shy
-      (concat "crate" "\\|"
-              "\\(?:s\\(?:elf\\|uper\\)\\)" "\\|"
-              ;;   in SimplePath
-              (rust-re-shy
-               (concat
-                "in[[:space:]]+"
-                rust-re-ident
-                (rust-re-shy (concat "::" rust-re-ident)) "*"))))
-     "[[:space:]]*)"))
-   "?"))
+(defconst rust-re-vis "pub")
 (defconst rust-re-unsafe "unsafe")
 (defconst rust-re-extern "extern")
-(defconst rust-re-async-or-const "async\\|const")
 (defconst rust-re-generic
   (concat "<[[:space:]]*'" rust-re-ident "[[:space:]]*>"))
 (defconst rust-re-union
@@ -171,27 +149,27 @@ or if NODEFAULT is non-nil, then fall back to returning nil."
      (group symbol-start "union" symbol-end)
      (+ space) (regexp ,rust-re-ident))))
 
+(defun rust-re-shy (inner) (concat "\\(?:" inner "\\)"))
+(defun rust-re-grab (inner) (concat "\\(" inner "\\)"))
 (defun rust-re-item-def (itype)
   (concat (rust-re-word itype)
           (rust-re-shy rust-re-generic) "?"
           "[[:space:]]+" (rust-re-grab rust-re-ident)))
+(defun rust-re-word (inner) (concat "\\<" inner "\\>"))
 
-;; TODO some of this does only make sense for `fn' (unsafe, extern...)
-;; and not other items
 (defun rust-re-item-def-imenu (itype)
   (concat "^[[:space:]]*"
-          (rust-re-shy (concat rust-re-vis "[[:space:]]+")) "?"
+          (rust-re-shy (concat (rust-re-word rust-re-vis) "[[:space:]]+")) "?"
           (rust-re-shy (concat (rust-re-word "default") "[[:space:]]+")) "?"
-          (rust-re-shy (concat (rust-re-shy rust-re-async-or-const) "[[:space:]]+")) "?"
           (rust-re-shy (concat (rust-re-word rust-re-unsafe) "[[:space:]]+")) "?"
           (rust-re-shy (concat (rust-re-word rust-re-extern) "[[:space:]]+"
-                               (rust-re-shy "\"[^\"]+\"[[:space:]]+") "?")) "?"
-                               (rust-re-item-def itype)))
+                                 (rust-re-shy "\"[^\"]+\"[[:space:]]+") "?")) "?"
+          (rust-re-item-def itype)))
 
 (defvar rust-imenu-generic-expression
   (append (mapcar #'(lambda (x)
                       (list (capitalize x) (rust-re-item-def-imenu x) 1))
-                  '("enum" "struct" "union" "type" "mod" "fn" "trait" "impl"))
+                  '("async fn" "enum" "struct" "union" "type" "mod" "fn" "trait" "impl"))
           `(("Macro" ,(rust-re-item-def-imenu "macro_rules!") 1)))
   "Value for `imenu-generic-expression' in Rust mode.
 
@@ -315,15 +293,10 @@ Use idomenu (imenu with `ido-mode') for best mileage.")
     (setq auto-mode-alist (remove mode auto-mode-alist))))
 
 (defvar rust-top-item-beg-re
-  (concat "\\s-*"
-          ;; TODO some of this does only make sense for `fn' (unsafe, extern...)
-          ;; and not other items
-          (rust-re-shy (concat (rust-re-shy rust-re-vis) "[[:space:]]+")) "?"
-          (rust-re-shy (concat (rust-re-shy rust-re-async-or-const) "[[:space:]]+")) "?"
-          (rust-re-shy (concat (rust-re-shy rust-re-unsafe) "[[:space:]]+")) "?"
+  (concat "\\s-*\\(?:priv\\|pub\\)?\\s-*"
           (regexp-opt
            '("enum" "struct" "union" "type" "mod" "use" "fn" "static" "impl"
-             "extern" "trait"))
+             "extern" "trait" "async"))
           "\\_>")
   "Start of a Rust item.")
 
@@ -337,7 +310,7 @@ Use idomenu (imenu with `ido-mode') for best mileage.")
     "box" "break"
     "const" "continue" "crate"
     "do" "dyn"
-    "else" "enum" "extern"
+    "else" "enum" "extern" "existential"
     "false" "fn" "for"
     "if" "impl" "in"
     "let" "loop"
@@ -375,7 +348,7 @@ This is used by `rust-font-lock-keywords'.
 \(`write!' is handled separately).")
 
 (defvar rust-formatting-macro-opening-re
-  "[[:space:]\n]*[({[][[:space:]\n]*"
+  "[[:space:]]*[({[][[:space:]]*"
   "Regular expression to match the opening delimiter of a Rust formatting macro.")
 
 (defvar rust-start-of-string-re
@@ -421,11 +394,9 @@ Does not match type annotations of the form \"foo::<\"."
       1 font-lock-preprocessor-face keep)
 
      ;; Builtin formatting macros
-     (,(concat (rust-re-grab
-                (concat (rust-re-word (regexp-opt rust-builtin-formatting-macros))
-                        "!"))
+     (,(concat (rust-re-grab (concat (regexp-opt rust-builtin-formatting-macros) "!"))
                rust-formatting-macro-opening-re
-               "\\(?:" rust-start-of-string-re "\\)?")
+               rust-start-of-string-re)
       (1 'rust-builtin-formatting-macro)
       (rust-string-interpolation-matcher
        (rust-end-of-string)
@@ -433,7 +404,7 @@ Does not match type annotations of the form \"foo::<\"."
        (0 'rust-string-interpolation t nil)))
 
      ;; write! macro
-     (,(concat (rust-re-grab (concat (rust-re-word "write\\(ln\\)?") "!"))
+     (,(concat (rust-re-grab "write\\(ln\\)?!")
                rust-formatting-macro-opening-re
                "[[:space:]]*[^\"]+,[[:space:]]*"
                rust-start-of-string-re)
@@ -448,14 +419,13 @@ Does not match type annotations of the form \"foo::<\"."
       1 font-lock-preprocessor-face)
 
      ;; Field names like `foo:`, highlight excluding the :
-     (,(concat (rust-re-grab rust-re-ident) "[[:space:]]*:[^:]")
-      1 font-lock-variable-name-face)
+     (,(concat (rust-re-grab rust-re-ident) ":[^:]") 1 font-lock-variable-name-face)
 
      ;; CamelCase Means Type Or Constructor
      (,rust-re-type-or-constructor 1 font-lock-type-face)
 
      ;; Type-inferred binding
-     (,(concat "\\_<\\(?:let\\s-+ref\\|let\\|ref\\|for\\)\\s-+\\(?:mut\\s-+\\)?"
+     (,(concat "\\_<\\(?:let\\s-+ref\\|let\\|ref\\)\\s-+\\(?:mut\\s-+\\)?"
                (rust-re-grab rust-re-ident)
                "\\_>")
       1 font-lock-variable-name-face)
@@ -1033,21 +1003,23 @@ should be considered a paired angle bracket."
    ;; as angle brackets it won't mess up any paren balancing.
    ((rust-in-macro) t)
 
-   ((= (following-char) ?<)
+   ((looking-at "<")
     (rust-is-lt-char-operator))
 
-   ;; Since rust-ordinary-lt-gt-p is called only when either < or > are at the point,
-   ;; we know that the following char must be > in the clauses below.
+   ((looking-at ">")
+    (cond
+     ;; Don't treat the > in -> or => as an angle bracket
+     ((member (char-before (point)) '(?- ?=)) t)
 
-   ;; If we are at top level and not in any list, it can't be a closing
-   ;; angle bracket
-   ((>= 0 (rust-paren-level)) t)
+     ;; If we are at top level and not in any list, it can't be a closing
+     ;; angle bracket
+     ((>= 0 (rust-paren-level)) t)
 
-   ;; Otherwise, treat the > as a closing angle bracket if it would
-   ;; match an opening one
-   ((save-excursion
-      (backward-up-list)
-      (/= (following-char) ?<)))))
+     ;; Otherwise, treat the > as a closing angle bracket if it would
+     ;; match an opening one
+     ((save-excursion
+        (backward-up-list)
+        (not (looking-at "<"))))))))
 
 (defun rust-syntactic-face-function (state)
   "Return face that distinguishes doc and normal comments in given syntax STATE."
