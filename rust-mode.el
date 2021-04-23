@@ -1510,7 +1510,7 @@ This handles multi-line comments with a * prefix on each line."
 
 ;;; Defun Motions
 
-(defun rust-beginning-of-defun (&optional arg)
+(defun rust-beginning-of-defun (&optional arg regex)
   "Move backward to the beginning of the current defun.
 
 With ARG, move backward multiple defuns.  Negative ARG means
@@ -1530,8 +1530,9 @@ which calls this, does that afterwards."
     (catch 'done
       (dotimes (_ magnitude)
         ;; Search until we find a match that is not in a string or comment.
-        (while (if (re-search-backward (concat "^\\(" rust-top-item-beg-re "\\)")
-                                       nil 'move sign)
+        (while (if (re-search-backward
+                    (concat "^\\(" (or regex rust-top-item-beg-re) "\\)")
+                    nil 'move sign)
                    (rust-in-str-or-cmnt)
                  ;; Did not find it.
                  (throw 'done nil)))))
