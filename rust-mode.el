@@ -606,6 +606,8 @@ buffer."
 
 (defconst rust-re-special-types (regexp-opt rust-special-types 'symbols))
 
+;;; Indent Line
+
 (defun rust-align-to-expr-after-brace ()
   (save-excursion
     (forward-char)
