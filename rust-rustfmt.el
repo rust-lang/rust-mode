@@ -86,13 +86,13 @@
 ;; Since we run rustfmt through stdin we get <stdin> markers in the
 ;; output. This replaces them with the buffer name instead.
 (defun rust--format-fix-rustfmt-buffer (buffer-name)
-  (with-current-buffer (get-buffer rust-rustfmt-buffername)
-    (let ((inhibit-read-only t))
-      (goto-char (point-min))
-      (while (re-search-forward "--> <stdin>:" nil t)
-        (replace-match (format "--> %s:" buffer-name)))
-      (while (re-search-forward "--> stdin:" nil t)
-        (replace-match (format "--> %s:" buffer-name))))))
+  (save-match-data
+    (with-current-buffer (get-buffer rust-rustfmt-buffername)
+      (let ((inhibit-read-only t)
+            (fixed (format "--> %s:" buffer-name)))
+          (goto-char (point-min))
+          (while (re-search-forward "--> \\(?:<stdin>\\|stdin\\):" nil t)
+            (replace-match fixed))))))
 
 ;; If rust-mode has been configured to navigate to source of the error
 ;; or display it, do so -- and return true. Otherwise return nil to
