@@ -144,6 +144,10 @@ compile errors and Clippy lints inline.
 [cargo.el](https://github.com/kwrooijen/cargo.el) provides a minor
 mode for integration with Cargo, Rust's package manager.
 
+## cargo-mode
+
+[cargo-mode](https://github.com/ayrat555/cargo-mode) is an Emacs minor mode which allows to dynamically select a Cargo command. The reasons behind this package can be found in [the post](https://www.badykov.com/emacs/2021/05/29/emacs-cargo-mode/).
+
 ## Rustic
 [rustic](https://github.com/brotzeit/rustic) is a fork of rust-mode,
 extending it with other features such as integration with LSP and with flycheck.
