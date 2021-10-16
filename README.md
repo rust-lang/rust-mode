@@ -1,4 +1,7 @@
+# rust-mode
+
 [![MELPA](https://melpa.org/packages/rust-mode-badge.svg)](https://melpa.org/#/rust-mode)
+[![](https://github.com/rust-lang/rust-mode/workflows/CI/badge.svg)](https://github.com/rust-lang/rust-mode/actions?query=workflow%3ACI)
 
 <!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-refresh-toc -->
 **Table of Contents**
@@ -23,7 +26,7 @@
 
 <!-- markdown-toc end -->
 
-# Introduction
+## Introduction
 `rust-mode` makes editing [Rust](http://rust-lang.org) code with Emacs
 enjoyable. It requires Emacs 25 or later, and is included in both
 [Emacs Prelude](https://github.com/bbatsov/prelude) and
@@ -39,9 +42,9 @@ trait definitions. See [Auto-completion / code navigation](#auto-completion--cod
 below for tips on how to enable this.
 
 
-# Installation
+## Installation
 
-## Melpa
+### Melpa
 The package is available on MELPA. Add this to your init.el.
 
 ``` elisp
@@ -60,7 +63,7 @@ And put this in your config to load rust-mode automatically:
 
 `(require 'rust-mode)`
 
-## Manual installation
+### Manual installation
 Clone this repository locally, and add this to your init.el:
 
 ``` elisp
@@ -68,8 +71,8 @@ Clone this repository locally, and add this to your init.el:
 (autoload 'rust-mode "rust-mode" nil t)
 ```
 
-# Feature guide
-## Indentation
+## Feature guide
+### Indentation
 Commands like <kbd>TAB</kbd> should indent correctly.
 
 The Rust style guide recommends spaces rather than tabs for
@@ -81,7 +84,7 @@ which forces indentation to always use spaces.
           (lambda () (setq indent-tabs-mode nil)))
 ```
 
-## Code formatting
+### Code formatting
 
 The `rust-format-buffer` function will format your code with
 [rustfmt](https://github.com/rust-lang/rustfmt) if installed. By
@@ -95,7 +98,7 @@ on save:
 (setq rust-format-on-save t)
 ```
 
-## Running / testing / compiling code
+### Running / testing / compiling code
 
 The `rust-run`, `rust-test`, `rust-compile` and `rust-check` functions shell out to
 Cargo to run, test, build and check your code. Under the hood, these use the
@@ -108,11 +111,11 @@ you can use the following in your init.el:
 (define-key rust-mode-map (kbd "C-c C-c") 'rust-run)
 ```
 
-## Clippy
+### Clippy
 `rust-run-clippy` runs
 [Clippy](https://github.com/rust-lang/rust-clippy), a linter.
 
-## Easy insertion of !dbg
+### Easy insertion of !dbg
 `rust-dbg-wrap-or-unwrap` either wraps or unwraps the current region
 in `dbg!`. This can be useful for easily adding debug lines to your
 program.
@@ -120,9 +123,9 @@ program.
 This is bound to <kbd>C-c C-d</kbd> by default.
 
 
-# Other recommended packages
+## Other recommended packages
 
-## Auto-completion / code navigation
+### Auto-completion / code navigation
 This package does not provide integration with
 [RLS](https://github.com/rust-lang/rls), which provides
 auto-completion and code navigation. To use this you need an Emacs
@@ -136,26 +139,26 @@ A lighter package that uses
 [racer](https://github.com/racer-rust/racer) is
 [emacs-racer](https://github.com/racer-rust/emacs-racer).
 
-## flycheck
+### flycheck
 [flycheck](https://github.com/flycheck/flycheck) allows highlighting
 compile errors and Clippy lints inline.
 
-## cargo.el
+### cargo.el
 [cargo.el](https://github.com/kwrooijen/cargo.el) provides a minor
 mode for integration with Cargo, Rust's package manager.
 
-## cargo-mode
+### cargo-mode
 
 [cargo-mode](https://github.com/ayrat555/cargo-mode) is an Emacs minor mode which allows to dynamically select a Cargo command. The reasons behind this package can be found in [the post](https://www.badykov.com/emacs/2021/05/29/emacs-cargo-mode/).
 
-## Rustic
+### Rustic
 [rustic](https://github.com/brotzeit/rustic) is based on rust-mode,
 extending it with other features such as integration with LSP and with flycheck.
 
 
-# For package maintainers
+## For package maintainers
 
-## Tests
+### Tests
 
 Run elisp tests:
 
