@@ -28,5 +28,7 @@ jobs:
         version: ${{ matrix.emacs_version }}
 
     - uses: actions/checkout@v1
+
     - name: Run tests
-      run: './run_rust_emacs_tests.sh'
+      run: |
+        make test
