@@ -145,7 +145,7 @@ compile errors and Clippy lints inline.
 mode for integration with Cargo, Rust's package manager.
 
 ## Rustic
-[rustic](https://github.com/brotzeit/rustic) is a fork of rust-mode,
+[rustic](https://github.com/brotzeit/rustic) is based on rust-mode,
 extending it with other features such as integration with LSP and with flycheck.
 
 
@@ -153,7 +153,8 @@ extending it with other features such as integration with LSP and with flycheck.
 
 ## Tests
 
-The file `rust-mode-tests.el` contains tests that can be run via
-[ERT](http://www.gnu.org/software/emacs/manual/html_node/ert/index.html).
-You can use `run_rust_emacs_tests.sh` to run them in batch mode, if
-you set the environment variable EMACS to a program that runs emacs.
+Run elisp tests:
+
+``` bash
+make test
+```
