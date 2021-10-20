@@ -15,7 +15,7 @@
     - [Code formatting](#code-formatting)
     - [Running / testing / compiling code](#running--testing--compiling-code)
     - [Clippy](#clippy)
-    - [Easy insertion of !dbg](#easy-insertion-of-dbg)
+    - [Easy insertion of dbg!](#easy-insertion-of-dbg)
 - [Other recommended packages](#other-recommended-packages)
     - [Auto-completion / code navigation](#auto-completion--code-navigation)
     - [flycheck](#flycheck)
@@ -115,7 +115,7 @@ you can use the following in your init.el:
 `rust-run-clippy` runs
 [Clippy](https://github.com/rust-lang/rust-clippy), a linter.
 
-### Easy insertion of !dbg
+### Easy insertion of dbg!
 `rust-dbg-wrap-or-unwrap` either wraps or unwraps the current region
 in `dbg!`. This can be useful for easily adding debug lines to your
 program.
