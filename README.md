@@ -6,23 +6,26 @@
 <!-- markdown-toc start - Don't edit this section. Run M-x markdown-toc-refresh-toc -->
 **Table of Contents**
 
-- [Introduction](#introduction)
-- [Installation](#installation)
-    - [Melpa](#melpa)
-    - [Manual installation](#manual-installation)
-- [Feature guide](#feature-guide)
-    - [Indentation](#indentation)
-    - [Code formatting](#code-formatting)
-    - [Running / testing / compiling code](#running--testing--compiling-code)
-    - [Clippy](#clippy)
-    - [Easy insertion of dbg!](#easy-insertion-of-dbg)
-- [Other recommended packages](#other-recommended-packages)
-    - [Auto-completion / code navigation](#auto-completion--code-navigation)
-    - [flycheck](#flycheck)
-    - [cargo.el](#cargoel)
-    - [Rustic](#rustic)
-- [For package maintainers](#for-package-maintainers)
-    - [Tests](#tests)
+- [rust-mode](#rust-mode)
+    - [Introduction](#introduction)
+    - [Known issues](#known-issues)
+    - [Installation](#installation)
+        - [Melpa](#melpa)
+        - [Manual installation](#manual-installation)
+    - [Feature guide](#feature-guide)
+        - [Indentation](#indentation)
+        - [Code formatting](#code-formatting)
+        - [Running / testing / compiling code](#running--testing--compiling-code)
+        - [Clippy](#clippy)
+        - [Easy insertion of dbg!](#easy-insertion-of-dbg)
+    - [Other recommended packages](#other-recommended-packages)
+        - [Auto-completion / code navigation](#auto-completion--code-navigation)
+        - [flycheck](#flycheck)
+        - [cargo.el](#cargoel)
+        - [cargo-mode](#cargo-mode)
+        - [Rustic](#rustic)
+    - [For package maintainers](#for-package-maintainers)
+        - [Tests](#tests)
 
 <!-- markdown-toc end -->
 
@@ -41,6 +44,10 @@ This mode does _not_ provide autocompletion, or jumping to function /
 trait definitions. See [Auto-completion / code navigation](#auto-completion--code-navigation)
 below for tips on how to enable this.
 
+## Known issues
+
+- `rust-syntax-propertize` and `adaptive-wrap-prefix-mode` can lead to
+  severe lag when editing larger files (#107)
 
 ## Installation
 
