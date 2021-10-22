@@ -47,7 +47,7 @@ below for tips on how to enable this.
 ## Known issues
 
 - `rust-syntax-propertize` and `adaptive-wrap-prefix-mode` can lead to
-  severe lag when editing larger files (#107)
+  severe lag when editing larger files (https://github.com/brotzeit/rustic/issues/107)
 
 ## Installation
 
