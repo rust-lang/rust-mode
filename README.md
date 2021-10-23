@@ -146,7 +146,7 @@ This is bound to <kbd>C-c C-d</kbd> by default.
 
 ### eglot
 
-eglot is a lightweight lsp client.
+A lightweight lsp client.
 
 ```elisp
 (add-hook 'rust-mode-hook 'eglot-ensure)
@@ -154,7 +154,7 @@ eglot is a lightweight lsp client.
 
 ### lsp-mode
 
-lsp-mode provides more features and you can enhance the functionality
+Provides more features and you can enhance the functionality
 by using additional packages. You can find more information in the
 [lsp-mode wiki](https://emacs-lsp.github.io/lsp-mode/page/installation/#vanilla-emacs).
 
