@@ -78,6 +78,14 @@ And put this in your config to load rust-mode automatically:
 
 `(require 'rust-mode)`
 
+### NonGNU ELPA
+
+https://elpa.nongnu.org/
+
+``` elisp
+(with-eval-after-load 'package (add-to-list 'package-archives '("nongnu" . "https://elpa.nongnu.org/nongnu/")))
+```
+
 ### Manual installation
 
 Clone this repository locally, and add this to your init.el:
