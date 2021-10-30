@@ -80,7 +80,11 @@ And put this in your config to load rust-mode automatically:
 
 ### NonGNU ELPA
 
-https://elpa.nongnu.org/
+[NonGNU ELPA](https://elpa.nongnu.org/) can be used out of the box in
+emacs28.
+
+For older versions you need to add something like the following to
+your init file:
 
 ``` elisp
 (with-eval-after-load 'package (add-to-list 'package-archives '("nongnu" . "https://elpa.nongnu.org/nongnu/")))
