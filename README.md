@@ -45,10 +45,9 @@ This mode provides:
 - Indentation
 - Integration with Cargo, clippy and rustfmt
 
-This mode does _not_ provide autocompletion, or jumping to function /
-trait definitions. See [Auto-completion / code
-navigation](#auto-completion--code-navigation) below for tips on how
-to enable this.
+If you want to disable these features because you only need the basic
+features of rust-mode you can set `rust-load-optional-libraries` to
+`nil`.
 
 ## Known issues
 
@@ -133,13 +132,6 @@ on save:
 The `rust-run`, `rust-test`, `rust-compile` and `rust-check` functions
 shell out to Cargo to run, test, build and check your code. Under the
 hood, these use the standard Emacs `compile` function.
-
-These are not bound by default. To bind these to keyboard shortcuts,
-you can use the following in your init.el:
-
-``` elisp
-(define-key rust-mode-map (kbd "C-c C-c") 'rust-run)
-```
 
 ### Clippy
 
