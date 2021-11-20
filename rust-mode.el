@@ -264,9 +264,9 @@ Use idomenu (imenu with `ido-mode') for best mileage.")
               'rust-electric-pair-inhibit-predicate-wrap)
   (setq-local electric-pair-skip-self 'rust-electric-pair-skip-self-wrap)
 
-  (add-hook 'before-save-hook 'rust-before-save-hook nil t)
-  (add-hook 'after-save-hook 'rust-after-save-hook nil t)
-  )
+  (when (fboundp 'rust-before-save-hook)
+    (add-hook 'before-save-hook 'rust-before-save-hook nil t)
+    (add-hook 'after-save-hook 'rust-after-save-hook nil t)))
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.rs\\'" . rust-mode))
