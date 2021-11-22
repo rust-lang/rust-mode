@@ -1,3 +1,6 @@
+;; (byte-recompile-directory "~/gnu/rust-mode/" 0 t)
+;; (byte-compile-file "rust-cargo.el" nil)
+
 ;;; rust-cargo.el --- Support for cargo                -*-lexical-binding: t-*-
 ;;; Commentary:
 
@@ -23,6 +26,12 @@
 
 (defvar-local rust-buffer-project nil)
 
+(defun cargo-parent (dir)
+  (replace-regexp-in-string "/[^/]+/Cargo.toml$" "/Cargo.toml" dir))
+(defun cargo-workspace (path)
+  (if (file-exists-p (cargo-parent path))
+      (cargo-parent path)
+    path))
 (defun rust-buffer-project ()
   "Get project root if possible."
   (with-temp-buffer
@@ -31,7 +40,7 @@
         (error "`cargo locate-project' returned %s status: %s" ret (buffer-string)))
       (goto-char 0)
       (let ((output (json-read)))
-        (cdr (assoc-string "root" output))))))
+        (cargo-workspace (cargo-workspace (cdr (assoc-string "root" output))))))))
 
 (defun rust-update-buffer-project ()
   (setq-local rust-buffer-project (rust-buffer-project)))
