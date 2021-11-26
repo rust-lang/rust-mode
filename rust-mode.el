@@ -31,6 +31,16 @@ This variable might soon be remove again.")
 (defvar electric-pair-skip-self)
 (defvar electric-indent-chars)
 
+(defcustom rust-before-save-hook 'rust-before-save-method
+  "Function for formatting before save."
+  :type 'function
+  :group 'rust-mode)
+
+(defcustom rust-after-save-hook 'rust-after-save-method
+  "Default method to handle rustfmt invocation after save."
+  :type 'function
+  :group 'rust-mode)
+
 ;;; Customization
 
 (defgroup rust-mode nil
@@ -264,9 +274,8 @@ Use idomenu (imenu with `ido-mode') for best mileage.")
               'rust-electric-pair-inhibit-predicate-wrap)
   (setq-local electric-pair-skip-self 'rust-electric-pair-skip-self-wrap)
 
-  (add-hook 'before-save-hook 'rust-before-save-hook nil t)
-  (add-hook 'after-save-hook 'rust-after-save-hook nil t)
-  )
+  (add-hook 'before-save-hook rust-before-save-hook nil t)
+  (add-hook 'after-save-hook rust-after-save-hook nil t))
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.rs\\'" . rust-mode))
