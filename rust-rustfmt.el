@@ -347,7 +347,7 @@ Return the created process."
 
 ;;; Hooks
 
-(defun rust-before-save-hook ()
+(defun rust-before-save-method ()
   (when rust-format-on-save
     (condition-case e
         (rust-format-buffer)
@@ -355,7 +355,7 @@ Return the created process."
                      (car e)
                      (cdr e))))))
 
-(defun rust-after-save-hook ()
+(defun rust-after-save-method ()
   (when rust-format-on-save
     (if (not (executable-find rust-rustfmt-bin))
         (error "Could not locate executable \"%s\"" rust-rustfmt-bin)
