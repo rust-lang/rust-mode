@@ -1,32 +1,30 @@
-name: GitHub actions CI
+name: CI
 
-on: [push]
+on: [push, pull_request]
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        rust_version: [stable]
-        emacs_version:
-          - 25.3
-          - 26.3
-          - 27.2
-          - snapshot
+    unix-test:
+        runs-on: ubuntu-latest
+        strategy:
+            max-parallel: 6
+            matrix:
+                emacs-version:
+                    - 26.3
+                    - 27.2
+                    - snapshot
 
-    env:
-      EMACS_VERSION: ${{ matrix.emacs_version }}
-    steps:
-    - uses: hecrj/setup-rust-action@v1
-      with:
-        rust-version: ${{ matrix.rust_version }}
-    - uses: purcell/setup-emacs@master
-      with:
-        version: ${{ matrix.emacs_version }}
+        steps:
+            - uses: actions/checkout@v2
 
-    - uses: actions/checkout@v1
+            - uses: purcell/setup-emacs@master
+              with:
+                  version: ${{ matrix.emacs-version }}
 
-    - name: Run tests
-      run: |
-        make test
+            - uses: conao3/setup-cask@master
+              with:
+                  version: 0.8.4
+
+            - name: Run tests
+              run: |
+                make test                  
+
