@@ -77,6 +77,15 @@ visit the new file."
                (delete-pair))
               (t (rust-insert-dbg)))))))
 
+(defun rustic-toggle-mutability ()
+  "Toggles the mutability of the variable defined on the current line"
+  (interactive)
+  (save-excursion
+    (back-to-indentation)
+    (forward-word)
+    (if (string= " mut" (buffer-substring (point) (+ (point) 4)))
+        (delete-region (point) (+ (point) 4))
+      (insert " mut"))))
 ;;; _
 (provide 'rust-utils)
 ;;; rust-utils.el ends here
