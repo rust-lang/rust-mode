@@ -18,6 +18,7 @@
         - [Running / testing / compiling code](#running--testing--compiling-code)
         - [Clippy](#clippy)
         - [Easy insertion of dbg!](#easy-insertion-of-dbg)
+        - [More commands](#more-commands)
     - [LSP](#lsp)
         - [eglot](#eglot)
         - [lsp-mode](#lsp-mode)
@@ -153,6 +154,10 @@ in `dbg!`. This can be useful for easily adding debug lines to your
 program.
 
 This is bound to <kbd>C-c C-d</kbd> by default.
+
+### More commands
+
+- `rustic-toggle-mutability` toggle mut for var defined at current line
 
 ## LSP
 
