@@ -77,7 +77,7 @@ visit the new file."
                (delete-pair))
               (t (rust-insert-dbg)))))))
 
-(defun rustic-toggle-mutability ()
+(defun rust-toggle-mutability ()
   "Toggles the mutability of the variable defined on the current line"
   (interactive)
   (save-excursion
