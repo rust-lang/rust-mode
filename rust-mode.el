@@ -131,6 +131,10 @@ to the function arguments.  When nil, `->' will be indented one level."
 (defconst rust-re-ident "[[:word:][:multibyte:]_][[:word:][:multibyte:]_[:digit:]]*")
 (defconst rust-re-lc-ident "[[:lower:][:multibyte:]_][[:word:][:multibyte:]_[:digit:]]*")
 (defconst rust-re-uc-ident "[[:upper:]][[:word:][:multibyte:]_[:digit:]]*")
+
+(defvar rust-re-funcall
+  (concat (rust-re-grab rust-re-ident) "[[:space:]\n]*("))
+
 (defvar rust-re-vis
   ;; pub | pub ( crate ) | pub ( self ) | pub ( super ) | pub ( in SimplePath )
   (concat
@@ -487,6 +491,9 @@ Does not match type annotations of the form \"foo::<\"."
       1 'rust-ampersand-face)
      ;; Numbers with type suffix
      (,rust-number-with-type 1 font-lock-type-face)
+
+     ;; Function calls
+     (,rust-re-funcall 1 'font-lock-function-name-face)
      )
 
    ;; Ensure we highlight `Foo` in `struct Foo` as a type.
