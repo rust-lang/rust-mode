@@ -389,7 +389,7 @@ r\"foo\\\", \"bar\", r\"bar\";
 r\"foo\\.\", \"bar\", r\"bar\";
 r\"foo\\..\", \"bar\", r\"foo\\..\\bar\";
 r\"\\\", \"foo\", r\"\\foo\";
-not_a_string();
+not_a_string;
 
 "
 
@@ -1579,12 +1579,12 @@ list of substrings of `STR' each followed by its face."
 
 (ert-deftest font-lock-raw-string-with-inner-hash ()
   (rust-test-font-lock
-   "r##\"I've got an octothorpe (#)\"##; foo()"
+   "r##\"I've got an octothorpe (#)\"##; foo"
    '("r##\"I've got an octothorpe (#)\"##" font-lock-string-face)))
 
 (ert-deftest font-lock-raw-string-with-inner-quote-and-hash ()
   (rust-test-font-lock
-   "not_the_string(); r##\"string \"# still same string\"##; not_the_string()"
+   "not_the_string; r##\"string \"# still same string\"##; not_the_string"
    '("r##\"string \"# still same string\"##" font-lock-string-face)))
 
 (ert-deftest font-lock-string-ending-with-r-not-raw-string ()
@@ -1620,7 +1620,7 @@ fn g() {
 (ert-deftest font-lock-raw-string-trick-ending-followed-by-string-with-quote ()
   (rust-test-font-lock
    "r\"With what looks like the start of a raw string at the end r#\";
-not_a_string();
+not_a_string;
 r##\"With \"embedded\" quote \"##;"
    '("r\"With what looks like the start of a raw string at the end r#\"" font-lock-string-face
      "r##\"With \"embedded\" quote \"##" font-lock-string-face)))
@@ -1629,7 +1629,7 @@ r##\"With \"embedded\" quote \"##;"
   ;; Check that it won't look for a raw string beginning inside another raw string.
   (rust-test-font-lock
    "r#\"In the first string r\" in the first string \"#;
-not_in_a_string();
+not_in_a_string;
 r##\"In the second string\"##;"
    '("r#\"In the first string r\" in the first string \"#" font-lock-string-face
      "r##\"In the second string\"##" font-lock-string-face)))
@@ -1639,7 +1639,7 @@ r##\"In the second string\"##;"
   (rust-test-font-lock
    "// r\" this is a comment
 \"this is a string\";
-this_is_not_a_string();)"
+this_is_not_a_string;)"
    '("// " font-lock-comment-delimiter-face
      "r\" this is a comment\n" font-lock-comment-face
      "\"this is a string\"" font-lock-string-face)))
@@ -1790,16 +1790,16 @@ this_is_not_a_string();)"
    '("?" rust-question-mark))
   (rust-test-font-lock
    "foo\(\)?;"
-   '("?" rust-question-mark))
+   '("foo" font-lock-function-name-face "?" rust-question-mark))
   (rust-test-font-lock
    "foo\(bar\(\)?\);"
-   '("?" rust-question-mark))
+   '("foo" font-lock-function-name-face "bar" font-lock-function-name-face "?" rust-question-mark))
   (rust-test-font-lock
    "\"?\""
    '("\"?\"" font-lock-string-face))
   (rust-test-font-lock
    "foo\(\"?\"\);"
-   '("\"?\"" font-lock-string-face))
+   '("foo" font-lock-function-name-face "\"?\"" font-lock-string-face))
   (rust-test-font-lock
    "// ?"
    '("// " font-lock-comment-delimiter-face
@@ -1809,10 +1809,11 @@ this_is_not_a_string();)"
    '("/// ?" font-lock-doc-face))
   (rust-test-font-lock
    "foo\(\"?\"\);"
-   '("\"?\"" font-lock-string-face))
+   '("foo" font-lock-function-name-face "\"?\"" font-lock-string-face))
   (rust-test-font-lock
    "foo\(\"?\"\)?;"
-   '("\"?\"" font-lock-string-face
+   '("foo" font-lock-function-name-face
+     "\"?\"" font-lock-string-face
      "?" rust-question-mark)))
 
 (ert-deftest rust-test-default-context-sensitive ()
