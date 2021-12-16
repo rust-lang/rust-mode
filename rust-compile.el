@@ -37,7 +37,7 @@ See `compilation-error-regexp-alist' for help on their format.")
 ;; Match test run failures and panics during compilation as
 ;; compilation warnings
 (defvar cargo-compilation-regexps
-  '("^\\s-+thread '[^']+' panicked at \\('[^']+', \\([^:]+\\):\\([0-9]+\\)\\)"
+  '("', \\(\\([^:]+\\):\\([0-9]+\\)\\)"
     2 3 nil nil 1)
   "Specifications for matching panics in cargo test invocations.
 See `compilation-error-regexp-alist' for help on their format.")
