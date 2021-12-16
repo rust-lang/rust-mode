@@ -1277,7 +1277,8 @@ This wraps the default defined by `electric-pair-inhibit-predicate'."
 This wraps the default defined by `electric-pair-skip-self'."
   (or
    (= ?> char)
-   (funcall (default-value 'electric-pair-skip-self) char)))
+   (let ((skip-self (default-value 'electric-pair-skip-self)))
+     (and skip-self (funcall skip-self char)))))
 
 (defun rust-ordinary-lt-gt-p ()
   "Test whether the `<' or `>' at point is an ordinary operator of some kind.
