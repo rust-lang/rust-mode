@@ -101,6 +101,11 @@ to the function arguments.  When nil, `->' will be indented one level."
   "Face for the question mark operator."
   :group 'rust-mode)
 
+(defface rust-ampersand-face
+  '((t :inherit default))
+  "Face for the ampersand reference mark."
+  :group 'rust-mode)
+
 (defface rust-builtin-formatting-macro
   '((t :inherit font-lock-builtin-face))
   "Face for builtin formatting macros (print! &c.)."
@@ -437,6 +442,7 @@ Does not match type annotations of the form \"foo::<\"."
 
      ;; Question mark operator
      ("\\?" . 'rust-question-mark)
+     ("\\(&\\)'?\\<" 1 'rust-ampersand-face)
      )
 
    ;; Ensure we highlight `Foo` in `struct Foo` as a type.
