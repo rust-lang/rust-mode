@@ -129,6 +129,21 @@ on save:
 (setq rust-format-on-save t)
 ```
 
+### Prettifying
+
+You can toggle prettification of your code by running `M-x
+prettify-symbols-mode`.  If you'd like to automatically enable this
+for all rust files, add the following to your init.el.
+
+```elisp
+(add-hook 'rust-mode-hook
+          (lambda () (prettify-symbols-mode)))
+```
+
+You can add your own prettifications to `rust-prettify-symbols-alist`.
+For example, to display `x.add(y)` as `x∔(y)`, simply add to your init
+file `(push '(".add" . ?∔) rust-prettify-symbols-alist)`.
+
 ### Running / testing / compiling code
 
 The `rust-run`, `rust-test`, `rust-compile` and `rust-check` functions
