@@ -41,6 +41,12 @@ This variable might soon be remove again.")
   :type 'function
   :group 'rust-mode)
 
+(defvar rust-prettify-symbols-alist
+  '(("&&" . ?∧) ("||" . ?∨)
+    ("<=" . ?≤)  (">=" . ?≥) ("!=" . ?≠)
+    ("INFINITY" . ?∞) ("->" . ?→) ("=>" . ?⇒))
+  "Alist of symbol prettifications used for `prettify-symbols-alist'.")
+
 ;;; Customization
 
 (defgroup rust-mode nil
@@ -209,6 +215,20 @@ Use idomenu (imenu with `ido-mode') for best mileage.")
     table)
   "Syntax definitions and helpers.")
 
+;;; Prettify
+
+(defun rust--prettify-symbols-compose-p (start end match)
+  "Return true iff the symbol MATCH should be composed.
+See `prettify-symbols-compose-predicate'."
+  (and (fboundp 'prettify-symbols-default-compose-p)
+       (prettify-symbols-default-compose-p start end match)
+       ;; Make sure there is a space before || as it is also used for
+       ;; functions with 0 arguments.
+       (not (and (string= match "||")
+                 (save-excursion
+                   (goto-char start)
+                   (looking-back "\\(?:\\<move\\|=\\) *"))))))
+
 ;;; Mode
 
 (defvar rust-mode-map
@@ -278,6 +298,9 @@ Use idomenu (imenu with `ido-mode') for best mileage.")
   (setq-local electric-pair-inhibit-predicate
               'rust-electric-pair-inhibit-predicate-wrap)
   (setq-local electric-pair-skip-self 'rust-electric-pair-skip-self-wrap)
+  ;; Configure prettify
+  (setq prettify-symbols-alist rust-prettify-symbols-alist)
+  (setq prettify-symbols-compose-predicate #'rust--prettify-symbols-compose-p)
 
   (add-hook 'before-save-hook rust-before-save-hook nil t)
   (add-hook 'after-save-hook rust-after-save-hook nil t))
