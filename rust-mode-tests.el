@@ -1699,6 +1699,7 @@ this_is_not_a_string();)"
      "foo" font-lock-type-face
      "x" font-lock-variable-name-face
      ;; This union is the name of a lifetime.
+     "&" rust-ampersand-face
      "union" font-lock-variable-name-face
      "bar" font-lock-type-face)))
 
