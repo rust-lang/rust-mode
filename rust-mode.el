@@ -467,7 +467,8 @@ Does not match type annotations of the form \"foo::<\"."
 
      ;; Question mark operator
      ("\\?" . 'rust-question-mark)
-     ("\\(&\\)'?\\<" 1 'rust-ampersand-face)
+     ("\\(&+\\)\\(?:'\\(?:\\<\\|_\\)\\|\\<\\|[[({:*_|]\\)"
+      1 'rust-ampersand-face)
      )
 
    ;; Ensure we highlight `Foo` in `struct Foo` as a type.
