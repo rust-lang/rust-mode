@@ -15,6 +15,7 @@
     - [Feature guide](#feature-guide)
         - [Indentation](#indentation)
         - [Code formatting](#code-formatting)
+        - [Prettifying](#prettifying)
         - [Running / testing / compiling code](#running--testing--compiling-code)
         - [Clippy](#clippy)
         - [Easy insertion of dbg!](#easy-insertion-of-dbg)
