@@ -222,12 +222,14 @@ Use idomenu (imenu with `ido-mode') for best mileage.")
 See `prettify-symbols-compose-predicate'."
   (and (fboundp 'prettify-symbols-default-compose-p)
        (prettify-symbols-default-compose-p start end match)
-       ;; Make sure there is a space before || as it is also used for
-       ;; functions with 0 arguments.
-       (not (and (string= match "||")
-                 (save-excursion
-                   (goto-char start)
-                   (looking-back "\\(?:\\<move\\|=\\) *"))))))
+       ;; Make sure || is not a closure with 0 arguments and && is not
+       ;; a double reference.
+       (pcase match
+         ("||" (not (save-excursion
+                      (goto-char start)
+                      (looking-back "\\(?:\\<move\\|=\\) *"))))
+         ("&&" (char-equal (char-after end) ?\s))
+         (_ t))))
 
 ;;; Mode
 
