@@ -227,7 +227,8 @@ See `prettify-symbols-compose-predicate'."
        (pcase match
          ("||" (not (save-excursion
                       (goto-char start)
-                      (looking-back "\\(?:\\<move\\|[[({:=,;]\\) *"))))
+                      (looking-back "\\(?:\\<move\\|[[({:=,;]\\) *"
+                                    (line-beginning-position)))))
          ("&&" (char-equal (char-after end) ?\s))
          (_ t))))
 
