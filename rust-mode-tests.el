@@ -1354,6 +1354,92 @@ list of substrings of `STR' each followed by its face."
      "mut" font-lock-keyword-face
      "bar" font-lock-variable-name-face)))
 
+(ert-deftest font-lock-ampersand ()
+  (rust-test-font-lock
+   "f(&a)"
+   '("&" rust-ampersand-face))
+  (rust-test-font-lock
+   "a && b &&& c"
+   nil)
+  (rust-test-font-lock
+   "&'a v"
+   '("&" rust-ampersand-face
+     "a" font-lock-variable-name-face))
+  (rust-test-font-lock
+   "&'static v"
+   '("&" rust-ampersand-face
+     "static" font-lock-keyword-face))
+  (rust-test-font-lock
+   "&mut v"
+   '("&" rust-ampersand-face
+     "mut" font-lock-keyword-face))
+  (rust-test-font-lock
+   "&f(&x)"
+   '("&" rust-ampersand-face
+     "&" rust-ampersand-face))
+  (rust-test-font-lock
+   "fn f(x: &X)"
+   '("fn" font-lock-keyword-face
+     "f" font-lock-function-name-face
+     "x" font-lock-variable-name-face
+     "&" rust-ampersand-face
+     "X" font-lock-type-face))
+  (rust-test-font-lock
+   "f(&X{x})"
+   '("&" rust-ampersand-face
+     "X" font-lock-type-face))
+  (rust-test-font-lock
+   "let x: &'_ f64 = &1.;"
+   '("let" font-lock-keyword-face
+     "x" font-lock-variable-name-face
+     "&" rust-ampersand-face
+     "_" font-lock-variable-name-face
+     "f64" font-lock-type-face
+     "&" rust-ampersand-face))
+  (rust-test-font-lock
+   "let x = &&1;"
+   '("let" font-lock-keyword-face
+     "x" font-lock-variable-name-face
+     "&&" rust-ampersand-face))
+  (rust-test-font-lock
+   "let x = &*y;"
+   '("let" font-lock-keyword-face
+     "x" font-lock-variable-name-face
+     "&" rust-ampersand-face))
+  (rust-test-font-lock
+   "let x = &::std::f64::consts::PI;"
+   '("let" font-lock-keyword-face
+     "x" font-lock-variable-name-face
+     "&" rust-ampersand-face
+     "std" font-lock-constant-face
+     "f64" font-lock-type-face
+     "consts" font-lock-constant-face
+     "PI" font-lock-type-face))
+  (rust-test-font-lock
+   "let x = &(1, 2);"
+   '("let" font-lock-keyword-face
+     "x" font-lock-variable-name-face
+     "&" rust-ampersand-face))
+  (rust-test-font-lock
+   "let x = &{1};"
+   '("let" font-lock-keyword-face
+     "x" font-lock-variable-name-face
+     "&" rust-ampersand-face))
+  (rust-test-font-lock
+   "let f = &|x| {x + 1};"
+   '("let" font-lock-keyword-face
+     "f" font-lock-variable-name-face
+     "&" rust-ampersand-face))
+  (rust-test-font-lock
+   "let x: &_ = &1;"
+   '("let" font-lock-keyword-face
+     "x" font-lock-variable-name-face
+     "&" rust-ampersand-face
+     "&" rust-ampersand-face))
+  (rust-test-font-lock
+   "&[1,2]"
+   '("&" rust-ampersand-face)))
+
 (ert-deftest font-lock-if-let-binding ()
   (rust-test-font-lock
    "if let Some(var) = some_var { /* no-op */ }"
