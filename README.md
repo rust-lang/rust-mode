@@ -1,5 +1,6 @@
 # rust-mode
 
+[![NonGNU ELPA](https://elpa.nongnu.org/nongnu/rust-mode.svg)](https://elpa.nongnu.org/nongnu/rust-mode.html)
 [![MELPA](https://melpa.org/packages/rust-mode-badge.svg)](https://melpa.org/#/rust-mode)
 [![](https://github.com/rust-lang/rust-mode/workflows/CI/badge.svg)](https://github.com/rust-lang/rust-mode/actions?query=workflow%3ACI)
 
