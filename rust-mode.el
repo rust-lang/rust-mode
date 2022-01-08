@@ -319,7 +319,7 @@ See `prettify-symbols-compose-predicate'."
           (rust-re-shy (concat (rust-re-shy rust-re-async-or-const) "[[:space:]]+")) "?"
           (rust-re-shy (concat (rust-re-shy rust-re-unsafe) "[[:space:]]+")) "?"
           (regexp-opt
-           '("enum" "struct" "union" "type" "mod" "use" "fn" "static" "impl"
+           '("enum" "struct" "union" "type" "mod" "fn" "static" "impl"
              "extern" "trait" "async"))
           "\\_>")
   "Start of a Rust item.")
