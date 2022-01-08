@@ -352,7 +352,7 @@ Return the created process."
   (when rust-format-on-save
     (condition-case e
         (rust-format-buffer)
-      (error (format "rust-before-save-hook: %S %S"
+      (message (format "rust-before-save-hook: %S %S"
                      (car e)
                      (cdr e))))))
 
