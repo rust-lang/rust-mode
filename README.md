@@ -100,6 +100,7 @@ Clone this repository locally, and add this to your init.el:
 ``` elisp
 (add-to-list 'load-path "/path/to/rust-mode/")
 (autoload 'rust-mode "rust-mode" nil t)
+(add-to-list 'auto-mode-alist '("\\.rs\\'" . rust-mode))
 ```
 
 ## Feature guide
