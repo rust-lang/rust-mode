@@ -118,6 +118,12 @@ which forces indentation to always use spaces.
           (lambda () (setq indent-tabs-mode nil)))
 ```
 
+Since Emacs ≥ 24.4, [`electric-indent-mode`][] is turned on by
+default. If you do not like it, call `(electric-indent-mode 0)` in
+`rust-mode-hook`.
+
+[`electric-indent-mode`]: https://www.gnu.org/software/emacs/manual/html_node/emacs/Indent-Convenience.html
+
 ### Code formatting
 
 The `rust-format-buffer` function will format your code with
