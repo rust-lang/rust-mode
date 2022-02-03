@@ -19,6 +19,11 @@
   :type 'boolean
   :group 'rust-mode)
 
+(defcustom rust-cargo-default-arguments ""
+  "Default arguments when running common cargo commands."
+  :type 'string
+  :group 'rust-mode)
+
 ;;; Buffer Project
 
 (defvar-local rust-buffer-project nil)
@@ -59,12 +64,12 @@
 (defun rust-check ()
   "Compile using `cargo check`"
   (interactive)
-  (rust--compile "%s check" rust-cargo-bin))
+  (rust--compile "%s check %s" rust-cargo-bin rust-cargo-default-arguments))
 
 (defun rust-compile ()
   "Compile using `cargo build`"
   (interactive)
-  (rust--compile "%s build" rust-cargo-bin))
+  (rust--compile "%s build %s" rust-cargo-bin rust-cargo-default-arguments))
 
 (defun rust-compile-release ()
   "Compile using `cargo build --release`"
@@ -74,7 +79,7 @@
 (defun rust-run ()
   "Run using `cargo run`"
   (interactive)
-  (rust--compile "%s run" rust-cargo-bin))
+  (rust--compile "%s run %s" rust-cargo-bin rust-cargo-default-arguments))
 
 (defun rust-run-release ()
   "Run using `cargo run --release`"
@@ -84,7 +89,7 @@
 (defun rust-test ()
   "Test using `cargo test`"
   (interactive)
-  (rust--compile "%s test" rust-cargo-bin))
+  (rust--compile "%s test %s" rust-cargo-bin rust-cargo-default-arguments))
 
 (defun rust-run-clippy ()
   "Run `cargo clippy'."

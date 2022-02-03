@@ -233,6 +233,9 @@ post](https://www.badykov.com/emacs/2021/05/29/emacs-cargo-mode/).
 extending it with other features such as integration with LSP and with
 flycheck.
 
+## Customization
+
+`rust-cargo-default-arguments` set additional cargo args used for check,compile,run,test
 
 ## For package maintainers
 
