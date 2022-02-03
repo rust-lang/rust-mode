@@ -1304,6 +1304,56 @@ list of substrings of `STR' each followed by its face."
    '("/* " font-lock-comment-delimiter-face
      "#[foo] */" font-lock-comment-face)))
 
+(ert-deftest font-lock-number-with-type ()
+  (rust-test-font-lock
+   "-123i32"
+   '("i32" font-lock-type-face))
+  (rust-test-font-lock
+   "123u32"
+   '("u32" font-lock-type-face))
+  (rust-test-font-lock
+   "123_123_u32"
+   '("u32" font-lock-type-face))
+  (rust-test-font-lock
+   "0xff_u8"
+   '("u8" font-lock-type-face))
+  (rust-test-font-lock
+   "0b1111_1111_1001_0000i64"
+   '("i64" font-lock-type-face))
+  (rust-test-font-lock
+   "0usize"
+   '("usize" font-lock-type-face))
+  (rust-test-font-lock
+   "123.0f64 + 1."
+   '("f64" font-lock-type-face))
+  (rust-test-font-lock
+   "0.1f32"
+   '("f32" font-lock-type-face))
+  (rust-test-font-lock
+   "12E+99_f64"
+   '("f64" font-lock-type-face))
+  (rust-test-font-lock
+   "5f32"
+   '("f32" font-lock-type-face))
+  (rust-test-font-lock
+   "0x5i32"
+   '("i32" font-lock-type-face))
+  (rust-test-font-lock
+   "1x5i32"
+   '())
+  (rust-test-font-lock
+   "0x5i321"
+   '())
+  (rust-test-font-lock
+   "fname5f32"
+   '())
+  (rust-test-font-lock
+   "0x5i32+1"
+   '("i32" font-lock-type-face))
+  (rust-test-font-lock
+   "f(0xFFi32)"
+   '("i32" font-lock-type-face)))
+
 (ert-deftest font-lock-double-quote-character-literal ()
   (rust-test-font-lock
    "'\"'; let"
