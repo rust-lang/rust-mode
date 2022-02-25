@@ -30,6 +30,7 @@
         - [cargo.el](#cargoel)
         - [cargo-mode](#cargo-mode)
         - [rustic](#rustic)
+    - [Optional features](#optional-features)
     - [For package maintainers](#for-package-maintainers)
         - [Tests](#tests)
     - [Contributing](#contributing)
@@ -232,6 +233,18 @@ post](https://www.badykov.com/emacs/2021/05/29/emacs-cargo-mode/).
 [rustic](https://github.com/brotzeit/rustic) is based on rust-mode,
 extending it with other features such as integration with LSP and with
 flycheck.
+
+## Optional features
+
+The features of the following files can be disabled with `rust-load-optional-libraries`.
+
+- rust-cargo.el
+- rust-compile.el
+- rust-playpen.el
+- rust-rustfmt.el
+
+They are disabled by default when you use rustic as it has its own implementations
+for those features.
 
 ## Customization
 
