@@ -54,6 +54,12 @@ trait definitions. See [Auto-completion / code
 navigation](#auto-completion--code-navigation) below for tips on how
 to enable this.
 
+If you are missing features in rust-mode, please check out
+[rustic](https://github.com/brotzeit/rustic) before you open a feature
+request. It depends on rust-mode and provides additional features. This
+allows us to keep rust-mode light-weight for users that are happy with
+basic functionality.
+
 ## Known issues
 
 - `rust-syntax-propertize` and `adaptive-wrap-prefix-mode` can lead to
