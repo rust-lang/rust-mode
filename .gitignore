@@ -1,1 +1,5 @@
 *.elc
+*-autoloads.el
+
+.eask
+/dist

@@ -8,64 +8,39 @@ PKG = rust-mode
 
 EMACS ?= emacs
 EMACS_ARGS ?=
-
-ELS   = rust-mode.el
-ELS  += rust-cargo.el
-ELS  += rust-compile.el
-ELS  += rust-playpen.el
-ELS  += rust-rustfmt.el
-ELS  += rust-utils.el
-ELCS  = $(ELS:.el=.elc)
+EASK ?= eask
 
 DEPS  =
 
 LOAD_PATH  ?= $(addprefix -L ../,$(DEPS))
 LOAD_PATH  += -L .
 
-lisp: $(ELCS) loaddefs
+ci: build compile checkdoc lint test
 
-%.elc: %.el
+build:
+	$(EASK) package
+	$(EASK) install
+
+compile:
 	@printf "Compiling $<\n"
-	@$(EMACS) -Q --batch $(EMACS_ARGS) \
-	$(LOAD_PATH) --funcall batch-byte-compile $<
+	$(EASK) compile
 
 test:
-	@$(EMACS) -Q --batch -L . -l rust-mode.el \
-	-l rust-mode-tests.el -f ert-run-tests-batch-and-exit
+	$(EASK) ert rust-mode-tests.el
 
-CLEAN  = $(ELCS) $(PKG)-autoloads.el
+checkdoc:
+	$(EASK) checkdoc
+
+lint:
+	$(EASK) lint
+
+CLEAN = $(PKG)-autoloads.el
 
 clean:
 	@printf "Cleaning...\n"
 	@rm -rf $(CLEAN)
+	$(EASK) clean-all
 
-loaddefs: $(PKG)-autoloads.el
-
-define LOADDEFS_TMPL
-;;; $(PKG)-autoloads.el --- automatically extracted autoloads
-;;
-;;; Code:
-(add-to-list 'load-path (directory-file-name \
-(or (file-name-directory #$$) (car load-path))))
-
-;; Local Variables:
-;; version-control: never
-;; no-byte-compile: t
-;; no-update-autoloads: t
-;; End:
-;;; $(PKG)-autoloads.el ends here
-endef
-export LOADDEFS_TMPL
-#'
-
-$(PKG)-autoloads.el: $(ELS)
+$(PKG)-autoloads.el:
 	@printf "Generating $@\n"
-	@printf "%s" "$$LOADDEFS_TMPL" > $@
-	@$(EMACS) -Q --batch --eval "(progn\
-	(setq make-backup-files nil)\
-	(setq vc-handled-backends nil)\
-	(setq default-directory (file-truename default-directory))\
-	(setq generated-autoload-file (expand-file-name \"$@\"))\
-	(setq find-file-visit-truename t)\
-	(update-directory-autoloads default-directory))"
-
+	$(EASK) autoloads
