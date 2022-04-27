@@ -16,7 +16,7 @@ LOAD_PATH  ?= $(addprefix -L ../,$(DEPS))
 LOAD_PATH  += -L .
 
 # TODO: add checkdoc and lint
-ci: build compile checkdoc
+ci: build compile test
 
 build:
 	$(EASK) package
