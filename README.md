@@ -21,6 +21,7 @@
         - [Clippy](#clippy)
         - [Easy insertion of dbg!](#easy-insertion-of-dbg)
         - [More commands](#more-commands)
+    - [highlighting with tree-sitter](#highlighting-with-tree-sitter)
     - [LSP](#lsp)
         - [eglot](#eglot)
         - [lsp-mode](#lsp-mode)
@@ -189,6 +190,18 @@ This is bound to <kbd>C-c C-d</kbd> by default.
 ### More commands
 
 - `rustic-toggle-mutability` toggle mut for var defined at current line
+
+## highlighting with tree-sitter
+
+You should take a look at [tree-sitter](https://github.com/emacs-tree-sitter/elisp-tree-sitter). When the dependencies are installed you can activate the feature with:
+
+```elisp
+(use-package tree-sitter
+  :config
+  (require 'tree-sitter-langs)
+  (global-tree-sitter-mode)
+  (add-hook 'tree-sitter-after-on-hook #'tree-sitter-hl-mode))
+```
 
 ## LSP
 
