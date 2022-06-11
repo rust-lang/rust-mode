@@ -27,13 +27,13 @@ compile:
 	$(EASK) compile
 
 test:
-	$(EASK) ert rust-mode-tests.el
+	$(EASK) test ert rust-mode-tests.el
 
 checkdoc:
-	$(EASK) checkdoc
+	$(EASK) lint checkdoc
 
 lint:
-	$(EASK) lint
+	$(EASK) lint package
 
 CLEAN = $(PKG)-autoloads.el
 
