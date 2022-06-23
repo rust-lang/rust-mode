@@ -30,10 +30,17 @@
 
 (defun rust-buffer-project ()
   "Get project root if possible."
+  ;; Copy environment variables into the new buffer, since
+  ;; with-temp-buffer will re-use the variables' defaults, even if
+  ;; they have been changed in this variable using e.g. envrc-mode.
+  ;; See https://github.com/purcell/envrc/issues/12.
   (let ((env process-environment)
         (path exec-path))
     (with-temp-buffer
+      ;; Copy the entire environment just in case there's something we
+      ;; don't know we need.
       (setq-local process-environment env)
+      ;; Set PATH so we can find cargo.
       (setq-local exec-path path)
       (let ((ret (call-process rust-cargo-bin nil t nil "locate-project")))
         (when (/= ret 0)
