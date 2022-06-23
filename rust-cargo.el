@@ -30,13 +30,17 @@
 
 (defun rust-buffer-project ()
   "Get project root if possible."
-  (with-temp-buffer
-    (let ((ret (call-process rust-cargo-bin nil t nil "locate-project")))
-      (when (/= ret 0)
-        (error "`cargo locate-project' returned %s status: %s" ret (buffer-string)))
-      (goto-char 0)
-      (let ((output (json-read)))
-        (cdr (assoc-string "root" output))))))
+  (let ((env process-environment)
+        (path exec-path))
+    (with-temp-buffer
+      (setq-local process-environment env)
+      (setq-local exec-path path)
+      (let ((ret (call-process rust-cargo-bin nil t nil "locate-project")))
+        (when (/= ret 0)
+          (error "`cargo locate-project' returned %s status: %s" ret (buffer-string)))
+        (goto-char 0)
+        (let ((output (json-read)))
+          (cdr (assoc-string "root" output)))))))
 
 (defun rust-update-buffer-project ()
   (setq-local rust-buffer-project (rust-buffer-project)))
