@@ -228,6 +228,9 @@ by using additional packages. You can find more information in the
 You can either use a lsp client or [racer](https://github.com/racer-rust/racer)
 with [emacs-racer](https://github.com/racer-rust/emacs-racer#installation).
 
+Note that racer and rls are considered deprecated. You should try rust-analyzer
+instead.
+
 ## Other recommended packages
 
 ### flycheck
