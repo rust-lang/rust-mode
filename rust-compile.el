@@ -76,7 +76,7 @@ the compilation window until the top of the error is visible."
      (add-to-list 'compilation-error-regexp-alist-alist
                   (cons 'cargo cargo-compilation-regexps))
      (add-to-list 'compilation-error-regexp-alist 'cargo)
-     (add-hook 'next-error-hook 'rustc-scroll-down-after-next-error)))
+     (add-hook 'next-error-hook #'rustc-scroll-down-after-next-error)))
 
 ;;; _
 (provide 'rust-compile)
