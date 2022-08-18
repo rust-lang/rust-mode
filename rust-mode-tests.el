@@ -393,11 +393,11 @@ not_a_string();
 
 "
 
-   (apply 'append (mapcar (lambda (s) (list s 'font-lock-string-face))
-                          '("r\"foo\\\"" "\"bar\"" "r\"bar\""
-                            "r\"foo\\.\"" "\"bar\"" "r\"bar\""
-                            "r\"foo\\..\"" "\"bar\"" "r\"foo\\..\\bar\""
-                            "r\"\\\"" "\"foo\"" "r\"\\foo\"")))
+   (apply #'append (mapcar (lambda (s) (list s 'font-lock-string-face))
+                           '("r\"foo\\\"" "\"bar\"" "r\"bar\""
+                             "r\"foo\\.\"" "\"bar\"" "r\"bar\""
+                             "r\"foo\\..\"" "\"bar\"" "r\"foo\\..\\bar\""
+                             "r\"\\\"" "\"foo\"" "r\"\\foo\"")))
    ))
 
 (ert-deftest font-lock-raw-string-after-normal-string-ending-in-r ()
@@ -3306,7 +3306,7 @@ type Foo<T> where T: Copy = Box<T>;
 (ert-deftest redo-syntax-after-change-far-from-point ()
   (let*
       ((tmp-file-name (make-temp-file "rust-mdoe-test-issue104"))
-       (base-contents (apply 'concat (append '("fn foo() {\n\n}\n") (make-list 500 "// More stuff...\n") '("fn bar() {\n\n}\n")))))
+       (base-contents (apply #'concat (append '("fn foo() {\n\n}\n") (make-list 500 "// More stuff...\n") '("fn bar() {\n\n}\n")))))
     ;; Create the temp file...
     (with-temp-file tmp-file-name
       (insert base-contents))
@@ -3481,12 +3481,11 @@ impl Two<'a> {
    #'rust-dbg-wrap-or-unwrap
    "let x = dbg!(\"foo, bar\")"))
 
-(when (executable-find rust-cargo-bin)
-  (ert-deftest rust-test-project-located ()
-    (let* ((test-dir (expand-file-name "test-project/" default-directory))
-           (manifest-file (expand-file-name "Cargo.toml" test-dir)))
-      (let ((default-directory test-dir))
-        (should (equal (expand-file-name (rust-buffer-project)) manifest-file))))))
+(ert-deftest rust-test-project-located ()
+  (let* ((test-dir (expand-file-name "test-project/" default-directory))
+         (manifest-file (expand-file-name "Cargo.toml" test-dir)))
+    (let ((default-directory test-dir))
+      (should (equal (expand-file-name (rust-buffer-project)) manifest-file)))))
 
 (defun rust-collect-matches (spec)
   (let ((matches nil))
@@ -3632,5 +3631,6 @@ impl Two<'a> {
          `(should
            (or
             (string-match "Prefix Command" ,match)
-            (string-match "^C-c C" ,match)))))
+            (string-match "^C-c C" ,match)))
+         t))
       (should (< 0 match-count)))))
