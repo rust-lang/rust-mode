@@ -1,5 +1,5 @@
 *.elc
 *-autoloads.el
-
-.eask
+/rust-mode-pkg.el
+ .eask
 /dist

@@ -9,14 +9,15 @@
 (defconst rust-test-fill-column 32)
 (setq-default indent-tabs-mode nil)
 
-(defmacro test-silence (messages &rest body)
-  `(cl-letf* (((symbol-function 'm)
-               (symbol-function #'message))
-              ((symbol-function #'message)
-	       (lambda (format-string &rest args)
-	         (unless (member format-string ,messages)
-	           (apply 'm format-string args)))))
-     ,@body))
+(defmacro rust-test-silence (messages &rest body)
+  `(let ((f (lambda (orig-fun format-string &rest args)
+             (unless (member format-string ,messages)
+               (apply orig-fun format-string args)))))
+     (unwind-protect
+         (progn
+           (advice-add 'message :around f)
+           ,@body)
+       (advice-remove 'message f))))
 
 (defun rust-compare-code-after-manip (_original _point-pos _manip-func expected got)
   (equal expected got))
@@ -53,7 +54,7 @@
     (should (rust-compare-code-after-manip
              original point-pos manip-func expected (buffer-string)))))
 
-(defun test-fill-paragraph (unfilled expected &optional start-pos end-pos)
+(defun rust-test-fill-paragraph (unfilled expected &optional start-pos end-pos)
   "We're going to run through many scenarios here--the point should be able to be anywhere from the start-pos (defaults to 1) through end-pos (defaults to the length of what was passed in) and (fill-paragraph) should return the same result.  It should also work with fill-region from start-pos to end-pos.
 
 Also, the result should be the same regardless of whether the code is at the beginning or end of the file.  (If you're not careful, that can make a difference.)  So we test each position given above with the passed code at the beginning, the end, neither and both.  So we do this a total of 1 + (end-pos - start-pos)*4 times.  Oy."
@@ -91,7 +92,7 @@ Also, the result should be the same regardless of whether the code is at the beg
     ))
 
 (ert-deftest fill-paragraph-top-level-multi-line-style-doc-comment-second-line ()
-  (test-fill-paragraph
+  (rust-test-fill-paragraph
    "/**
  * This is a very very very very very very very long string
  */"
@@ -102,7 +103,7 @@ Also, the result should be the same regardless of whether the code is at the beg
 
 
 (ert-deftest fill-paragraph-top-level-multi-line-style-doc-comment-first-line ()
-  (test-fill-paragraph
+  (rust-test-fill-paragraph
    "/** This is a very very very very very very very long string
  */"
    "/** This is a very very very
@@ -118,7 +119,7 @@ Also, the result should be the same regardless of whether the code is at the beg
  *
  * This is the second really really really really really really long paragraph
  */"))
-    (test-fill-paragraph
+    (rust-test-fill-paragraph
      multi-paragraph-unfilled
      "/**
  * This is the first really
@@ -128,7 +129,7 @@ Also, the result should be the same regardless of whether the code is at the beg
  * This is the second really really really really really really long paragraph
  */"
      1 89)
-    (test-fill-paragraph
+    (rust-test-fill-paragraph
      multi-paragraph-unfilled
      "/**
  * This is the first really really really really really really really long paragraph
@@ -145,7 +146,7 @@ Also, the result should be the same regardless of whether the code is at the beg
         "/// This is the first really really really really really really really long paragraph
 ///
 /// This is the second really really really really really really long paragraph"))
-    (test-fill-paragraph
+    (rust-test-fill-paragraph
      multi-paragraph-unfilled
      "/// This is the first really
 /// really really really really
@@ -153,7 +154,7 @@ Also, the result should be the same regardless of whether the code is at the beg
 ///
 /// This is the second really really really really really really long paragraph"
      1 86)
-    (test-fill-paragraph
+    (rust-test-fill-paragraph
      multi-paragraph-unfilled
      "/// This is the first really really really really really really really long paragraph
 ///
@@ -163,7 +164,7 @@ Also, the result should be the same regardless of whether the code is at the beg
      87)))
 
 (ert-deftest fill-paragraph-multi-paragraph-single-line-style-indented ()
-  (test-fill-paragraph
+  (rust-test-fill-paragraph
    "     // This is the first really really really really really really really long paragraph
      //
      // This is the second really really really really really really long paragraph"
@@ -175,7 +176,7 @@ Also, the result should be the same regardless of whether the code is at the beg
      // This is the second really really really really really really long paragraph" 1 89))
 
 (ert-deftest fill-paragraph-multi-line-style-comment ()
-  (test-fill-paragraph
+  (rust-test-fill-paragraph
    "/* This is a very very very very very very very very long string
  */"
    "/* This is a very very very very
@@ -184,7 +185,7 @@ Also, the result should be the same regardless of whether the code is at the beg
  */"))
 
 (ert-deftest fill-paragraph-multi-line-style-inner-doc-comment ()
-  (test-fill-paragraph
+  (rust-test-fill-paragraph
    "/*! This is a very very very very very very very long string
  */"
    "/*! This is a very very very
@@ -193,14 +194,14 @@ Also, the result should be the same regardless of whether the code is at the beg
  */"))
 
 (ert-deftest fill-paragraph-single-line-style-inner-doc-comment ()
-  (test-fill-paragraph
+  (rust-test-fill-paragraph
    "//! This is a very very very very very very very long string"
    "//! This is a very very very
 //! very very very very long
 //! string"))
 
 (ert-deftest fill-paragraph-prefixless-multi-line-doc-comment ()
-  (test-fill-paragraph
+  (rust-test-fill-paragraph
    "/**
 This is my summary. Blah blah blah blah blah. Dilly dally dilly dally dilly dally doo.
 
@@ -215,7 +216,7 @@ This is some more text.  Fee fie fo fum.  Humpty dumpty sat on a wall.
 */" 4 90))
 
 (ert-deftest fill-paragraph-with-no-space-after-star-prefix ()
-  (test-fill-paragraph
+  (rust-test-fill-paragraph
    "/**
  *This is a very very very very very very very long string
  */"
@@ -225,7 +226,7 @@ This is some more text.  Fee fie fo fum.  Humpty dumpty sat on a wall.
  */"))
 
 (ert-deftest fill-paragraph-single-line-style-with-code-before ()
-  (test-fill-paragraph
+  (rust-test-fill-paragraph
    "fn foo() { }
 /// This is my comment.  This is more of my comment.  This is even more."
    "fn foo() { }
@@ -234,7 +235,7 @@ This is some more text.  Fee fie fo fum.  Humpty dumpty sat on a wall.
 /// even more." 14))
 
 (ert-deftest fill-paragraph-single-line-style-with-code-after ()
-  (test-fill-paragraph
+  (rust-test-fill-paragraph
    "/// This is my comment.  This is more of my comment.  This is even more.
 fn foo() { }"
    "/// This is my comment.  This is
@@ -243,7 +244,7 @@ fn foo() { }"
 fn foo() { }" 1 73))
 
 (ert-deftest fill-paragraph-single-line-style-code-before-and-after ()
-  (test-fill-paragraph
+  (rust-test-fill-paragraph
    "fn foo() { }
 /// This is my comment.  This is more of my comment.  This is even more.
 fn bar() { }"
@@ -318,7 +319,7 @@ very very very long string
      deindented
      1
      (lambda ()
-       (test-silence
+       (rust-test-silence
         '("%s %s"   ; "Indenting..." progress-reporter-do-update
           "%sdone") ; "Indenting...done"  progress-reporter-done
         (indent-region 1 (+ 1 (buffer-size)))))
@@ -392,11 +393,11 @@ not_a_string();
 
 "
 
-   (apply 'append (mapcar (lambda (s) (list s 'font-lock-string-face))
-                          '("r\"foo\\\"" "\"bar\"" "r\"bar\""
-                            "r\"foo\\.\"" "\"bar\"" "r\"bar\""
-                            "r\"foo\\..\"" "\"bar\"" "r\"foo\\..\\bar\""
-                            "r\"\\\"" "\"foo\"" "r\"\\foo\"")))
+   (apply #'append (mapcar (lambda (s) (list s 'font-lock-string-face))
+                           '("r\"foo\\\"" "\"bar\"" "r\"bar\""
+                             "r\"foo\\.\"" "\"bar\"" "r\"bar\""
+                             "r\"foo\\..\"" "\"bar\"" "r\"foo\\..\\bar\""
+                             "r\"\\\"" "\"foo\"" "r\"\\foo\"")))
    ))
 
 (ert-deftest font-lock-raw-string-after-normal-string-ending-in-r ()
@@ -3305,7 +3306,7 @@ type Foo<T> where T: Copy = Box<T>;
 (ert-deftest redo-syntax-after-change-far-from-point ()
   (let*
       ((tmp-file-name (make-temp-file "rust-mdoe-test-issue104"))
-       (base-contents (apply 'concat (append '("fn foo() {\n\n}\n") (make-list 500 "// More stuff...\n") '("fn bar() {\n\n}\n")))))
+       (base-contents (apply #'concat (append '("fn foo() {\n\n}\n") (make-list 500 "// More stuff...\n") '("fn bar() {\n\n}\n")))))
     ;; Create the temp file...
     (with-temp-file tmp-file-name
       (insert base-contents))
@@ -3480,12 +3481,11 @@ impl Two<'a> {
    #'rust-dbg-wrap-or-unwrap
    "let x = dbg!(\"foo, bar\")"))
 
-(when (executable-find rust-cargo-bin)
-  (ert-deftest rust-test-project-located ()
-    (let* ((test-dir (expand-file-name "test-project/" default-directory))
-           (manifest-file (expand-file-name "Cargo.toml" test-dir)))
-      (let ((default-directory test-dir))
-        (should (equal (expand-file-name (rust-buffer-project)) manifest-file))))))
+(ert-deftest rust-test-project-located ()
+  (let* ((test-dir (expand-file-name "test-project/" default-directory))
+         (manifest-file (expand-file-name "Cargo.toml" test-dir)))
+    (let ((default-directory test-dir))
+      (should (equal (expand-file-name (rust-buffer-project)) manifest-file)))))
 
 (defun rust-collect-matches (spec)
   (let ((matches nil))
@@ -3631,5 +3631,6 @@ impl Two<'a> {
          `(should
            (or
             (string-match "Prefix Command" ,match)
-            (string-match "^C-c C" ,match)))))
+            (string-match "^C-c C" ,match)))
+         t))
       (should (< 0 match-count)))))
