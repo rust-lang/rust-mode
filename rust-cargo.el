@@ -44,7 +44,7 @@
         (setq-local process-environment env)
         ;; Set PATH so we can find cargo.
         (setq-local exec-path path)
-        (let ((ret (call-process rust-cargo-bin nil t nil "locate-project")))
+        (let ((ret (process-file rust-cargo-bin nil (list (current-buffer) nil) nil "locate-project" "--workspace")))
           (when (/= ret 0)
             (error "`cargo locate-project' returned %s status: %s" ret (buffer-string)))
           (goto-char 0)
