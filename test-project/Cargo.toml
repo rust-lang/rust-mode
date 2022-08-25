@@ -1,1 +1,10 @@
-# Dummy file needed for test
+# Dummy file needed for test.
+#
+# Needs to have at least a few fields set up, because
+#
+#   cargo locate-project --workspace
+#
+# will attempt to parse it and fail, if the file is empty.
+[package]
+name = "test-project"
+version = "0.1.0"
