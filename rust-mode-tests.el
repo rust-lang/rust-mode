@@ -3482,6 +3482,7 @@ impl Two<'a> {
    "let x = dbg!(\"foo, bar\")"))
 
 (ert-deftest rust-test-project-located ()
+  (skip-unless (executable-find rust-cargo-bin))
   (let* ((test-dir (expand-file-name "test-project/" default-directory))
          (manifest-file (expand-file-name "Cargo.toml" test-dir)))
     (let ((default-directory test-dir))
