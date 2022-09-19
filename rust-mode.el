@@ -734,7 +734,7 @@ buffer."
         (while (and (or (rust-in-str-or-cmnt)
                         ;; Only whitespace (or nothing) from the beginning to
                         ;; the end of the line.
-                        (looking-back "^\s*" (point-at-bol)))
+                        (looking-back "^\s*" (line-beginning-position)))
                     (= (rust-paren-level) level))
           (forward-line -1)
           (end-of-line)))
