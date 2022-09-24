@@ -51,8 +51,7 @@ This mode provides:
 - Integration with Cargo, clippy and rustfmt
 
 This mode does _not_ provide autocompletion, or jumping to function /
-trait definitions. See [Auto-completion / code
-navigation](#auto-completion--code-navigation) below for tips on how
+trait definitions. See [Auto-completion](#auto-completion) below for tips on how
 to enable this.
 
 If you are missing features in rust-mode, please check out
