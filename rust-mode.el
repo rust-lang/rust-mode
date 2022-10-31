@@ -1411,34 +1411,32 @@ whichever comes first."
 
 (defun rust-syntax-propertize (start end)
   "A `syntax-propertize-function' to apply properties from START to END."
-  ;; Cache all macro scopes as an optimization. See issue #208
-  (let ((rust-macro-scopes (rust-macro-scope start end)))
-    (goto-char start)
-    (let ((str-start (rust-in-str-or-cmnt)))
-      (when str-start
-        (rust--syntax-propertize-raw-string str-start end)))
-    (funcall
-     (syntax-propertize-rules
-      ;; Character literals.
-      (rust--char-literal-rx (1 "\"") (2 "\""))
-      ;; Raw strings.
-      ("\\(r\\)#*\""
-       (0 (ignore
-           (goto-char (match-end 0))
-           (unless (save-excursion (nth 8 (syntax-ppss (match-beginning 0))))
-             (put-text-property (match-beginning 1) (match-end 1)
-                                'syntax-table (string-to-syntax "|"))
-             (rust--syntax-propertize-raw-string (match-beginning 0) end)))))
-      ("[<>]"
-       (0 (ignore
-           (when (save-match-data
-                   (save-excursion
-                     (goto-char (match-beginning 0))
-                     (rust-ordinary-lt-gt-p)))
-             (put-text-property (match-beginning 0) (match-end 0)
-                                'syntax-table (string-to-syntax "."))
-             (goto-char (match-end 0)))))))
-     (point) end)))
+  (goto-char start)
+  (let ((str-start (rust-in-str-or-cmnt)))
+    (when str-start
+      (rust--syntax-propertize-raw-string str-start end)))
+  (funcall
+   (syntax-propertize-rules
+    ;; Character literals.
+    (rust--char-literal-rx (1 "\"") (2 "\""))
+    ;; Raw strings.
+    ("\\(r\\)#*\""
+     (0 (ignore
+         (goto-char (match-end 0))
+         (unless (save-excursion (nth 8 (syntax-ppss (match-beginning 0))))
+           (put-text-property (match-beginning 1) (match-end 1)
+                              'syntax-table (string-to-syntax "|"))
+           (rust--syntax-propertize-raw-string (match-beginning 0) end)))))
+    ("[<>]"
+     (0 (ignore
+         (when (save-match-data
+                 (save-excursion
+                   (goto-char (match-beginning 0))
+                   (rust-ordinary-lt-gt-p)))
+           (put-text-property (match-beginning 0) (match-end 0)
+                              'syntax-table (string-to-syntax "."))
+           (goto-char (match-end 0)))))))
+   (point) end))
 
 (defun rust-fill-prefix-for-comment-start (line-start)
   "Determine what to use for `fill-prefix' based on the text at LINE-START."
