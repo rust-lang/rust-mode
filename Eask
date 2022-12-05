@@ -2,6 +2,9 @@
          "1.0.4"
          "A major-mode for editing Rust source code")
 
+(website-url "https://github.com/rust-lang/rust-mode")
+(keywords "languages")
+
 (package-file "rust-mode.el")
 
 (files 
