@@ -40,7 +40,7 @@ CLEAN = $(PKG)-autoloads.el
 clean:
 	@printf "Cleaning...\n"
 	@rm -rf $(CLEAN)
-	$(EASK) clean-all
+	$(EASK) clean all
 
 $(PKG)-autoloads.el:
 	@printf "Generating $@\n"
