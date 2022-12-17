@@ -1628,5 +1628,7 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
 
 (provide 'rust-mode)
 (require 'rust-utils)
+(when (version< "28.2" emacs-version)
+ (require 'rust-ts-mode))
 
 ;;; rust-mode.el ends here
