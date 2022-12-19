@@ -1,5 +1,5 @@
 (package "rust-mode"
-         "1.0.4"
+         "1.0.5"
          "A major-mode for editing Rust source code")
 
 (website-url "https://github.com/rust-lang/rust-mode")
