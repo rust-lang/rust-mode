@@ -69,7 +69,10 @@
                         (with-current-buffer buf
                           (replace-buffer-contents rust-rustfmt-buffername))
                       (copy-to-buffer buf (point-min) (point-max))))
-                (kill-buffer-and-window))
+	        (let ((win (get-buffer-window rust-rustfmt-buffername)))
+		  (if win
+		      (quit-window t win)
+		    (kill-buffer rust-rustfmt-buffername))))
                ((= ret 3)
                 (if (not (string= (buffer-string)
                                   (with-current-buffer buf (buffer-string))))
