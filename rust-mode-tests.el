@@ -3116,7 +3116,7 @@ macro_c!{
      (syntax-ppss))))
 
 
-(ert-deftest rust-test-in-macro-no-caching ()
+(ert-deftest rust-test-in-macro-around-opening ()
   (should-not
    (with-temp-buffer
      (insert
@@ -3125,66 +3125,38 @@ macro_c!{
         struct Boo<D> {}
 ")
      (rust-mode)
-     (search-backward "macro")
-     ;; do not use the cache
-     (let ((rust-macro-scopes nil))
-       (rust-in-macro)))))
-
-(ert-deftest rust-test-in-macro-fake-cache ()
-  (should
-   (with-temp-buffer
-     (insert
-      "fn foo<A>(a:A) {
-    macro_c!{
-        struct Boo<D> {}
-")
-     (rust-mode)
-     (search-backward "macro")
-     ;; make the cache lie to make the whole buffer in scope
-     ;; we need to be at paren level 1 for this to work
-     (let ((rust-macro-scopes `((,(point-min) ,(point-max)))))
-       (rust-in-macro)))))
-
-(ert-deftest rust-test-in-macro-broken-cache ()
-  (should-error
-   (with-temp-buffer
-     (insert
-      "fn foo<A>(a:A) {
-    macro_c!{
-        struct Boo<D> {}
-")
-     (rust-mode)
-     (search-backward "Boo")
-     ;; do we use the cache at all
-     (let ((rust-macro-scopes '(I should break)))
-       (rust-in-macro)))))
+     (search-backward "macro_c")
+     (and
+      (not (rust-in-macro))
+      (progn (forward-thing 'symbol 1) (not (rust-in-macro)))
+      (progn (forward-char 1) (rust-in-macro))
+      (progn (goto-char (point-max)) (rust-in-macro))))))
 
 (ert-deftest rust-test-in-macro-nested ()
-  (should
-   (equal
-    (with-temp-buffer
-      (insert
-       "macro_rules! outer {
+  (with-temp-buffer
+    (insert
+     "macro_rules! outer {
     () => { vec![] };
 }")
-      (rust-mode)
-      (rust-macro-scope (point-min) (point-max)))
-    '((38 40) (20 45)))))
+    (rust-mode)
+    (should (progn (goto-char 20) (not (rust-in-macro))))
+    (should (progn (goto-char 21) (eq (rust-in-macro) 20)))
+    (should (progn (goto-char 38) (eq (rust-in-macro) 20)))
+    (should (progn (goto-char 39) (eq (rust-in-macro) 38)))
+    (should (progn (goto-char 40) (eq (rust-in-macro) 20)))
+    (should (progn (goto-char 44) (eq (rust-in-macro) 20)))
+    (should (progn (goto-char 45) (not (rust-in-macro))))))
 
 (ert-deftest rust-test-in-macro-not-with-space ()
-  (should
-   (equal
-    (with-temp-buffer
-      (insert
+  (with-temp-buffer
+    (insert
        "fn foo<T>() {
     if !(mem::size_of::<T>() > 8) {
         bar()
     }
 }")
-      (rust-mode)
-      (rust-macro-scope (point-min) (point-max)))
-    'empty)))
-
+    (rust-mode)
+    (should (progn (goto-char 24) (not (rust-in-macro))))))
 
 (ert-deftest rust-test-paren-matching-type-with-module-name ()
   (rust-test-matching-parens
