@@ -41,49 +41,51 @@
 
 (defun rust--format-call (buf)
   "Format BUF using rustfmt."
-  (with-current-buffer (get-buffer-create rust-rustfmt-buffername)
-    (view-mode +1)
-    (let ((inhibit-read-only t))
-      (erase-buffer)
-      (insert-buffer-substring buf)
-      (let* ((tmpf (make-temp-file "rustfmt"))
-             (ret (apply #'call-process-region
-                         (point-min)
-                         (point-max)
-                         rust-rustfmt-bin
-                         t
-                         `(t ,tmpf)
-                         nil
-                         rust-rustfmt-switches)))
-        (unwind-protect
-            (cond
-             ((zerop ret)
-              (if (not (string= (buffer-string)
-                                (with-current-buffer buf (buffer-string))))
-                  ;; replace-buffer-contents was in emacs 26.1, but it
-                  ;; was broken for non-ASCII strings, so we need 26.2.
-                  (if (and (fboundp 'replace-buffer-contents)
-                           (version<= "26.2" emacs-version))
-                      (with-current-buffer buf
-                        (replace-buffer-contents rust-rustfmt-buffername))
-                    (copy-to-buffer buf (point-min) (point-max))))
-              (kill-buffer-and-window))
-             ((= ret 3)
-              (if (not (string= (buffer-string)
-                                (with-current-buffer buf (buffer-string))))
-                  (copy-to-buffer buf (point-min) (point-max)))
-              (erase-buffer)
-              (insert-file-contents tmpf)
-              (rust--format-fix-rustfmt-buffer (buffer-name buf))
-              (error "Rustfmt could not format some lines, see %s buffer for details"
-                     rust-rustfmt-buffername))
-             (t
-              (erase-buffer)
-              (insert-file-contents tmpf)
-              (rust--format-fix-rustfmt-buffer (buffer-name buf))
-              (error "Rustfmt failed, see %s buffer for details"
-                     rust-rustfmt-buffername))))
-        (delete-file tmpf)))))
+  (let ((path exec-path))
+    (with-current-buffer (get-buffer-create rust-rustfmt-buffername)
+      (setq-local exec-path path)
+      (view-mode +1)
+      (let ((inhibit-read-only t))
+        (erase-buffer)
+        (insert-buffer-substring buf)
+        (let* ((tmpf (make-temp-file "rustfmt"))
+               (ret (apply #'call-process-region
+                           (point-min)
+                           (point-max)
+                           rust-rustfmt-bin
+                           t
+                           `(t ,tmpf)
+                           nil
+                           rust-rustfmt-switches)))
+          (unwind-protect
+              (cond
+               ((zerop ret)
+                (if (not (string= (buffer-string)
+                                  (with-current-buffer buf (buffer-string))))
+                    ;; replace-buffer-contents was in emacs 26.1, but it
+                    ;; was broken for non-ASCII strings, so we need 26.2.
+                    (if (and (fboundp 'replace-buffer-contents)
+                             (version<= "26.2" emacs-version))
+                        (with-current-buffer buf
+                          (replace-buffer-contents rust-rustfmt-buffername))
+                      (copy-to-buffer buf (point-min) (point-max))))
+                (kill-buffer-and-window))
+               ((= ret 3)
+                (if (not (string= (buffer-string)
+                                  (with-current-buffer buf (buffer-string))))
+                    (copy-to-buffer buf (point-min) (point-max)))
+                (erase-buffer)
+                (insert-file-contents tmpf)
+                (rust--format-fix-rustfmt-buffer (buffer-name buf))
+                (error "Rustfmt could not format some lines, see %s buffer for details"
+                       rust-rustfmt-buffername))
+               (t
+                (erase-buffer)
+                (insert-file-contents tmpf)
+                (rust--format-fix-rustfmt-buffer (buffer-name buf))
+                (error "Rustfmt failed, see %s buffer for details"
+                       rust-rustfmt-buffername))))
+          (delete-file tmpf))))))
 
 ;; Since we run rustfmt through stdin we get <stdin> markers in the
 ;; output. This replaces them with the buffer name instead.
