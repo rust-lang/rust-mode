@@ -152,7 +152,8 @@ rustfmt complain in the echo area."
           (goto-char (point-min))
           (forward-line (1- (car target-point)))
           (forward-char (1- (cdr target-point))))
-        (message target-problem)))))
+        (unless rust-format-show-buffer
+          (message target-problem))))))
 
 (defconst rust--format-word "\
 \\b\\(else\\|enum\\|fn\\|for\\|if\\|let\\|loop\\|\
