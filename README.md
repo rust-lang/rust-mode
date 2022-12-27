@@ -21,7 +21,7 @@
         - [Clippy](#clippy)
         - [Easy insertion of dbg!](#easy-insertion-of-dbg)
         - [More commands](#more-commands)
-    - [highlighting with tree-sitter](#highlighting-with-tree-sitter)
+    - [tree-sitter](#tree-sitter)
     - [LSP](#lsp)
         - [eglot](#eglot)
         - [lsp-mode](#lsp-mode)
@@ -191,9 +191,20 @@ This is bound to <kbd>C-c C-d</kbd> by default.
 
 - `rust-toggle-mutability` toggle mut for var defined at current line
 
-## highlighting with tree-sitter
+## tree-sitter
 
-You should take a look at [tree-sitter](https://github.com/emacs-tree-sitter/elisp-tree-sitter). When the dependencies are installed you can activate the feature with:
+You can try the new native treesitter mode `rust-ts-mode` with:
+
+```elisp
+(use-package rust-mode
+  :init
+  (setq rust-mode-treesitter-derive t))
+```
+
+In case you want to use treesitter but can't use emacs master, you can
+take a look at
+[tree-sitter](https://github.com/emacs-tree-sitter/elisp-tree-sitter). When
+the dependencies are installed you can activate the feature with:
 
 ```elisp
 (use-package tree-sitter
