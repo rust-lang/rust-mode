@@ -166,17 +166,18 @@ The `rust-run`, `rust-test`, `rust-compile` and `rust-check` functions
 shell out to Cargo to run, test, build and check your code. Under the
 hood, these use the standard Emacs `compile` function.
 
-These are not bound by default. To bind these to keyboard shortcuts,
-you can use the following in your init.el:
+By default these are bound to:
 
-``` elisp
-(define-key rust-mode-map (kbd "C-c C-c") 'rust-run)
-```
+- <kbd>C-c C-c C-u</kbd> `rust-compile`
+- <kbd>C-c C-c C-k</kbd> `rust-check`
+- <kbd>C-c C-c C-t</kbd> `rust-test`
+- <kbd>C-c C-c C-r</kbd> `rust-run`
 
 ### Clippy
 
 `rust-run-clippy` runs
-[Clippy](https://github.com/rust-lang/rust-clippy), a linter.
+[Clippy](https://github.com/rust-lang/rust-clippy), a linter. By
+default, this is bound to <kbd>C-c C-c C-l</kbd>.
 
 ### Easy insertion of dbg!
 
