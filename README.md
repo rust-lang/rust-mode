@@ -50,7 +50,7 @@ This mode provides:
 - Indentation
 - Integration with Cargo, clippy and rustfmt
 
-This mode does _not_ provide autocompletion, or jumping to function /
+This mode does _not_ provide auto completion, or jumping to function /
 trait definitions. See [Auto-completion](#auto-completion) below for tips on how
 to enable this.
 
@@ -189,7 +189,7 @@ This is bound to <kbd>C-c C-d</kbd> by default.
 
 ### More commands
 
-- `rustic-toggle-mutability` toggle mut for var defined at current line
+- `rust-toggle-mutability` toggle mut for var defined at current line
 
 ## highlighting with tree-sitter
 
@@ -228,7 +228,7 @@ by using additional packages. You can find more information in the
 You can either use a lsp client or [racer](https://github.com/racer-rust/racer)
 with [emacs-racer](https://github.com/racer-rust/emacs-racer#installation).
 
-Note that racer and rls are considered deprecated. You should try rust-analyzer
+Note that racer and rls are considered deprecated. You should use rust-analyzer
 instead.
 
 ## Other recommended packages
