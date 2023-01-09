@@ -46,7 +46,8 @@
         (when (/= ret 0)
           (error "`cargo locate-project' returned %s status: %s" ret (buffer-string)))
         (goto-char 0)
-        (let ((output (json-read)))
+        (let ((output (let ((json-object-type 'alist))
+                        (json-read))))
           (cdr (assoc-string "root" output)))))))
 
 (defun rust-buffer-crate ()
