@@ -1094,6 +1094,25 @@ fn test4();")
       (beginning-of-defun 2)
       (should (eq (point) fn-1)))))
 
+(ert-deftest rust-beginning-of-defun-pub-scoped ()
+  (let (fn-1-start fn-1-end fn-2-start fn-2-end)
+   (with-temp-buffer
+     (rust-mode)
+     (setq fn-1-start (point))
+     (insert "pub(crate::mod1) fn test2() {}\n")
+     (setq fn-1-end (point))
+     (setq fn-2-start (point))
+     (insert "pub(self) fn test1() {}\n")
+     (setq fn-3-end (point))
+
+     (goto-char (point-max))
+
+     (beginning-of-defun)
+     (should (eq (point) fn-2-start))
+
+     (beginning-of-defun)
+     (should (eq (point) fn-1-start)))))
+
 (ert-deftest rust-end-of-defun-from-middle-of-fn ()
   (rust-test-motion
    rust-test-motion-string
@@ -1135,6 +1154,25 @@ fn test4();")
    'middle-of-fn3
    'between-fn1-fn2
    #'end-of-defun -2))
+
+(ert-deftest rust-end-of-defun-pub-scoped ()
+  (let (fn-1-start fn-1-end fn-2-start fn-2-end)
+   (with-temp-buffer
+     (rust-mode)
+     (setq fn-1-start (point))
+     (insert "pub(crate::mod1) fn test2() {}\n")
+     (setq fn-1-end (point))
+     (setq fn-2-start (point))
+     (insert "pub(self) fn test1() {}\n")
+     (setq fn-2-end (point))
+
+     (goto-char (point-min))
+
+     (end-of-defun)
+     (should (eq (point) fn-1-end))
+
+     (end-of-defun)
+     (should (eq (point) fn-2-end)))))
 
 (ert-deftest rust-mark-defun-from-middle-of-fn ()
   (rust-test-region
