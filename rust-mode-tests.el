@@ -54,6 +54,13 @@
     (should (rust-compare-code-after-manip
              original point-pos manip-func expected (buffer-string)))))
 
+(defmacro rust-test-with-standard-fill-settings (&rest body)
+  (declare (indent defun))
+  `(let ((fill-column rust-test-fill-column)
+         (sentence-end-double-space t)
+         (colon-double-space nil))
+     ,@body))
+
 (defun rust-test-fill-paragraph (unfilled expected &optional start-pos end-pos)
   "We're going to run through many scenarios here--the point should be able to be anywhere from the start-pos (defaults to 1) through end-pos (defaults to the length of what was passed in) and (fill-paragraph) should return the same result.  It should also work with fill-region from start-pos to end-pos.
 
@@ -78,7 +85,7 @@ Also, the result should be the same regardless of whether the code is at the beg
                                  (concat padding-beginning unfilled padding-end)
                                  pos
                                  (lambda ()
-                                   (let ((fill-column rust-test-fill-column))
+                                   (rust-test-with-standard-fill-settings
                                      (fill-paragraph)))
                                  (concat padding-beginning expected padding-end)))))
     ;; In addition to all the fill-paragraph tests, check that it works using fill-region
@@ -86,7 +93,7 @@ Also, the result should be the same regardless of whether the code is at the beg
      unfilled
      start-pos
      (lambda ()
-       (let ((fill-column rust-test-fill-column))
+       (rust-test-with-standard-fill-settings
          (fill-region start-pos end-pos)))
      expected)
     ))
