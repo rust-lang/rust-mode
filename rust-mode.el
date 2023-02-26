@@ -56,6 +56,11 @@ This variable might soon be remove again.")
   :link '(url-link "https://www.rust-lang.org/")
   :group 'languages)
 
+(defcustom rust-mode-hook '(rust-maybe-initialize-buffer-project)
+  "Hook called by `rust-mode'."
+  :type 'hook
+  :group 'rust-mode)
+
 (defcustom rust-indent-offset 4
   "Indent Rust code by this number of spaces."
   :type 'integer

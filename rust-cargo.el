@@ -63,8 +63,6 @@
   (when rust-always-locate-project-on-open
     (rust-update-buffer-project)))
 
-(add-hook 'rust-mode-hook #'rust-maybe-initialize-buffer-project)
-
 ;;; Internal
 
 (defun rust--compile (format-string &rest args)
