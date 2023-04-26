@@ -2797,7 +2797,7 @@ fn foo<T:Fn() -> X<Y>>() -> Z {
      )
    ))
 
-(ert-deftest rust-test-paren-matching-lt-ops-in-fn-params ()
+(ert-deftest rust-test-paren-matching-lt-ops-in-fn-params-1 ()
   (rust-test-matching-parens
    "
 fn foo(x:i32) {
@@ -2809,7 +2809,7 @@ fn foo(x:i32) {
      )
    ))
 
-(ert-deftest rust-test-paren-matching-lt-ops-in-fn-params ()
+(ert-deftest rust-test-paren-matching-lt-ops-in-fn-params-2 ()
   (rust-test-matching-parens
    "
 fn foo(x:i32) -> bool {
