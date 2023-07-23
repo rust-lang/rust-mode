@@ -37,29 +37,30 @@ visit the new file."
 ;;; dbg! macro
 
 (defun rust-insert-dbg ()
-  "Insert the dbg! macro."
+  "Insert the dbg! macro. Move cursor to the end of macro."
   (when (rust-in-str)
     (up-list -1 t t))
   (insert "(")
   (forward-sexp)
   (insert ")")
   (backward-sexp)
-  (insert "dbg!"))
+  (insert "dbg!")
+  (forward-sexp))
 
 (defun rust-insert-dbg-region ()
-  "Insert the dbg! macro around a region."
+  "Insert the dbg! macro around a region. Move cursor to the end of macro."
   (when (< (mark) (point))
     (exchange-point-and-mark))
   (let ((old-point (point)))
     (insert-parentheses)
     (goto-char old-point))
-(insert "dbg!"))
+  (insert "dbg!")
+  (forward-sexp))
 
 (defun rust-insert-dbg-alone ()
-  "Insert the dbg! macro alone."
+  "Insert the dbg! macro alone. Move cursor in between the brackets."
   (insert "dbg!()")
   (backward-char))
-
 
 ;;;###autoload
 (defun rust-dbg-wrap-or-unwrap ()
@@ -67,13 +68,14 @@ visit the new file."
   (interactive)
   
   (cond
-   ;; alone
-   ((or (looking-at-p " *$") (looking-at-p " *//.*"))
-    (rust-insert-dbg-alone))
    
    ;; region
    ((region-active-p)
     (rust-insert-dbg-region))
+
+   ;; alone
+   ((or (looking-at-p " *$") (looking-at-p " *//.*"))
+    (rust-insert-dbg-alone))
 
    ;; symbol
    (t
