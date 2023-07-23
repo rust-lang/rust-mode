@@ -55,12 +55,22 @@ visit the new file."
     (goto-char old-point))
 (insert "dbg!"))
 
+(defun rust-insert-dbg-alone ()
+  "Insert the dbg! macro alone."
+  (insert "dbg!()")
+  (backward-char))
+
+
 ;;;###autoload
 (defun rust-dbg-wrap-or-unwrap ()
   "Either remove or add the dbg! macro."
   (interactive)
   
   (cond
+   ;; alone
+   ((or (looking-at-p " *$") (looking-at-p " *//.*"))
+    (rust-insert-dbg-alone))
+   
    ;; region
    ((region-active-p)
     (rust-insert-dbg-region))
