@@ -38,20 +38,22 @@ visit the new file."
 
 (defun rust-insert-dbg ()
   "Insert the dbg! macro."
-  (cond ((region-active-p)
-         (when (< (mark) (point))
-           (exchange-point-and-mark))
-         (let ((old-point (point)))
-           (insert-parentheses)
-           (goto-char old-point)))
-        (t
-         (when (rust-in-str)
-           (up-list -1 t t))
-         (insert "(")
-         (forward-sexp)
-         (insert ")")
-         (backward-sexp)))
+  (when (rust-in-str)
+    (up-list -1 t t))
+  (insert "(")
+  (forward-sexp)
+  (insert ")")
+  (backward-sexp)
   (insert "dbg!"))
+
+(defun rust-insert-dbg-region ()
+  "Insert the dbg! macro around a region."
+  (when (< (mark) (point))
+    (exchange-point-and-mark))
+  (let ((old-point (point)))
+    (insert-parentheses)
+    (goto-char old-point))
+(insert "dbg!"))
 
 ;;;###autoload
 (defun rust-dbg-wrap-or-unwrap ()
@@ -59,7 +61,7 @@ visit the new file."
   (interactive)
   (save-excursion
     (if (region-active-p)
-        (rust-insert-dbg)
+        (rust-insert-dbg-region)
 
       (let ((beginning-of-symbol (ignore-errors (beginning-of-thing 'symbol))))
         (when beginning-of-symbol
