@@ -59,26 +59,30 @@ visit the new file."
 (defun rust-dbg-wrap-or-unwrap ()
   "Either remove or add the dbg! macro."
   (interactive)
-  ;; (save-excursion
-    (if (region-active-p)
-        (rust-insert-dbg-region)
+  
+  (cond
+   ;; region
+   ((region-active-p)
+    (rust-insert-dbg-region))
 
-      (let ((beginning-of-symbol (ignore-errors (beginning-of-thing 'symbol))))
-        (when beginning-of-symbol
-          (goto-char beginning-of-symbol)))
+   ;; symbol
+   (t
+    (let ((beginning-of-symbol (ignore-errors (beginning-of-thing 'symbol))))
+      (when beginning-of-symbol
+        (goto-char beginning-of-symbol)))
 
-      (let ((dbg-point (save-excursion
-                         (or (and (looking-at-p "dbg!") (+ 4 (point)))
-                             (ignore-errors
-                               (while (not (rust-looking-back-str "dbg!"))
-                                 (backward-up-list))
-                               (point))))))
-        (cond (dbg-point
-               (goto-char dbg-point)
-               (delete-char -4)
-               (delete-pair))
-              (t (rust-insert-dbg)))))
-    ;; )
+    (let ((dbg-point (save-excursion
+                       (or (and (looking-at-p "dbg!") (+ 4 (point)))
+                           (ignore-errors
+                             (while (not (rust-looking-back-str "dbg!"))
+                               (backward-up-list))
+                             (point))))))
+      (cond (dbg-point
+             (goto-char dbg-point)
+             (delete-char -4)
+             (delete-pair))
+            (t (rust-insert-dbg)))))
+   )
 )
 
 (defun rust-toggle-mutability ()
