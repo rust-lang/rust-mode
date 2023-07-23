@@ -59,7 +59,7 @@ visit the new file."
 (defun rust-dbg-wrap-or-unwrap ()
   "Either remove or add the dbg! macro."
   (interactive)
-  (save-excursion
+  ;; (save-excursion
     (if (region-active-p)
         (rust-insert-dbg-region)
 
@@ -77,7 +77,9 @@ visit the new file."
                (goto-char dbg-point)
                (delete-char -4)
                (delete-pair))
-              (t (rust-insert-dbg)))))))
+              (t (rust-insert-dbg)))))
+    ;; )
+)
 
 (defun rust-toggle-mutability ()
   "Toggles the mutability of the variable defined on the current line"
