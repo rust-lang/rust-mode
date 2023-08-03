@@ -3454,7 +3454,8 @@ impl Two<'a> {
    "let x = add(first, second);"
    15
    #'rust-dbg-wrap-or-unwrap
-   "let x = add(dbg!(first), second);"))
+   "let x = add(dbg!(first), second);"
+   24))
 
 (ert-deftest rust-test-dbg-wrap-empty-line ()
   (rust-test-manip-code
@@ -3494,7 +3495,8 @@ let b = 1;"
    "let x = add((first, second);"
    14
    #'rust-dbg-wrap-or-unwrap
-   "let x = add((dbg!(first), second);"))
+   "let x = add((dbg!(first), second);"
+   25))
 
 (ert-deftest rust-test-dbg-wrap-region ()
   (rust-test-manip-code
@@ -3505,7 +3507,8 @@ let b = 1;"
      (push-mark nil t t)
      (goto-char 26)
      (rust-dbg-wrap-or-unwrap))
-   "let x = dbg!(add(first, second));"))
+   "let x = dbg!(add(first, second));"
+   33))
 
 (defun rust-test-dbg-unwrap (position)
   (rust-test-manip-code
