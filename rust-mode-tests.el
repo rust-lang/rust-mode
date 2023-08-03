@@ -45,14 +45,16 @@
 (put 'rust-compare-code-after-manip 'ert-explainer
      'rust-test-explain-bad-manip)
 
-(defun rust-test-manip-code (original point-pos manip-func expected)
+(defun rust-test-manip-code (original manip-pos manip-func expected &optional final-pos)
   (with-temp-buffer
     (rust-mode)
     (insert original)
-    (goto-char point-pos)
+    (goto-char manip-pos)
     (funcall manip-func)
     (should (rust-compare-code-after-manip
-             original point-pos manip-func expected (buffer-string)))))
+             original manip-pos manip-func expected (buffer-string)))
+    (if final-pos
+        (should (equal (point) final-pos)))))
 
 (defmacro rust-test-with-standard-fill-settings (&rest body)
   (declare (indent defun))
@@ -3452,14 +3454,49 @@ impl Two<'a> {
    "let x = add(first, second);"
    15
    #'rust-dbg-wrap-or-unwrap
-   "let x = add(dbg!(first), second);"))
+   "let x = add(dbg!(first), second);"
+   24))
+
+(ert-deftest rust-test-dbg-wrap-empty-line ()
+  (rust-test-manip-code
+   "let a = 1;
+
+let b = 1;"
+   12
+   #'rust-dbg-wrap-or-unwrap
+   "let a = 1;
+dbg!()
+let b = 1;"
+   17))
+
+(ert-deftest rust-test-dbg-wrap-empty-before-comment ()
+  (rust-test-manip-code
+   "let a = 1;
+// comment
+let b = 1;"
+   12
+   #'rust-dbg-wrap-or-unwrap
+   "let a = 1;
+dbg!()// comment
+let b = 1;"
+   17)
+  ;; between statements and comments
+  (rust-test-manip-code
+   "let a = 1;// comment
+let b = 1;"
+   11
+   #'rust-dbg-wrap-or-unwrap
+   "let a = 1;dbg!()// comment
+let b = 1;"
+   16))
 
 (ert-deftest rust-test-dbg-wrap-symbol-unbalanced ()
   (rust-test-manip-code
    "let x = add((first, second);"
    14
    #'rust-dbg-wrap-or-unwrap
-   "let x = add((dbg!(first), second);"))
+   "let x = add((dbg!(first), second);"
+   25))
 
 (ert-deftest rust-test-dbg-wrap-region ()
   (rust-test-manip-code
@@ -3470,7 +3507,8 @@ impl Two<'a> {
      (push-mark nil t t)
      (goto-char 26)
      (rust-dbg-wrap-or-unwrap))
-   "let x = dbg!(add(first, second));"))
+   "let x = dbg!(add(first, second));"
+   33))
 
 (defun rust-test-dbg-unwrap (position)
   (rust-test-manip-code
