@@ -3454,6 +3454,35 @@ impl Two<'a> {
    #'rust-dbg-wrap-or-unwrap
    "let x = add(dbg!(first), second);"))
 
+(ert-deftest rust-test-dbg-wrap-empty-line ()
+  (rust-test-manip-code
+   "let a = 1;
+
+let b = 1;"
+   12
+   #'rust-dbg-wrap-or-unwrap
+   "let a = 1;
+dbg!()
+let b = 1;"))
+
+(ert-deftest rust-test-dbg-wrap-empty-before-comment ()
+  (rust-test-manip-code
+   "let a = 1;
+// comment
+let b = 1;"
+   12
+   #'rust-dbg-wrap-or-unwrap
+   "let a = 1;
+dbg!()// comment
+let b = 1;")
+  (rust-test-manip-code
+   "let a = 1;// comment
+let b = 1;"
+   11
+   #'rust-dbg-wrap-or-unwrap
+   "let a = 1;dbg!()// comment
+let b = 1;"))
+
 (ert-deftest rust-test-dbg-wrap-symbol-unbalanced ()
   (rust-test-manip-code
    "let x = add((first, second);"
