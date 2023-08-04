@@ -3449,13 +3449,31 @@ impl Two<'a> {
      "Foo" font-lock-type-face
      "in" font-lock-keyword-face)))
 
-(ert-deftest rust-test-dbg-wrap-symbol ()
+(ert-deftest rust-test-dbg-wrap-sexp ()
+  "a valid sexp ahead of current pos"
   (rust-test-manip-code
    "let x = add(first, second);"
    15
    #'rust-dbg-wrap-or-unwrap
    "let x = add(dbg!(first), second);"
    24))
+
+(ert-deftest rust-test-dbg-wrap-sexp-fallback ()
+  "a invalid sexp ahead of current pos"
+  ;; inside
+  (rust-test-manip-code
+   "if let Ok(val) = may_val {}"
+   27
+   #'rust-dbg-wrap-or-unwrap
+   "if let Ok(val) = may_val {dbg!()}"
+   32)
+  ;; before
+  (rust-test-manip-code
+   "let a = {}"
+   9
+   #'rust-dbg-wrap-or-unwrap
+   "let a = dbg!({})"
+   17))
 
 (ert-deftest rust-test-dbg-wrap-empty-line ()
   (rust-test-manip-code
