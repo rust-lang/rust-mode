@@ -36,16 +36,27 @@ visit the new file."
 
 ;;; dbg! macro
 
-(defun rust-insert-dbg ()
-  "Insert the dbg! macro. Move cursor to the end of macro."
+(defun rust-insert-dbg-sexp ()
+  "Insert the dbg! macro around a sexp if possible, insert at current position
+if not. Move cursor to the end of macro."
   (when (rust-in-str)
     (up-list -1 t t))
-  (insert "(")
-  (forward-sexp)
-  (insert ")")
-  (backward-sexp)
-  (insert "dbg!")
-  (forward-sexp))
+  (setq safe-to-forward t)
+  (save-excursion
+    (condition-case nil
+        (forward-sexp)
+      (error (setq safe-to-forward nil)
+             nil)))
+  (cond
+   ((not safe-to-forward)
+    (rust-insert-dbg-alone))
+   (t
+    (insert "(")
+    (forward-sexp)
+    (insert ")")
+    (backward-sexp)
+    (insert "dbg!")
+    (forward-sexp))))
 
 (defun rust-insert-dbg-region ()
   "Insert the dbg! macro around a region. Move cursor to the end of macro."
@@ -93,7 +104,7 @@ visit the new file."
              (goto-char dbg-point)
              (delete-char -4)
              (delete-pair))
-            (t (rust-insert-dbg)))))
+            (t (rust-insert-dbg-sexp)))))
    )
 )
 
