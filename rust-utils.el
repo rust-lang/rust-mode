@@ -41,22 +41,22 @@ visit the new file."
 if not. Move cursor to the end of macro."
   (when (rust-in-str)
     (up-list -1 t t))
-  (setq safe-to-forward t)
-  (save-excursion
-    (condition-case nil
-        (forward-sexp)
-      (error (setq safe-to-forward nil)
-             nil)))
-  (cond
-   ((not safe-to-forward)
-    (rust-insert-dbg-alone))
-   (t
-    (insert "(")
-    (forward-sexp)
-    (insert ")")
-    (backward-sexp)
-    (insert "dbg!")
-    (forward-sexp))))
+  (let ((safe-to-forward t))
+    (save-excursion
+      (condition-case nil
+          (forward-sexp)
+        (error (setq safe-to-forward nil)
+               nil)))
+    (cond
+     ((not safe-to-forward)
+      (rust-insert-dbg-alone))
+     (t
+      (insert "(")
+      (forward-sexp)
+      (insert ")")
+      (backward-sexp)
+      (insert "dbg!")
+      (forward-sexp)))))
 
 (defun rust-insert-dbg-region ()
   "Insert the dbg! macro around a region. Move cursor to the end of macro."
