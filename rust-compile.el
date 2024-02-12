@@ -34,6 +34,12 @@ See `compilation-error-regexp-alist' for help on their format.")
   "Specifications for matching code references in rustc invocations.
 See `compilation-error-regexp-alist' for help on their format.")
 
+(defvar rustc-panic-run-regexps
+  (let ((re (concat "thread '[[:alnum:]]+' panicked at " rustc-compilation-location)))
+    (cons re '(2 3 4 nil nil)))
+  "Specifications for matching code references in rustc invocations.
+See `compilation-error-regexp-alist' for help on their format.")
+
 ;; Match test run failures and panics during compilation as
 ;; compilation warnings
 (defvar cargo-compilation-regexps
@@ -73,6 +79,9 @@ the compilation window until the top of the error is visible."
      (add-to-list 'compilation-error-regexp-alist-alist
                   (cons 'rustc-colon rustc-colon-compilation-regexps))
      (add-to-list 'compilation-error-regexp-alist 'rustc-colon)
+     (add-to-list 'compilation-error-regexp-alist-alist
+                  (cons 'rustc-panic rustc-panic-run-regexps))
+     (add-to-list 'compilation-error-regexp-alist 'rustc-panic)
      (add-to-list 'compilation-error-regexp-alist-alist
                   (cons 'cargo cargo-compilation-regexps))
      (add-to-list 'compilation-error-regexp-alist 'cargo)
