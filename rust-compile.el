@@ -37,7 +37,7 @@ See `compilation-error-regexp-alist' for help on their format.")
 (defvar rustc-panic-run-regexps
   (let ((re (concat "thread '[[:alnum:]]+' panicked at " rustc-compilation-location)))
     (cons re '(2 3 4 nil nil)))
-  "Specifications for matching code references in rustc invocations.
+  "Specifications for matching panics when running and testing.
 See `compilation-error-regexp-alist' for help on their format.")
 
 ;; Match test run failures and panics during compilation as
