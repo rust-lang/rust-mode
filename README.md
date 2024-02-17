@@ -201,7 +201,7 @@ You can try the new native treesitter mode `rust-ts-mode` with:
   (setq rust-mode-treesitter-derive t))
 ```
 
-In case you want to use treesitter but can't use emacs master, you can
+In case you want to use treesitter but can't use Emacs 29.1, you can
 take a look at
 [tree-sitter](https://github.com/emacs-tree-sitter/elisp-tree-sitter). When
 the dependencies are installed you can activate the feature with:

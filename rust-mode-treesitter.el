@@ -6,6 +6,9 @@
 ;;; Code:
 
 ;;;###autoload
+(require 'treesit)
+(require 'rust-ts-mode)
+
 (define-derived-mode rust-mode rust-ts-mode "Rust"
   "Major mode for Rust code.
 
