@@ -8,6 +8,7 @@
 ;;;###autoload
 (require 'treesit)
 (require 'rust-ts-mode)
+(require 'rust-common)
 
 (define-derived-mode rust-mode rust-ts-mode "Rust"
   "Major mode for Rust code.
