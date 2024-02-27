@@ -4,6 +4,8 @@
 ;; rust-common code for both prog-mode and tree-sitter one
 
 ;;; Code:
+(require 'rust-rustfmt)
+
 (defcustom rust-before-save-hook 'rust-before-save-method
   "Function for formatting before save."
   :type 'function
