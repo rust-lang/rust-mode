@@ -6,18 +6,19 @@
 ;;; Code:
 
 ;;;###autoload
-(require 'treesit)
-(require 'rust-ts-mode)
-(require 'rust-common)
+(when (version<= "29.1" emacs-version)
+  (require 'treesit)
+  (require 'rust-ts-mode)
+  (require 'rust-common)
 
-(define-derived-mode rust-mode rust-ts-mode "Rust"
-  "Major mode for Rust code.
+  (define-derived-mode rust-mode rust-ts-mode "Rust"
+    "Major mode for Rust code.
 
 \\{rust-mode-map}"
-  :group 'rust-mode
+    :group 'rust-mode
 
-  (add-hook 'before-save-hook rust-before-save-hook nil t)
-  (add-hook 'after-save-hook rust-after-save-hook nil t))
+    (add-hook 'before-save-hook rust-before-save-hook nil t)
+    (add-hook 'after-save-hook rust-after-save-hook nil t)))
 
 (provide 'rust-mode-treesitter)
 ;;; rust-mode-treesitter.el ends here
