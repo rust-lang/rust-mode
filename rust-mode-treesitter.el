@@ -6,7 +6,7 @@
 ;;; Code:
 
 ;;;###autoload
-(when (version<= "29.1" emacs-version)
+(when (and (version<= "29.1" emacs-version) rust-mode-treesitter-derive)
   ;; We have the when macro because of
   ;; https://github.com/rust-lang/rust-mode/issues/520
   (require 'treesit)
