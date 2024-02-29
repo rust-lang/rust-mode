@@ -5,7 +5,6 @@
 
 ;;; Code:
 
-;;;###autoload
 (when (version<= "29.1" emacs-version)
   ;; We have the when macro because of
   ;; https://github.com/rust-lang/rust-mode/issues/520
