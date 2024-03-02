@@ -1445,7 +1445,6 @@ whichever comes first."
            (goto-char (match-end 0)))))))
    (point) end))
 
-;;;###autoload
 (define-derived-mode rust-mode prog-mode "Rust"
   "Major mode for Rust code.
 
