@@ -76,6 +76,9 @@ instead of `prog-mode'. This option requires emacs29+."
   (require 'rust-prog-mode))
 
 ;;;###autoload
+(autoload 'rust-mode "rust-mode" "Major mode for Rust code.")
+
+;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.rs\\'" . rust-mode))
 
 (provide 'rust-mode)
