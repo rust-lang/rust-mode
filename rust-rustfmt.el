@@ -87,8 +87,8 @@
                 (insert-file-contents tmpf)
                 (rust--format-fix-rustfmt-buffer (buffer-name buf))
                 (error "Rustfmt failed, see %s buffer for details"
-                       rust-rustfmt-buffername))))
-          (delete-file tmpf))))))
+                       rust-rustfmt-buffername)))
+            (delete-file tmpf)))))))
 
 ;; Since we run rustfmt through stdin we get <stdin> markers in the
 ;; output. This replaces them with the buffer name instead.

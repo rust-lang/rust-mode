@@ -4,7 +4,8 @@
 ;; rust-mode code deriving from prog-mode instead of rust-ts-mode
 
 ;;; Code:
-(require 'rust-common)
+
+(require 'rust-mode)
 
 (defvar electric-pair-inhibit-predicate)
 (defvar electric-pair-skip-self)

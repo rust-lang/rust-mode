@@ -5,12 +5,13 @@
 
 ;;; Code:
 
+(require 'rust-mode)
+
+;; Do not compile or load on Emacs releases that don't support
+;; this.  See https://github.com/rust-lang/rust-mode/issues/520.
 (when (version<= "29.1" emacs-version)
-  ;; We have the when macro because of
-  ;; https://github.com/rust-lang/rust-mode/issues/520
   (require 'treesit)
   (require 'rust-ts-mode)
-  (require 'rust-common)
 
   (define-derived-mode rust-mode rust-ts-mode "Rust"
     "Major mode for Rust code.
