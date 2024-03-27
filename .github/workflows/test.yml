@@ -23,6 +23,7 @@ jobs:
           - 28.2
           - 29.1
           - 29.2
+          - 29.3
         include:
           - os: ubuntu-latest
             emacs-version: snapshot
