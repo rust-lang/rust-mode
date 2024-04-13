@@ -13,6 +13,12 @@
   (require 'treesit)
   (require 'rust-ts-mode)
 
+  ;; HACK: `rust-ts-mode' adds itself to the `auto-mode-alist'
+  ;; after us, so we need to readd `rust-mode' to the front of
+  ;; the list after loading `rust-ts-mode'.
+  (setq auto-mode-alist (delete '("\\.rs\\'" . rust-mode) auto-mode-alist))
+  (add-to-list 'auto-mode-alist '("\\.rs\\'" . rust-mode))
+
   (define-derived-mode rust-mode rust-ts-mode "Rust"
     "Major mode for Rust code.
 
