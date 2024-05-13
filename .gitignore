@@ -3,3 +3,5 @@
 /rust-mode-pkg.el
  .eask
 /dist
+test-project/Cargo.lock
+test-project/target/

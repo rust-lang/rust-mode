@@ -28,6 +28,7 @@ compile:
 
 test:
 	$(EASK) test ert rust-mode-tests.el
+	$(EASK) test ert rust-cargo-tests.el
 
 checkdoc:
 	$(EASK) lint checkdoc

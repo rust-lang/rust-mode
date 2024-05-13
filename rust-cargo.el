@@ -67,46 +67,54 @@
 
 ;;; Internal
 
-(defun rust--compile (format-string &rest args)
+(defun rust--compile (comint format-string &rest args)
   (when (null rust-buffer-project)
     (rust-update-buffer-project))
   (let ((default-directory
           (or (and rust-buffer-project
                    (file-name-directory rust-buffer-project))
-              default-directory)))
-    (compile (apply #'format format-string args))))
+              default-directory))
+        ;; make sure comint is a boolean value
+        (comint (not (not comint))))
+    (compile (apply #'format format-string args) comint)))
 
 ;;; Commands
 
 (defun rust-check ()
   "Compile using `cargo check`"
   (interactive)
-  (rust--compile "%s check %s" rust-cargo-bin rust-cargo-default-arguments))
+  (rust--compile nil "%s check %s" rust-cargo-bin rust-cargo-default-arguments))
 
 (defun rust-compile ()
   "Compile using `cargo build`"
   (interactive)
-  (rust--compile "%s build %s" rust-cargo-bin rust-cargo-default-arguments))
+  (rust--compile nil "%s build %s" rust-cargo-bin rust-cargo-default-arguments))
 
 (defun rust-compile-release ()
   "Compile using `cargo build --release`"
   (interactive)
-  (rust--compile "%s build --release" rust-cargo-bin))
+  (rust--compile nil "%s build --release" rust-cargo-bin))
 
-(defun rust-run ()
-  "Run using `cargo run`"
-  (interactive)
-  (rust--compile "%s run %s" rust-cargo-bin rust-cargo-default-arguments))
+(defun rust-run (&optional comint)
+  "Run using `cargo run`
 
-(defun rust-run-release ()
-  "Run using `cargo run --release`"
-  (interactive)
-  (rust--compile "%s run --release" rust-cargo-bin))
+If optional arg COMINT is t or invoked with universal prefix arg,
+output buffer will be in comint mode, i.e. interactive."
+  (interactive "P")
+  (rust--compile comint "%s run %s" rust-cargo-bin rust-cargo-default-arguments))
+
+(defun rust-run-release (&optional comint)
+  "Run using `cargo run --release`
+
+If optional arg COMINT is t or invoked with universal prefix arg,
+output buffer will be in comint mode, i.e. interactive."
+  (interactive "P")
+  (rust--compile comint "%s run --release" rust-cargo-bin))
 
 (defun rust-test ()
   "Test using `cargo test`"
   (interactive)
-  (rust--compile "%s test %s" rust-cargo-bin rust-cargo-default-arguments))
+  (rust--compile nil "%s test %s" rust-cargo-bin rust-cargo-default-arguments))
 
 (defun rust-run-clippy ()
   "Run `cargo clippy'."
@@ -118,7 +126,7 @@
          ;; set `compile-command' temporarily so `compile' doesn't
          ;; clobber the existing value
          (compile-command (mapconcat #'shell-quote-argument args " ")))
-    (rust--compile compile-command)))
+    (rust--compile nil compile-command)))
 
 ;;; _
 (provide 'rust-cargo)
