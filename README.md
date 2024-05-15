@@ -173,6 +173,9 @@ By default these are bound to:
 - <kbd>C-c C-c C-t</kbd> `rust-test`
 - <kbd>C-c C-c C-r</kbd> `rust-run`
 
+To run programs requiring user input use universal argument when invoking
+ `rust-run` (<kbd>C-u C-c C-c C-r</kbd>).
+
 ### Clippy
 
 `rust-run-clippy` runs
