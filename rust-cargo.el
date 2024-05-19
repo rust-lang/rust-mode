@@ -19,11 +19,11 @@
   :type 'boolean
   :group 'rust-mode)
 
-(defcustom rust-locate-project-in-workspace t
-  "Whether to use `--workspace` with `cargo locate-project`. If t,
- rust-mode will run commands for the entire workspace. If nil,
- rust will search for the Cargo.toml in the local crated"
-  :type 'boolean
+(defcustom rust-cargo-locate-default-arguments '("--workspace")
+  "Arguments for `cargo locate-project`. Remove `--workspace` if you
+would prefer to use the local crate Cargo.toml instead of the
+worksapce for commands like `cargo check`."
+  :type '(repeat string)
   :group 'rust-mode)
 
 (defcustom rust-cargo-default-arguments ""
@@ -50,10 +50,12 @@
       ;; Set PATH so we can find cargo.
       (setq-local exec-path path)
       (let ((ret
-             (let ((args (list rust-cargo-bin nil (list (current-buffer) nil) nil "locate-project")))
-               (when rust-locate-project-in-workspace
-                 (setq args (append args (list "--workspace"))))
-                 (apply #'process-file args))))
+             (let ((args
+                    (append
+                     (list rust-cargo-bin nil (list (current-buffer) nil) nil
+                           "locate-project")
+                     rust-cargo-locate-default-arguments)))
+               (apply #'process-file args))))
         (when (/= ret 0)
           (error "`cargo locate-project' returned %s status: %s" ret (buffer-string)))
         (goto-char 0)
