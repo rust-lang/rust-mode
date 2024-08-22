@@ -1,5 +1,5 @@
 (package "rust-mode"
-         "1.0.5"
+         "1.0.6"
          "A major-mode for editing Rust source code")
 
 (website-url "https://github.com/rust-lang/rust-mode")
@@ -7,7 +7,7 @@
 
 (package-file "rust-mode.el")
 
-(files 
+(files
  "rust-cargo.el"
  "rust-compile.el"
  "rust-playpen.el"
