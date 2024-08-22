@@ -55,7 +55,7 @@ trait definitions. See [Auto-completion](#auto-completion) below for tips on how
 to enable this.
 
 If you are missing features in rust-mode, please check out
-[rustic](https://github.com/brotzeit/rustic) before you open a feature
+[rustic](https://github.com/emacs-rustic/rustic) before you open a feature
 request. It depends on rust-mode and provides additional features. This
 allows us to keep rust-mode light-weight for users that are happy with
 basic functionality.
@@ -266,7 +266,7 @@ post](https://www.badykov.com/emacs/2021/05/29/emacs-cargo-mode/).
 
 ### rustic
 
-[rustic](https://github.com/brotzeit/rustic) is based on rust-mode,
+[rustic](https://github.com/emacs-rustic/rustic) is based on rust-mode,
 extending it with other features such as integration with LSP and with
 flycheck.
 
