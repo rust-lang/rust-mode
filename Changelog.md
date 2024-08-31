@@ -1,3 +1,7 @@
+# Unreleased
+
+- Update rustfmt's defaults to use 2021 edition ([#554](https://github.com/rust-lang/rust-mode/issues/509)).
+
 # v1.0.6
 
 - Add support for treesitter mode.
