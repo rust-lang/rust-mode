@@ -7,6 +7,9 @@
 ;;; Code:
 ;;; Options
 
+(require 'rust-compile)
+(require 'compile)
+
 (defcustom rust-format-on-save nil
   "Format future rust buffers before saving using rustfmt."
   :type 'boolean
@@ -39,6 +42,34 @@
 
 (defconst rust-rustfmt-buffername "*rustfmt*")
 
+(define-compilation-mode rust-format-mode "rust-format"
+  "Major mode for Rust compilation output."
+
+  (setq-local compilation-error-regexp-alist-alist nil)
+  (add-to-list 'compilation-error-regexp-alist-alist
+               (cons 'rustc-refs rustc-refs-compilation-regexps))
+  (add-to-list 'compilation-error-regexp-alist-alist
+               (cons 'rustc rustc-compilation-regexps))
+  (add-to-list 'compilation-error-regexp-alist-alist
+               (cons 'rustc-colon rustc-colon-compilation-regexps))
+  (add-to-list 'compilation-error-regexp-alist-alist
+               (cons 'cargo cargo-compilation-regexps))
+  (add-to-list 'compilation-error-regexp-alist-alist
+               (cons 'rustc-panics rustc-panics-compilation-regexps))
+
+  (setq-local compilation-error-regexp-alist nil)
+  (add-to-list 'compilation-error-regexp-alist 'rustc-refs)
+  (add-to-list 'compilation-error-regexp-alist 'rustc)
+  (add-to-list 'compilation-error-regexp-alist 'rustc-colon)
+  (add-to-list 'compilation-error-regexp-alist 'cargo)
+  (add-to-list 'compilation-error-regexp-alist 'rustc-panics)
+
+  (add-hook 'next-error-hook #'rustc-scroll-down-after-next-error)
+
+  (if (or compilation-auto-jump-to-first-error
+          (eq compilation-scroll-output 'first-error))
+      (set (make-local-variable 'compilation-auto-jump-to-next) t)))
+
 (defun rust--format-call (buf)
   "Format BUF using rustfmt."
   (let ((path exec-path))
@@ -69,10 +100,20 @@
                         (with-current-buffer buf
                           (replace-buffer-contents rust-rustfmt-buffername))
                       (copy-to-buffer buf (point-min) (point-max))))
-	        (let ((win (get-buffer-window rust-rustfmt-buffername)))
-		  (if win
-		      (quit-window t win)
-		    (kill-buffer rust-rustfmt-buffername))))
+                (let ((win (get-buffer-window rust-rustfmt-buffername)))
+                  (if win
+                      (quit-window t win)
+                    (kill-buffer rust-rustfmt-buffername))))
+               ((= ret 1)
+                (erase-buffer)
+                (insert-file-contents tmpf)
+
+                (rust-format-mode) ;; render compilation errors in compilation-mode
+                (setq-local compile-command (format "%s %s" rust-rustfmt-bin (buffer-file-name buf)))
+
+                (rust--format-fix-rustfmt-buffer (buffer-name buf))
+                (error "Rustfmt failed because of parsing errors, see %s buffer for details"
+                       rust-rustfmt-buffername))
                ((= ret 3)
                 (if (not (string= (buffer-string)
                                   (with-current-buffer buf (buffer-string))))

@@ -1,5 +1,6 @@
 ;;; rust-cargo-tests.el --- ERT tests for rust-cargo.el  -*- lexical-binding: t; -*-
 (require 'rust-cargo)
+(require 'rust-rustfmt)
 (require 'ert)
 
 (defun rust-test--wait-process-exit ()
@@ -51,3 +52,21 @@
      (rust-test--send-process-string "1234\n")
      (rust-test--wait-process-exit)
      (should (rust-test--find-string "***run interactive: 1234")))))
+
+(ert-deftest rust-test-rustfmt ()
+  (skip-unless (executable-find "rustfmt"))
+  (rust-test--with-main-file-buffer
+   (let ((old-content (buffer-string))
+             (ret (rust-format-buffer)))
+         (should (string= ret "Formatted buffer with rustfmt."))
+         (should (string= old-content (buffer-string))))))
+
+(ert-deftest rust-test-rustfmt-parsing-errors ()
+  (skip-unless (executable-find "rustfmt"))
+  (with-temp-buffer
+    (insert "fn main() {")
+    (rust-format-buffer)
+    (with-current-buffer "*rustfmt*"
+      (should (eq major-mode 'rust-format-mode))
+      (should (rust-test--find-string "error:")))
+    (kill-buffer "*rustfmt*")))
