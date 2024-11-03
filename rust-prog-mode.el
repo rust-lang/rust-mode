@@ -1574,7 +1574,7 @@ whichever comes first."
   (setq-local syntax-propertize-function #'rust-syntax-propertize)
 
   ;; Indentation
-  (setq-local indent-line-function 'rust-mode-indent-line)
+  (setq-local indent-line-function 'rust-doc-indent-line)
 
   ;; Fonts
   (setq-local font-lock-defaults
