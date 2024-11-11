@@ -567,7 +567,7 @@ buffer."
          ;; foo.bar
          (t (funcall skip-dot-identifier)))))))
 
-(defun rust-mode-indent-line ()
+(defun rust-mode--indent-line ()
   (interactive)
   (let ((indent
          (save-excursion
@@ -769,7 +769,7 @@ buffer."
   (save-excursion (= (progn (goto-char pos1) (line-end-position))
                      (progn (goto-char pos2) (line-end-position)))))
 
-(defun rust-doc-indent-line ()
+(defun rust-mode-indent-line ()
   "Indent the current line, and indent code examples in comments.
 
 Indent the current line as `rust-mode-indent-line' does.  If
@@ -779,7 +779,7 @@ current line within the code example."
   (interactive)
 
   ;; First, reindent the current line.
-  (rust-mode-indent-line)
+  (rust-mode--indent-line)
 
   ;; If point is inside a comment:
   (let ((ppss (syntax-ppss)))
@@ -871,7 +871,7 @@ current line within the code example."
                  (or (string-suffix-p "\t" cb-pad)
                      (= 0 (length com-prefix) (length cb-pad))
                      (setq-local indent-tabs-mode nil))
-                 (rust-mode-indent-line)
+                 (rust-mode--indent-line)
 
                  ;; Extract the indented line and copy back into the
                  ;; original buffer.
@@ -1574,7 +1574,7 @@ whichever comes first."
   (setq-local syntax-propertize-function #'rust-syntax-propertize)
 
   ;; Indentation
-  (setq-local indent-line-function 'rust-doc-indent-line)
+  (setq-local indent-line-function 'rust-mode-indent-line)
 
   ;; Fonts
   (setq-local font-lock-defaults
