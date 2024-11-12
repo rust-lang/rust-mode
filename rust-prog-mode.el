@@ -567,7 +567,7 @@ buffer."
          ;; foo.bar
          (t (funcall skip-dot-identifier)))))))
 
-(defun rust-mode-indent-line ()
+(defun rust-mode--indent-line ()
   (interactive)
   (let ((indent
          (save-excursion
@@ -768,6 +768,123 @@ buffer."
   "Return non-nil if POS1 and POS2 are on the same line."
   (save-excursion (= (progn (goto-char pos1) (line-end-position))
                      (progn (goto-char pos2) (line-end-position)))))
+
+(defun rust-mode-indent-line ()
+  "Indent the current line, and indent code examples in comments.
+
+Indent the current line as `rust-mode-indent-line' does.  If
+point is inside a block comment containing a Markdown code
+example (delimited by triple backquotes), then also indent the
+current line within the code example."
+  (interactive)
+
+  ;; First, reindent the current line.
+  (rust-mode--indent-line)
+
+  ;; If point is inside a comment:
+  (let ((ppss (syntax-ppss)))
+    (when (nth 4 ppss)
+      (rust-with-comment-fill-prefix
+       (lambda ()
+         (let* ((orig-buf (current-buffer))
+                (orig-point (point))
+                (orig-eol (line-end-position))
+                (orig-bol (line-beginning-position))
+                (orig-mode major-mode)
+                (com-start (nth 8 ppss))
+                (com-prefix (replace-regexp-in-string "\\s-*\\'" ""
+                                                      (or fill-prefix "")))
+                (com-re (regexp-quote com-prefix))
+                (cb-re (concat "^" com-re "\\(\\s-*\\)```"))
+                cb-start cb-pad cb-hidden-marker indented rel-point)
+
+           ;; If point is within the prefix (not inside the comment
+           ;; body), don't do anything fancy.
+           (when (>= orig-point (+ orig-bol (length com-prefix)))
+             (save-excursion
+               ;; If we're in a // comment block, use the fill prefix to
+               ;; find the start of the block.  If we're in a /*
+               ;; comment, the start is determined by ppss.
+               (when (string-match "^\\s-*//" com-prefix)
+                 (setq com-start orig-bol)
+                 (while (and (= (forward-line -1) 0)
+                             (looking-at com-re))
+                   (setq com-start (point))))
+
+               ;; Search for ``` lines within the comment block, and
+               ;; identify the start of the current code block if any.
+               (goto-char com-start)
+               (while (re-search-forward cb-re orig-bol t)
+                 (setq cb-start (unless cb-start (line-end-position))
+                       cb-pad (match-string 1))))
+
+             (when cb-start
+               ;; We're inside a code block.  Copy preceding contents to
+               ;; a temporary buffer.
+               (with-temp-buffer
+                 (insert-buffer-substring orig-buf cb-start orig-eol)
+                 (forward-char (- orig-point orig-eol))
+                 (save-excursion
+                   ;; For each line in the temporary buffer, remove
+                   ;; the comment prefix, left padding if present, and
+                   ;; hidden-line marker if present.  For example, if
+                   ;; the code block begins with:
+                   ;;
+                   ;; ^    /// ```$
+                   ;;
+                   ;; then trim lines as follows:
+                   ;;
+                   ;; ^    ///$                 becomes  ^$
+                   ;; ^    ///     let x = 2;$  becomes  ^    let x = 2;$
+                   ;; ^    /// # fn main() {$   becomes  ^fn main() {$
+                   ;;
+                   ;; If the line we're indenting isn't a hidden line,
+                   ;; then remove hidden lines completely - non-hidden
+                   ;; lines are indented as if the hidden lines don't
+                   ;; exist.
+                   (let ((trim-re (concat com-re "\\(?:" cb-pad "\\)?"
+                                          "\\(\\s-*# \\)?")))
+                     (beginning-of-line)
+                     (if (and (looking-at trim-re) (match-beginning 1))
+                         (setq cb-hidden-marker "# ")
+                       (setq cb-hidden-marker ""
+                             trim-re (concat com-re "\\(?:" cb-pad "\\)?"
+                                             "\\(\\s-*# .*\\)?")))
+
+                     (goto-char (point-min))
+                     (while (not (eobp))
+                       (when (looking-at trim-re)
+                         (delete-region (point) (match-end 0)))
+                       (forward-line 1))))
+
+                 ;; Reindent the line.  Copy local settings from the
+                 ;; parent buffer, but disable indent-tabs-mode unless
+                 ;; it is enabled in the parent buffer and the code
+                 ;; block is already tab-aligned.
+                 (funcall orig-mode)
+                 (mapc (lambda (v)
+                         (when (custom-variable-p (or (car-safe v) v))
+                           (if (symbolp v)
+                               (makunbound (make-local-variable v))
+                             (set (make-local-variable (car v)) (cdr v)))))
+                       (buffer-local-variables orig-buf))
+                 (or (string-suffix-p "\t" cb-pad)
+                     (= 0 (length com-prefix) (length cb-pad))
+                     (setq-local indent-tabs-mode nil))
+                 (rust-mode--indent-line)
+
+                 ;; Extract the indented line and copy back into the
+                 ;; original buffer.
+                 (setq rel-point (- (point) (point-max)))
+                 (beginning-of-line)
+                 (setq indented
+                       (concat com-prefix cb-pad cb-hidden-marker
+                               (buffer-substring (point) (point-max)))))
+               (goto-char orig-eol)
+               (unless (equal indented (buffer-substring orig-bol orig-eol))
+                 (delete-region orig-bol orig-eol)
+                 (insert indented))
+               (forward-char rel-point)))))))))
 
 ;;; Font-locking definitions and helpers
 

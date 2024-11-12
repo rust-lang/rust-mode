@@ -887,6 +887,98 @@ struct A {
 "
    ))
 
+;; When point is inside an example code block, indent-for-tab-command
+;; should reindent the example code.
+(ert-deftest indent-inside-doc-example ()
+  (rust-test-manip-code
+   "
+/// ```
+/// if 2 + 2 == 4 {
+/// success();
+/// }
+/// ```
+"
+   34
+   #'indent-for-tab-command
+   "
+/// ```
+/// if 2 + 2 == 4 {
+///     success();
+/// }
+/// ```
+"
+   38))
+
+;; Inside example code blocks, hidden lines starting with "# " should
+;; be indented as if the "# " wasn't there.
+(ert-deftest indent-inside-doc-example-hidden-code ()
+  (rust-test-manip-code
+   "
+/// ```
+/// # if 2 + 2 == 4 {
+/// # success();
+/// # }
+/// ```
+"
+   36
+   #'indent-for-tab-command
+   "
+/// ```
+/// # if 2 + 2 == 4 {
+/// #     success();
+/// # }
+/// ```
+"
+   42))
+
+;; Inside example code blocks, hidden lines starting with "# "
+;; shouldn't affect indentation of non-hidden lines.
+(ert-deftest indent-inside-doc-example-with-hidden-block ()
+  (rust-test-manip-code
+   "
+/// ```
+/// # if 2 + 2 == 4 {
+///     success();
+/// # }
+/// ```
+"
+   40
+   #'indent-for-tab-command
+   "
+/// ```
+/// # if 2 + 2 == 4 {
+/// success();
+/// # }
+/// ```
+"
+   36))
+
+;; When point is outside the comment, indent-for-tab-command should
+;; reindent the comment line without affecting its contents.
+(ert-deftest indent-outside-doc-example ()
+  (rust-test-manip-code
+   "
+impl Foo {
+    /// ```
+    /// if 2 + 2 == 4 {
+  /// success();
+    /// }
+    /// ```
+}
+"
+   49
+   #'indent-for-tab-command
+   "
+impl Foo {
+    /// ```
+    /// if 2 + 2 == 4 {
+    /// success();
+    /// }
+    /// ```
+}
+"
+   53))
+
 (defconst rust-test-motion-string
       "
 fn fn1(arg: i32) -> bool {
