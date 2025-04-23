@@ -33,7 +33,7 @@
   :type 'string
   :group 'rust-mode)
 
-(defcustom rust-rustfmt-switches '("--edition" "2021")
+(defcustom rust-rustfmt-switches '("--edition" "2024")
   "Arguments to pass when invoking the `rustfmt' executable."
   :type '(repeat string)
   :group 'rust-mode)
