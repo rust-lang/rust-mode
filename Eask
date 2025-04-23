@@ -1,3 +1,5 @@
+;; -*- mode: eask; lexical-binding: t -*-
+
 (package "rust-mode"
          "1.0.6"
          "A major-mode for editing Rust source code")
