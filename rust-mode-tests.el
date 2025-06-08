@@ -3693,6 +3693,7 @@ let b = 1;"
     (insert "note: `ZZZ` could also refer to the constant imported here -> b\n  --> file4.rs:12:34\n\n")
     (insert "    ::: file5.rs:12:34\n\n")
     (insert "thread 'main' panicked at src/file7.rs:12:34:\n\n")
+    (insert "[src/file8.rs:159:5] symbol_value(SOME_VAR) = Some(\n\n")
     ;; should not match
     (insert "werror found a -> b\n  --> no_match.rs:12:34\n\n")
     (insert "error[E0061]: this function takes 1 parameter but 2 parameters were supplied\n  --> file6.rs:132:34
@@ -3712,12 +3713,14 @@ let b = 1;"
                (("file5.rs" "12" "34" compilation-info "file5.rs:12:34"))
                ((like-previous-one "82" back-to-indentation compilation-info "82")
                 (like-previous-one "132" back-to-indentation compilation-info "132"))
-               (("src/file7.rs" "12" "34" nil "src/file7.rs:12:34")))
+               (("src/file7.rs" "12" "34" nil "src/file7.rs:12:34"))
+               (("src/file8.rs" "159" "5" compilation-info "src/file8.rs:159:5")))
              (mapcar #'rust-collect-matches
                      (list rustc-compilation-regexps
                            rustc-colon-compilation-regexps
                            rustc-refs-compilation-regexps
-                           rustc-panics-compilation-regexps))))))
+                           rustc-panics-compilation-regexps
+                           rustc-dbg!-compilation-regexps))))))
 
 ;; If electric-pair-mode is available, load it and run the tests that use it.  If not,
 ;; no error--the tests will be skipped.
