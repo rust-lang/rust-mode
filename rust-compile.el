@@ -48,6 +48,12 @@ See `compilation-error-regexp-alist' for help on their format.")
   "Specifications for matching panics in cargo test invocations.
 See `compilation-error-regexp-alist' for help on their format.")
 
+(defvar rustc-dbg!-compilation-regexps
+  (let ((re (concat "\\[" rustc-compilation-location "\\]")))
+    (cons re '(2 3 4 0 1)))
+  "Specifications for matching dbg! output.
+See `compilation-error-regexp-alist' for help on their format.")
+
 (defun rustc-scroll-down-after-next-error ()
   "In the new style error messages, the regular expression
 matches on the file name (which appears after `-->`), but the
@@ -85,6 +91,9 @@ the compilation window until the top of the error is visible."
                   (cons 'rustc-panics rustc-panics-compilation-regexps))
      (add-to-list 'compilation-error-regexp-alist 'rustc-panics)
      (add-to-list 'compilation-error-regexp-alist 'cargo)
+     (add-to-list 'compilation-error-regexp-alist-alist
+                  (cons 'rust-dbg! rustc-dbg!-compilation-regexps))
+     (add-to-list 'compilation-error-regexp-alist 'rust-dbg!)
      (add-hook 'next-error-hook #'rustc-scroll-down-after-next-error)))
 
 ;;; _
