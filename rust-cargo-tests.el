@@ -21,6 +21,13 @@
        (find-file main-file)
        ,expr)))
 
+(defmacro rust-test--with-snippet-buffer (expr)
+  `(let* ((test-dir (expand-file-name "test-project/" default-directory))
+          (snippet-file (expand-file-name "src/rustfmt-default.rs" test-dir)))
+     (save-current-buffer
+       (find-file snippet-file)
+       ,expr)))
+
 (defun rust-test--find-string (string)
   "Find STRING in current buffer."
   (goto-char (point-min))
@@ -70,3 +77,13 @@
       (should (eq major-mode 'rust-format-mode))
       (should (rust-test--find-string "error:")))
     (kill-buffer "*rustfmt*")))
+
+(ert-deftest rust-test-respect-rustfmt-defaults ()
+  (skip-unless (executable-find "rustfmt"))
+  (rust-test--with-snippet-buffer
+   (let ((old-content (buffer-string))
+             (ret (rust-format-buffer)))
+         (should (string= old-content (buffer-string))))))
+
+(ert-deftest rust-test-ensure-rustfmt-switches-nil ()
+  (should (eq rust-rustfmt-switches nil)))

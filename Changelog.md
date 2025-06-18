@@ -1,7 +1,7 @@
 # Unreleased
 
-- Update rustfmt's defaults to use 2024 edition ([#566](https://github.com/rust-lang/rust-mode/issues/509)).
-- Update rustfmt's defaults to use 2021 edition ([#554](https://github.com/rust-lang/rust-mode/issues/509)).
+- Ensure rustfmt is invoked without overriding parameters [#571](https://github.com/rust-lang/rust-mode/pull/571)
+- Fix native compilation warnings ([#509](https://github.com/rust-lang/rust-mode/issues/509)).
 - Introduce `rust-format-mode` for `rust-format-buffer` ([#556](https://github.com/rust-lang/rust-mode/pull/556)).
 
 # v1.0.6

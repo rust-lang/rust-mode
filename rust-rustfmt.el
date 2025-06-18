@@ -33,8 +33,10 @@
   :type 'string
   :group 'rust-mode)
 
-(defcustom rust-rustfmt-switches '("--edition" "2024")
-  "Arguments to pass when invoking the `rustfmt' executable."
+(defcustom rust-rustfmt-switches nil
+  "Arguments to pass when invoking the `rustfmt' executable. This variable
+will override any user configuration (e.g. rustfmt.toml). Recommendation
+is to not modify this and rely on declarative configuration instead."
   :type '(repeat string)
   :group 'rust-mode)
 
