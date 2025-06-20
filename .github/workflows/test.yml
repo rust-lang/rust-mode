@@ -45,6 +45,9 @@ jobs:
       - uses: jcs090218/setup-emacs@master
         with:
           version: ${{ matrix.emacs-version }}
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
       - uses: emacs-eask/setup-eask@master
         with:
           version: "snapshot"
