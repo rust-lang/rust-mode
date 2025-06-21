@@ -28,6 +28,12 @@ See `compilation-error-regexp-alist' for help on their format.")
   "Specifications for matching `:::` hints in rustc invocations.
 See `compilation-error-regexp-alist' for help on their format.")
 
+(defvar rustc-backtrace-compilation-regexps
+  (let ((re (concat "^ +at " rustc-compilation-location)))
+    (cons re '(2 3 4 0 1)))
+  "Specifications for matching stack backtraces in rustc invocations.
+See `compilation-error-regexp-alist' for help on their format.")
+
 (defvar rustc-refs-compilation-regexps
   (let ((re "^\\([0-9]+\\)[[:space:]]*|"))
     (cons re '(nil 1 nil 0 1)))
@@ -85,6 +91,9 @@ the compilation window until the top of the error is visible."
      (add-to-list 'compilation-error-regexp-alist-alist
                   (cons 'rustc-colon rustc-colon-compilation-regexps))
      (add-to-list 'compilation-error-regexp-alist 'rustc-colon)
+     (add-to-list 'compilation-error-regexp-alist-alist
+                  (cons 'rustc-backtrace rustc-backtrace-compilation-regexps))
+     (add-to-list 'compilation-error-regexp-alist 'rustc-backtrace)
      (add-to-list 'compilation-error-regexp-alist-alist
                   (cons 'cargo cargo-compilation-regexps))
      (add-to-list 'compilation-error-regexp-alist-alist
