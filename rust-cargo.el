@@ -31,6 +31,11 @@ worksapce for commands like `cargo check`."
   :type 'string
   :group 'rust-mode)
 
+(defcustom rust-cargo-clippy-default-arguments '()
+  "Default arguments for running `cargo clippy`."
+  :type '(repeat string)
+  :group 'rust-mode)
+
 ;;; Buffer Project
 
 (defvar-local rust-buffer-project nil)
@@ -134,11 +139,13 @@ output buffer will be in comint mode, i.e. interactive."
   (interactive)
   (when (null rust-buffer-project)
     (rust-update-buffer-project))
-  (let* ((args (list rust-cargo-bin "clippy"
-                     (concat "--manifest-path=" rust-buffer-project)))
+  (let* ((args (append (list rust-cargo-bin "clippy"
+                             (concat "--manifest-path=" rust-buffer-project))
+                       rust-cargo-clippy-default-arguments))
          ;; set `compile-command' temporarily so `compile' doesn't
          ;; clobber the existing value
-         (compile-command (mapconcat #'shell-quote-argument args " ")))
+         (compile-command (concat (mapconcat #'shell-quote-argument args " ")
+                                  " " rust-cargo-default-arguments)))
     (rust--compile nil compile-command)))
 
 ;;; _
