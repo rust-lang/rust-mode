@@ -66,7 +66,9 @@ worksapce for commands like `cargo check`."
         (goto-char 0)
         (let ((output (let ((json-object-type 'alist))
                         (json-read))))
-          (cdr (assoc-string "root" output)))))))
+          (concat
+           (file-remote-p default-directory)
+           (cdr (assoc-string "root" output))))))))
 
 (defun rust-buffer-crate ()
   "Try to locate Cargo.toml using `locate-dominating-file'."
@@ -140,7 +142,7 @@ output buffer will be in comint mode, i.e. interactive."
   (when (null rust-buffer-project)
     (rust-update-buffer-project))
   (let* ((args (append (list rust-cargo-bin "clippy"
-                             (concat "--manifest-path=" rust-buffer-project))
+                             (concat "--manifest-path=" (file-local-name rust-buffer-project)))
                        rust-cargo-clippy-default-arguments))
          ;; set `compile-command' temporarily so `compile' doesn't
          ;; clobber the existing value
