@@ -204,7 +204,8 @@ See `prettify-symbols-compose-predicate'."
     "u64" "i64"
     "u128" "i128"
 
-    "f32" "f64"
+    "f16" "f32"
+    "f64" "f128"
     "isize" "usize"
     "bool"
     "str" "char"))
