@@ -17,12 +17,6 @@
     ("INFINITY" . ?∞) ("->" . ?→) ("=>" . ?⇒))
   "Alist of symbol prettifications used for `prettify-symbols-alist'.")
 
-(defcustom rust-indent-offset 4
-  "Indent Rust code by this number of spaces."
-  :type 'integer
-  :group 'rust-mode
-  :safe #'integerp)
-
 (defcustom rust-indent-method-chain nil
   "Indent Rust method chains, aligned by the `.' operators."
   :type 'boolean
