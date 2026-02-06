@@ -138,7 +138,8 @@ If prefixed with `C-u`, pass additional arguments to the command
 If optional arg IS-TEST is non-nil,
 the argument `-- --show-output' will be automatically
 added instead of being read from the minibuffer.
-Note that the IS-TEST is not meant for general use,
+
+Note that the IS-TEST arg is not meant for general use,
 and only exists for testing the `rust-mode' package. "
   (interactive "P")
   (let ((test-command
