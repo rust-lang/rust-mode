@@ -60,6 +60,22 @@
      (rust-test--wait-process-exit)
      (should (rust-test--find-string "***run interactive: 1234")))))
 
+(ert-deftest rust-test-test ()
+  (skip-unless (executable-find rust-cargo-bin))
+  (setq rust-cargo-default-arguments "")
+  (rust-test--with-main-file-buffer
+     (with-current-buffer (rust-test)
+       (rust-test--wait-process-exit)
+       (should (rust-test--find-string "running 1 test")))))
+
+(ert-deftest rust-test-test-with-arg ()
+  (skip-unless (executable-find rust-cargo-bin))
+  (setq rust-cargo-default-arguments "")
+  (rust-test--with-main-file-buffer
+     (with-current-buffer (rust-test t t)
+       (rust-test--wait-process-exit)
+       (should (rust-test--find-string "***output test")))))
+
 (ert-deftest rust-test-rustfmt ()
   (skip-unless (executable-find "rustfmt"))
   (rust-test--with-main-file-buffer
