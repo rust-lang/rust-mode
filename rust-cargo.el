@@ -135,8 +135,10 @@ output buffer will be in comint mode, i.e. interactive."
 If prefixed with `C-u`, pass additional arguments to the command
 (from a string read from the minibuffer).
 
-If IS-TEST is non-nil, the arguement `-- --show-output' will be
-automatically added. Note that the IS-TEST is not meant for general use,
+If optional arg IS-TEST is non-nil,
+the argument `-- --show-output' will be automatically
+added instead of being read from the minibuffer.
+Note that the IS-TEST is not meant for general use,
 and only exists for testing the `rust-mode' package. "
   (interactive "P")
   (let ((test-command
