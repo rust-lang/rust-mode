@@ -3809,3 +3809,39 @@ let b = 1;"
             (string-match "^C-c C" ,match)))
          t))
       (should (< 0 match-count)))))
+
+;; Toggle mutability tests
+
+(ert-deftest rust-toggle-mutability-let ()
+  "Test toggling let <-> let mut."
+  (with-temp-buffer
+    (rust-mode)
+    (insert "    let x = 5;")
+    (rust-toggle-mutability)
+    (should (string= (buffer-string) "    let mut x = 5;"))
+    (rust-toggle-mutability)
+    (should (string= (buffer-string) "    let x = 5;"))))
+
+(ert-deftest rust-toggle-mutability-ref ()
+  "Test toggling & <-> &mut."
+  (with-temp-buffer
+    (rust-mode)
+    (insert "    let y = & x;")
+    (goto-char (line-end-position))
+    (rust-toggle-mutability)
+    (should (string-match-p "&mut " (buffer-string)))
+    (goto-char (line-end-position))
+    (rust-toggle-mutability)
+    (should (string-match-p "& x" (buffer-string)))))
+
+(ert-deftest rust-toggle-mutability-self ()
+  "Test toggling &self <-> &mut self."
+  (with-temp-buffer
+    (rust-mode)
+    (insert "    fn foo(&self) {")
+    (goto-char (line-end-position))
+    (rust-toggle-mutability)
+    (should (string-match-p "&mut self" (buffer-string)))
+    (goto-char (line-end-position))
+    (rust-toggle-mutability)
+    (should (string-match-p "&self" (buffer-string)))))
