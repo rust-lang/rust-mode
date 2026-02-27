@@ -108,15 +108,38 @@ if not. Move cursor to the end of macro."
    )
   )
 
+;;;###autoload
 (defun rust-toggle-mutability ()
-  "Toggles the mutability of the variable defined on the current line"
+  "Toggle the mutability of the binding or reference near point.
+Handles `let' <-> `let mut' and `&' <-> `&mut' (including `&self')."
   (interactive)
   (save-excursion
-    (back-to-indentation)
-    (forward-word)
-    (if (string= " mut" (buffer-substring (point) (+ (point) 4)))
-        (delete-region (point) (+ (point) 4))
-      (insert " mut"))))
+    (let ((line-start (line-beginning-position))
+          (line-end (line-end-position)))
+      (cond
+       ;; Remove: &mut -> &
+       ((search-backward "&mut " line-start t)
+        (forward-char 1)
+        (delete-region (point) (+ (point) 4)))
+       ;; Remove: let mut -> let
+       ((progn (goto-char (line-beginning-position))
+               (re-search-forward "\\_<let mut\\_>" line-end t))
+        (replace-match "let"))
+       ;; Add: & -> &mut
+       ((progn (goto-char (line-end-position))
+               (search-backward "& " line-start t))
+        (forward-char 1)
+        (insert "mut "))
+       ;; Add: &self -> &mut self
+       ((progn (goto-char (line-end-position))
+               (search-backward "&self" line-start t))
+        (forward-char 1)
+        (insert "mut "))
+       ;; Add: let -> let mut
+       ((progn (goto-char (line-beginning-position))
+               (re-search-forward "\\_<let\\_>" line-end t))
+        (insert " mut"))
+       (t (message "No mutable/immutable binding or reference found on this line"))))))
 ;;; _
 (provide 'rust-utils)
 ;;; rust-utils.el ends here
