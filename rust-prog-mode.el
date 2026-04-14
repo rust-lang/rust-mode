@@ -112,6 +112,14 @@ to the function arguments.  When nil, `->' will be indented one level."
      (or space line-start)
      (group symbol-start "union" symbol-end)
      (+ space) (regexp ,rust-re-ident))))
+(defconst rust-re-raw
+  (rx-to-string
+   `(seq
+     "&"
+     (zero-or-more space)
+     (group "raw")
+     (one-or-more space)
+     (or "const" "mut"))))
 
 (defun rust-re-item-def (itype)
   (concat (rust-re-word itype)
@@ -269,6 +277,7 @@ Does not match type annotations of the form \"foo::<\"."
      ;; Contextual keywords
      ("\\_<\\(default\\)[[:space:]]+fn\\_>" 1 font-lock-keyword-face)
      (,rust-re-union 1 font-lock-keyword-face)
+     (,rust-re-raw 1 font-lock-keyword-face)
 
      ;; Special types
      (,(regexp-opt rust-special-types 'symbols) . font-lock-type-face)
