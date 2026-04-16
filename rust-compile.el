@@ -75,8 +75,8 @@ the compilation window until the top of the error is visible."
         (let ((start-of-error
                (save-excursion
                  (beginning-of-line)
-                 (while (not (looking-at "^[a-z]+:\\|^[a-z]+\\[E[0-9]+\\]:"))
-                   (forward-line -1))
+                 (while (and (not (looking-at "^[a-z]+:\\|^[a-z]+\\[E[0-9]+\\]:"))
+                             (equal (forward-line -1) 0)))
                  (point))))
           (set-window-start (selected-window) start-of-error))))))
 
