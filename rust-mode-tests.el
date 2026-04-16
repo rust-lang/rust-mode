@@ -1979,6 +1979,28 @@ this_is_not_a_string();)"
      "union" font-lock-variable-name-face
      "bar" font-lock-type-face)))
 
+(ert-deftest rust-test-raw-context-sensitive ()
+  (rust-test-font-lock
+   "let raw = 7; let foo = &raw const raw; let bar = &raw mut raw;"
+   '("let" font-lock-keyword-face
+     ;; The first raw is a variable name.
+     "raw" font-lock-variable-name-face
+     "let" font-lock-keyword-face
+     "foo" font-lock-variable-name-face
+     "&" rust-ampersand-face
+     ;; The second raw is a contextual keyword.
+     "raw" font-lock-keyword-face
+     "const" font-lock-keyword-face
+     ;; The third raw is a value.
+     "let" font-lock-keyword-face
+     "bar" font-lock-variable-name-face
+     "&" rust-ampersand-face
+     ;; The fourth raw is a contextual keyword.
+     "raw" font-lock-keyword-face
+     "mut" font-lock-keyword-face
+     ;; The fifth raw is a value.
+     )))
+
 (ert-deftest indent-method-chains-no-align ()
   (let ((rust-indent-method-chain nil)) (test-indent
    "
