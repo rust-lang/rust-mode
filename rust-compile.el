@@ -41,9 +41,10 @@ See `compilation-error-regexp-alist' for help on their format.")
 See `compilation-error-regexp-alist' for help on their format.")
 
 (defvar rustc-panics-compilation-regexps
-   (let ((re (concat "thread '[^']+' panicked at " rustc-compilation-location)))
-     (cons re '(2 3 4 nil 1)))
-   "Specifications for matching panics in rustc invocations.
+  (let ((re (concat "thread '[^']+'\\(?: ([0-9]+)\\)? panicked at "
+                    rustc-compilation-location)))
+    (cons re '(2 3 4 nil 1)))
+  "Specifications for matching panics in rustc invocations.
 See `compilation-error-regexp-alist' for help on their format.")
 
 ;; Match test run failures and panics during compilation as

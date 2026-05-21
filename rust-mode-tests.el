@@ -3715,6 +3715,7 @@ let b = 1;"
     (insert "note: `ZZZ` could also refer to the constant imported here -> b\n  --> file4.rs:12:34\n\n")
     (insert "    ::: file5.rs:12:34\n\n")
     (insert "thread 'main' panicked at src/file7.rs:12:34:\n\n")
+    (insert "thread 'aaa::bbb' (19178688) panicked at crates/a/src/b.rs:13:9:\n\n")
     (insert "[src/file8.rs:159:5] symbol_value(SOME_VAR) = Some(\n\n")
     (insert "    at file9.rs:12:34\n\n")
     ;; should not match
@@ -3736,7 +3737,8 @@ let b = 1;"
                (("file5.rs" "12" "34" compilation-info "file5.rs:12:34"))
                ((like-previous-one "82" back-to-indentation compilation-info "82")
                 (like-previous-one "132" back-to-indentation compilation-info "132"))
-               (("src/file7.rs" "12" "34" nil "src/file7.rs:12:34"))
+               (("src/file7.rs" "12" "34" nil "src/file7.rs:12:34")
+                ("crates/a/src/b.rs" "13" "9" nil "crates/a/src/b.rs:13:9"))
                (("src/file8.rs" "159" "5" compilation-info "src/file8.rs:159:5"))
                (("file9.rs" "12" "34" compilation-info "file9.rs:12:34")))
              (mapcar #'rust-collect-matches
