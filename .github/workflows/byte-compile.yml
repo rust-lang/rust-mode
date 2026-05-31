@@ -1,0 +1,44 @@
+name: Byte-compile
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  byte-compile:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        emacs-version:
+          - "25.1"
+          - "30.1"
+          - snapshot
+    steps:
+      - uses: actions/checkout@v5
+      - uses: purcell/setup-emacs@master
+        with:
+          version: ${{ matrix.emacs-version }}
+      - name: Byte-compile with warnings as errors
+        run: |
+          emacs -Q --batch -L . \
+            --eval '(setq byte-compile-error-on-warn t)' \
+            --eval '(let ((files (list "rust-cargo.el" "rust-common.el"
+                                       "rust-compile.el" "rust-mode.el"
+                                       "rust-playpen.el" "rust-prog-mode.el"
+                                       "rust-rustfmt.el" "rust-utils.el"))
+                          (ok t))
+                      (when (version<= "29.1" emacs-version)
+                        (setq files
+                              (append files (list "rust-mode-treesitter.el"))))
+                      (dolist (f files)
+                        (unless (byte-compile-file f)
+                          (setq ok nil)))
+                      (unless ok (kill-emacs 1)))'
