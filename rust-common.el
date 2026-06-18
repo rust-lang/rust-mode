@@ -16,5 +16,11 @@
   :type 'function
   :group 'rust-mode)
 
+(defcustom rust-indent-offset 4
+  "Indent Rust code by this number of spaces."
+  :type 'integer
+  :group 'rust-mode
+  :safe #'integerp)
+
 (provide 'rust-common)
 ;;; rust-common.el ends here
