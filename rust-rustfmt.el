@@ -82,6 +82,7 @@ is to not modify this and rely on declarative configuration instead."
         (erase-buffer)
         (insert-buffer-substring buf)
         (let* ((tmpf (make-temp-file "rustfmt"))
+               (switches (buffer-local-value 'rust-rustfmt-switches buf))
                (ret (apply #'call-process-region
                            (point-min)
                            (point-max)
@@ -89,7 +90,7 @@ is to not modify this and rely on declarative configuration instead."
                            t
                            `(t ,tmpf)
                            nil
-                           rust-rustfmt-switches)))
+                           switches)))
           (unwind-protect
               (cond
                ((zerop ret)
