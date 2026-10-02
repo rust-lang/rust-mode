@@ -4,7 +4,7 @@
 ;; Author: Mozilla <rust-mode@noreply.github.com>
 ;; Url: https://github.com/rust-lang/rust-mode
 ;; Keywords: languages
-;; Package-Requires: ((emacs "25.1"))
+;; Package-Requires: ((emacs "26.1"))
 
 ;; This file is distributed under the terms of both the MIT license and the
 ;; Apache License (version 2.0).

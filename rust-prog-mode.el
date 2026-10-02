@@ -922,11 +922,12 @@ and end."
 (defun rust-string-interpolation-matcher (limit)
   "Match next Rust interpolation marker before LIMIT and set match data if found.
 Returns nil if not within a Rust string."
-  (when-let (((rust-in-str))
-             (match (rust-next-string-interpolation limit)))
-    (set-match-data match)
-    (goto-char (cadr match))
-    match))
+  (when (rust-in-str)
+    (let ((match (rust-next-string-interpolation limit)))
+      (when match
+        (set-match-data match)
+        (goto-char (cadr match))
+        match))))
 
 (defun rust-syntax-class-before-point ()
   (when (> (point) 1)
@@ -950,18 +951,19 @@ Returns nil if not within a Rust string."
    ;; we're looking back at this, we want to end up just after "Fn".
    ((member (char-before) '(?\] ?\) ))
     (let ((is-paren (rust-looking-back-str ")")))
-      (when-let ((dest (save-excursion
+      (let ((dest (save-excursion
+                    (backward-sexp)
+                    (rust-rewind-irrelevant)
+                    (or
+                     (when (rust-looking-back-str "->")
+                       (backward-char 2)
+                       (rust-rewind-irrelevant)
+                       (when (rust-looking-back-str ")")
                          (backward-sexp)
-                         (rust-rewind-irrelevant)
-                         (or
-                          (when (rust-looking-back-str "->")
-                            (backward-char 2)
-                            (rust-rewind-irrelevant)
-                            (when (rust-looking-back-str ")")
-                              (backward-sexp)
-                              (point)))
-                          (and is-paren (point))))))
-        (goto-char dest))))))
+                         (point)))
+                     (and is-paren (point))))))
+        (when dest
+          (goto-char dest)))))))
 
 (defun rust-rewind-to-decl-name ()
   "Return the point at the beginning of the name in a declaration.
@@ -1548,8 +1550,9 @@ whichever comes first."
 (defun rust-syntax-propertize (start end)
   "A `syntax-propertize-function' to apply properties from START to END."
   (goto-char start)
-  (when-let ((str-start (rust-in-str-or-cmnt)))
-    (rust--syntax-propertize-raw-string str-start end))
+  (let ((str-start (rust-in-str-or-cmnt)))
+    (when str-start
+      (rust--syntax-propertize-raw-string str-start end)))
   (funcall
    (syntax-propertize-rules
     ;; Character literals.

@@ -6,6 +6,7 @@
 ;;; Code:
 
 (require 'json)
+(require 'subr-x)
 
 ;;; Options
 
