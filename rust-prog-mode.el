@@ -141,7 +141,7 @@ to the function arguments.  When nil, `->' will be indented one level."
 (defvar rust-imenu-generic-expression
   (append (mapcar #'(lambda (x)
                       (list (capitalize x) (rust-re-item-def-imenu x) 1))
-                  '("enum" "struct" "union" "type" "mod" "fn" "trait" "impl"))
+                  '("enum" "struct" "union" "type" "mod" "fn" "trait" "impl" "const" "static"))
           `(("Macro" ,(rust-re-item-def-imenu "macro_rules!") 1)))
   "Value for `imenu-generic-expression' in Rust mode.
 
